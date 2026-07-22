@@ -7,6 +7,7 @@ import { marketStats, municipalities, neighborhoods, sales } from "@/db/schema";
 import { isAddressIdSuppressed } from "@/lib/suppression";
 import { formatEuro } from "@/lib/util";
 import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/ui";
+import { MarktSignalenKaart } from "@/components/markt/signalen";
 
 /**
  * Buurtpagina: kerncijfers, recente verkopen en prijsontwikkeling op
@@ -252,6 +253,8 @@ export default async function BuurtPagina({ params }: { params: Promise<Params> 
           </div>
         ) : null}
       </Kaart>
+
+      <MarktSignalenKaart variant="volledig" buurtCode={buurt.buurtCode} className="mt-5" />
     </div>
   );
 }

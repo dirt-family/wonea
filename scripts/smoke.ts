@@ -18,7 +18,12 @@ const ROUTES: Check[] = [
   { pad: "/claim", verwachtStatus: 200 },
   { pad: "/buurt/eindhoven/binnenstad", verwachtStatus: 200, bevat: "Binnenstad" },
   { pad: "/widget?bron=demo", verwachtStatus: 200 },
-  // Fase 3: /biedadvies; Fase 4: funnels + /admin
+  { pad: "/hypotheek", verwachtStatus: 200, bevat: "hypotheek" },
+  { pad: "/verkopen", verwachtStatus: 200 },
+  { pad: "/taxatierapport", verwachtStatus: 200, bevat: "taxatie" },
+  { pad: "/verduurzamen", verwachtStatus: 200 },
+  { pad: "/premium", verwachtStatus: 200, bevat: "gratis" },
+  { pad: "/admin", verwachtStatus: 401 }, // basic-auth vereist
 ];
 
 async function main() {

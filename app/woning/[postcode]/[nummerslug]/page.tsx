@@ -8,6 +8,7 @@ import { isSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation } from "@/lib/valuation";
 import { formatEuro, normalizePostcode } from "@/lib/util";
 import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/ui";
+import { MarktSignalenKaart } from "@/components/markt/signalen";
 
 type Params = { postcode: string; nummerslug: string };
 
@@ -209,6 +210,15 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
             </Kaart>
           ) : null}
 
+          {buurt ? (
+            <MarktSignalenKaart
+              variant="compact"
+              buurtCode={buurt.buurtCode}
+              buurtNaam={buurt.naam}
+              buurtHref={gemeente ? `/buurt/${gemeente.slug}/${buurt.slug}` : undefined}
+            />
+          ) : null}
+
           {labelSlecht ? (
             <Kaart className="bg-accent-wash">
               <SectieLabel>Verduurzamen</SectieLabel>
@@ -239,9 +249,14 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
           <SectieLabel>Biedadvies</SectieLabel>
           <h2 className="mt-2 text-lg font-semibold">Wat is een realistisch bod?</h2>
           <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-            Binnenkort zie je hier wat er in deze buurt over of onder de vraagprijs wordt geboden en wat dat betekent voor jouw
-            bod.
+            Bekijk wat er in deze buurt over of onder de vraagprijs wordt geboden en wat dat betekent voor jouw bod.
           </p>
+          <Link
+            href={`/biedadvies/${adres.postcode}/${adres.nummerslug}`}
+            className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4"
+          >
+            Naar het biedadvies
+          </Link>
         </Kaart>
       </div>
 
