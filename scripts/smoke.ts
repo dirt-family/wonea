@@ -13,16 +13,13 @@ const ROUTES: Check[] = [
   { pad: "/over-ons", verwachtStatus: 200 },
   { pad: "/privacy", verwachtStatus: 200 },
   { pad: "/woz-check", verwachtStatus: 200 },
-  { pad: "/claim", verwachtStatus: 200 },
-  { pad: "/hypotheek", verwachtStatus: 200 },
-  { pad: "/verkopen", verwachtStatus: 200 },
-  { pad: "/verduurzamen", verwachtStatus: 200 },
-  { pad: "/taxatierapport", verwachtStatus: 200 },
-  { pad: "/api/search?q=kleine+berg", verwachtStatus: 200 },
+  { pad: "/verwijderen", verwachtStatus: 200, bevat: "twee stappen" },
+  { pad: "/api/search?q=kleine+berg", verwachtStatus: 200, bevat: "resultaten" },
+  // Fase 2+: /claim /dashboard /buurt; Fase 3: /biedadvies; Fase 4: funnels + /admin
 ];
 
 async function main() {
-  const base = process.env.BASE_URL ?? "http://localhost:3000";
+  const base = process.env.BASE_URL ?? "http://localhost:4123";
   let fouten = 0;
   for (const check of ROUTES) {
     try {
