@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Aanvraag ontvangen" };
+export const metadata: Metadata = { title: "Aanvraag ontvangen", robots: { index: false, follow: false } };
 
 /**
  * Rustige bevestigingspagina na de hypotheekfunnel. Herhaalt wat er gebeurt

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 /**
@@ -6,6 +7,10 @@ import Link from "next/link";
  * Elke adminpagina toont bovenaan de PII-regel: admin toont persoonsgegevens
  * (e-mailadressen), die gebruiken we alleen waarvoor ze zijn afgegeven.
  */
+
+// noindex voor het hele /admin-segment (pagina's eronder overschrijven robots
+// niet); daarnaast blokkeert app/robots.ts /admin al voor crawlers.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">

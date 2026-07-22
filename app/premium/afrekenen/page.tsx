@@ -12,7 +12,7 @@ import { checkoutQuery, koopPremium, veiligeVanUrl } from "@/app/premium/logic";
 import { parseProduct, PRODUCTEN } from "@/app/premium/producten";
 import { stuurPremiumLoginMail } from "@/app/premium/login-mail";
 
-export const metadata: Metadata = { title: "Afrekenen" };
+export const metadata: Metadata = { title: "Afrekenen", robots: { index: false, follow: false } };
 
 /**
  * Gemockte checkout (Fase 4.5). Sessie vereist: de aankoop hangt aan een

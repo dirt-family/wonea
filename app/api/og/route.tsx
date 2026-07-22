@@ -28,6 +28,16 @@ const KLEUR = {
 
 const MAAT = { width: 1200, height: 630 };
 
+// Cache-beleid (Fase 5.3, docs/PERFORMANCE.md): og-rendering is relatief duur
+// (satori) en crawlers halen dezelfde afbeelding vaak herhaald op.
+// - Generiek (geen/ongeldig token): statische inhoud, 24u cachen.
+// - Token-afbeelding: bevat adres + waarde, dus KORT cachen (1u, geen
+//   stale-while-revalidate): na intrekken van het token of opt-out van het
+//   adres is de afbeelding binnen een uur ook uit shared caches verdwenen.
+//   Er is geen on-demand purge voor deze route; de korte TTL is de grens.
+const CACHE_GENERIEK = "public, max-age=86400";
+const CACHE_TOKEN = "public, max-age=3600";
+
 function generiekeAfbeelding() {
   return new ImageResponse(
     (
@@ -50,7 +60,7 @@ function generiekeAfbeelding() {
         <div style={{ display: "flex", marginTop: 48, fontSize: 26, color: KLEUR.gedempt }}>wonea.nl</div>
       </div>
     ),
-    MAAT,
+    { ...MAAT, headers: { "Cache-Control": CACHE_GENERIEK } },
   );
 }
 
@@ -139,6 +149,6 @@ export async function GET(request: Request) {
         </div>
       </div>
     ),
-    MAAT,
+    { ...MAAT, headers: { "Cache-Control": CACHE_TOKEN } },
   );
 }

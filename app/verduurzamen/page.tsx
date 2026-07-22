@@ -4,7 +4,7 @@ import { adresNaam, vindVerduurzaamAdres } from "@/app/verduurzamen/logic";
 import { VERTICAAL_SLUGS, VERTICALEN } from "@/app/verduurzamen/verticalen";
 import { BronLabel, inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Verduurzamen: wat levert het jouw huis op?" };
+export const metadata: Metadata = { title: "Verduurzamen: wat levert het jouw huis op?", robots: { index: false, follow: false } };
 
 /**
  * Ingang van de verduurzamingsfunnel. Met adres (searchParams postcode +

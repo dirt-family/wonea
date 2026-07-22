@@ -3,7 +3,7 @@ import { KnopPrimair, KnopSecundair, Kaart, SectieLabel } from "@/components/ui"
 import { veiligeVanUrl } from "@/app/premium/logic";
 import { parseProduct, PRODUCTEN } from "@/app/premium/producten";
 
-export const metadata: Metadata = { title: "Aankoop afgerond" };
+export const metadata: Metadata = { title: "Aankoop afgerond", robots: { index: false, follow: false } };
 
 /**
  * Rustige bevestigingspagina na de gemockte checkout. Herhaalt wat er is

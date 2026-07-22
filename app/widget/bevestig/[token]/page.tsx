@@ -14,7 +14,7 @@ import { Kaart } from "@/components/ui";
  * melding. Verlopen of gepurgede tokens: eerlijke uitleg, geen harde 404.
  */
 
-export const metadata: Metadata = { title: "Aanmelding bevestigen" };
+export const metadata: Metadata = { title: "Aanmelding bevestigen", robots: { index: false, follow: false } };
 
 export default async function WidgetBevestigPagina({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;

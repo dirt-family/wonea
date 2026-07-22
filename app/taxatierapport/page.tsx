@@ -10,7 +10,7 @@ import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/
 import { CONSENT_TEKST, CONSENT_TEKSTVERSIE, consentTekstversie } from "@/app/taxatierapport/consent-teksten";
 import { isMoment, MOMENTEN, vindAdres, type Moment } from "@/app/taxatierapport/helpers";
 
-export const metadata: Metadata = { title: "Gevalideerd taxatierapport aanvragen" };
+export const metadata: Metadata = { title: "Gevalideerd taxatierapport aanvragen", robots: { index: false, follow: false } };
 
 /**
  * Taxatierapport-funnel: uitleg (wat is NWWI, wanneer nodig, echte prijsrange

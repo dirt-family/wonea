@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Aanvraag verstuurd" };
+export const metadata: Metadata = { title: "Aanvraag verstuurd", robots: { index: false, follow: false } };
 
 /** Rustige bevestiging: herhaalt wat er gebeurt en dat de testfase niets echt doorstuurt. */
 export default function VerkopenBedanktPagina() {

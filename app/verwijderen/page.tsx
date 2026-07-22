@@ -10,7 +10,7 @@ import { normalizePostcode, nowIso, randomToken } from "@/lib/util";
 import { stuurOptoutBevestiging } from "@/emails/optout";
 import { inputClass, Kaart, KnopPrimair, Veld } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Woningpagina verwijderen" };
+export const metadata: Metadata = { title: "Woningpagina verwijderen", robots: { index: false, follow: false } };
 
 const formSchema = z.object({
   postcode: z.string().min(6),

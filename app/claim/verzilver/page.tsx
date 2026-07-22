@@ -11,7 +11,7 @@ import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
 import { CONSENT_TEKST_ALERTS, CONSENT_TEKST_MARKETING } from "@/app/claim/consent-teksten";
 import { verzilverClaim } from "@/app/claim/verzilver/logic";
 
-export const metadata: Metadata = { title: "Bevestig je claim" };
+export const metadata: Metadata = { title: "Bevestig je claim", robots: { index: false, follow: false } };
 
 const verzilverSchema = z.object({
   token: z.string().min(10).max(200),

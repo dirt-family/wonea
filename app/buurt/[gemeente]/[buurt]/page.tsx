@@ -5,6 +5,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { marketStats, municipalities, neighborhoods, sales } from "@/db/schema";
 import { isAddressIdSuppressed } from "@/lib/suppression";
+import { isBuurtIndexeerbaar } from "@/lib/seo/gating";
 import { formatEuro } from "@/lib/util";
 import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/ui";
 import { MarktSignalenKaart } from "@/components/markt/signalen";
@@ -16,6 +17,21 @@ import { MarktSignalenKaart } from "@/components/markt/signalen";
  */
 
 type Params = { gemeente: string; buurt: string };
+
+/**
+ * ISR on-demand, zelfde beleid als de adrespagina: niets bij build, elke
+ * bezochte buurt-URL 24 uur gecachet. Datapatroon past: puur leeswerk (geen
+ * writes bij render), geen cookies/headers, en de bron (market_stats, CBS,
+ * seed-verkopen) verandert hooguit maandelijks. Let op (docs/PERFORMANCE.md):
+ * zodra er kadaster-verkopen MET adres_id bestaan, moet de opt-out-cascade ook
+ * de buurtpagina van dat adres revalidaten; met alleen seed-verkopen (nooit
+ * een adres_id) kan hier niets lekken.
+ */
+export const revalidate = 86400;
+export const dynamicParams = true;
+export function generateStaticParams(): Params[] {
+  return [];
+}
 
 function vindBuurt(params: Params) {
   const gemeente = db.select().from(municipalities).where(eq(municipalities.slug, params.gemeente.toLowerCase())).get();
@@ -32,10 +48,13 @@ function vindBuurt(params: Params) {
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const data = vindBuurt(await params);
   if (!data) return { title: "Buurt niet gevonden", robots: { index: false, follow: false } };
+  // Gebiedswhitelist (lib/seo/gating.ts): buurtpagina's mogen alleen de index
+  // in als de buurt bewust is vrijgegeven. Default is noindex.
+  const indexeerbaar = isBuurtIndexeerbaar(data.buurt.buurtCode);
   return {
     title: `Buurt ${data.buurt.naam} in ${data.gemeente.naam}: woningmarkt en prijzen`,
     description: `Kerncijfers, recente verkopen en prijsontwikkeling van buurt ${data.buurt.naam} in ${data.gemeente.naam}, met bronnen en uitleg.`,
-    robots: { index: false, follow: false }, // indexatie-gating beslist in Fase 5
+    robots: indexeerbaar ? { index: true, follow: true } : { index: false, follow: false },
   };
 }
 

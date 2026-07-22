@@ -5,12 +5,32 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { addresses, municipalities, wozValues } from "@/db/schema";
 import { isSuppressed } from "@/lib/suppression";
+import { findComparables } from "@/lib/comparables";
+import { isAdresIndexeerbaar } from "@/lib/seo/gating";
+import { breadcrumbJsonLd, jsonLdScriptProps, woningJsonLd, type Kruimel } from "@/lib/seo/jsonld";
 import { getOrCreateValuation } from "@/lib/valuation";
-import { formatEuro, normalizePostcode } from "@/lib/util";
+import { baseUrl, formatEuro, normalizePostcode } from "@/lib/util";
 import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/ui";
 import { MarktSignalenKaart } from "@/components/markt/signalen";
 
 type Params = { postcode: string; nummerslug: string };
+
+/**
+ * ISR on-demand (PLAN par. 1 "Rendering"): niets prerenderen bij build (lege
+ * generateStaticParams), elke bezochte URL wordt na de eerste request 24 uur
+ * gecachet. Dit gaat SAMEN met de write in getOrCreateValuation, en is zelfs de
+ * veiligste variant: de valuation-insert (max 1 rij per adres per dag) gebeurt
+ * alleen bij (re)generatie van de pagina, dus hooguit ~1x per 24u per adres in
+ * plaats van bij elke bezoeker. Dat verlaagt de druk op SQLite's ene writer.
+ * Lege generateStaticParams betekent ook: geen DB-writes tijdens `next build`.
+ * Opt-out blijft direct zichtbaar: de verwijderflow purget deze route al via
+ * revalidatePath (app/verwijderen/[token]). Onderbouwing: docs/PERFORMANCE.md.
+ */
+export const revalidate = 86400;
+export const dynamicParams = true;
+export function generateStaticParams(): Params[] {
+  return [];
+}
 
 function vindAdres(params: Params) {
   const postcode = normalizePostcode(params.postcode);
@@ -28,12 +48,24 @@ function vindAdres(params: Params) {
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const adres = vindAdres(await params);
-  if (!adres) return { title: "Woning niet gevonden" };
+  if (!adres) return { title: "Woning niet gevonden", robots: { index: false, follow: false } };
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
+
+  // Indexatie-gating op twee niveaus (lib/seo/gating.ts): gebiedswhitelist
+  // EN datadiepte. Default is noindex; alleen een pagina met echte inhoud in
+  // een vrijgegeven gebied mag de index in.
+  const comparables = findComparables({
+    buurtCode: adres.buurtCode,
+    straat: adres.straat,
+    woningtype: adres.woningtype,
+    oppervlakteM2: adres.oppervlakteM2,
+  });
+  const indexeerbaar = isAdresIndexeerbaar(adres, { nComparables: comparables.comparables.length });
+
   return {
     title: `${naam}, ${adres.postcode} ${adres.plaats}: woningwaarde en bandbreedte`,
     description: `Geschatte waarde van ${naam} in ${adres.plaats}, met eerlijke bandbreedte, de verkopen erachter en een uitgelegde methode.`,
-    robots: { index: false, follow: false }, // indexatie-gating beslist in Fase 5
+    robots: indexeerbaar ? { index: true, follow: true } : { index: false, follow: false },
   };
 }
 
@@ -72,8 +104,18 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
   const labelSlecht = ["D", "E", "F", "G"].includes((adres.energielabel ?? "").toUpperCase());
   const maandFmt = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 
+  // Structured data: kruimelpad + woningkenmerken. BEWUST zonder prijs of
+  // waardeschatting; zie de harde regel in lib/seo/jsonld.ts.
+  const kruimels: Kruimel[] = [
+    { naam: "Wonea", url: `${baseUrl()}/` },
+    ...(buurt && gemeente ? [{ naam: `Buurt ${buurt.naam}`, url: `${baseUrl()}/buurt/${gemeente.slug}/${buurt.slug}` }] : []),
+    { naam, url: `${baseUrl()}/woning/${adres.postcode}/${adres.nummerslug}` },
+  ];
+
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
+      <script {...jsonLdScriptProps(breadcrumbJsonLd(kruimels))} />
+      <script {...jsonLdScriptProps(woningJsonLd(adres))} />
       <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
         <Link href="/" className="hover:text-merk">Wonea</Link> / {adres.plaats} / {adres.straat}
       </nav>

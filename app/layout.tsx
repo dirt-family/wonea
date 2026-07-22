@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Analytics } from "@/components/analytics";
 import "@fontsource-variable/inter";
 import "@fontsource/source-serif-4/400.css";
 import "@fontsource/source-serif-4/600.css";
 import "@fontsource/source-serif-4/700.css";
 import "./globals.css";
+import { jsonLdScriptProps, organizationJsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
 
 export const metadata: Metadata = {
   title: {
@@ -13,7 +15,9 @@ export const metadata: Metadata = {
   },
   description:
     "Wonea toont de geschatte waarde van elke woning met een eerlijke bandbreedte, de verkopen waarop die is gebaseerd en een uitgelegde methode. Jouw huis, jouw data.",
-  robots: { index: false, follow: false }, // default noindex; adrespagina's beslissen zelf via gating (Fase 5)
+  // Geen globale robots-regel meer: adres- en buurtpagina's beslissen via de
+  // indexatie-gating (lib/seo/gating.ts); alle overige pagina's dragen hun
+  // eigen expliciete robots-metadata.
 };
 
 function Header() {
@@ -78,9 +82,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl">
       <body className="min-h-screen">
+        <script {...jsonLdScriptProps(organizationJsonLd())} />
+        <script {...jsonLdScriptProps(websiteJsonLd())} />
         <Header />
         <main>{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );

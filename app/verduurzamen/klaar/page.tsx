@@ -3,7 +3,7 @@ import Link from "next/link";
 import { isVerticaal, PARTIJ_TYPE, VERTICALEN } from "@/app/verduurzamen/verticalen";
 import { Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Aanvraag ontvangen" };
+export const metadata: Metadata = { title: "Aanvraag ontvangen", robots: { index: false, follow: false } };
 
 /**
  * Rustige bevestigingspagina na de funnel: herhaalt wat er gebeurt, aan welk

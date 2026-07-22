@@ -10,7 +10,7 @@ import { Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
 import { HypotheekStepper, type StepperWaarde } from "@/app/hypotheek/stepper";
 import { HYPOTHEEK_SUBTYPES, isHypotheekSubtype, SUBTYPE_META } from "@/app/hypotheek/schema";
 
-export const metadata: Metadata = { title: "Hypotheekadvies aanvragen" };
+export const metadata: Metadata = { title: "Hypotheekadvies aanvragen", robots: { index: false, follow: false } };
 
 /**
  * Hypotheekfunnel (Fase 4.1). Startpagina met drie ingangen die het subtype

@@ -12,6 +12,10 @@ import { WozVergelijker } from "./vergelijker";
 export const metadata: Metadata = {
   title: "Gratis WOZ-check: klopt je WOZ-waarde met de markt?",
   description: "Vergelijk de WOZ-waarde van je beschikking met een eerlijke marktschatting. Gratis, zonder account. Wij verdienen niets aan WOZ-bezwaar.",
+  // Bewust indexeerbaar: de WOZ-check is de gratis organische haak (PLAN par.
+  // 4.3) en staat in /sitemaps/statisch.xml; een noindex-pagina mag nooit in
+  // een sitemap staan, dus indexeren en opnemen horen hier bij elkaar.
+  robots: { index: true, follow: true },
 };
 
 export default async function WozCheckPagina({

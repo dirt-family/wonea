@@ -16,7 +16,7 @@ import { WidgetResize } from "./widget-resize";
  * de widget is een compacte, zelfstandige kaart.
  */
 
-export const metadata: Metadata = { title: "Wat is dit huis waard?" };
+export const metadata: Metadata = { title: "Wat is dit huis waard?", robots: { index: false, follow: false } };
 
 type Zoek = { postcode?: string; nummer?: string; bron?: string; verzonden?: string; fout?: string };
 

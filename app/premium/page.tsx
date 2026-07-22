@@ -5,7 +5,7 @@ import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
 import { checkoutQuery, veiligeVanUrl } from "@/app/premium/logic";
 import { parseProduct, PRODUCTEN, PRODUCT_VOLGORDE } from "@/app/premium/producten";
 
-export const metadata: Metadata = { title: "Premium verdieping" };
+export const metadata: Metadata = { title: "Premium verdieping", robots: { index: false, follow: false } };
 
 /**
  * Overzicht van de twee premium-producten (Fase 4.5). searchParams:

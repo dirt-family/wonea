@@ -17,8 +17,8 @@ type Zoek = { postcode?: string; nummer?: string };
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { verticaal } = await params;
-  if (!isVerticaal(verticaal)) return { title: "Niet gevonden" };
-  return { title: `${VERTICALEN[verticaal].titel} aanvragen` };
+  if (!isVerticaal(verticaal)) return { title: "Niet gevonden", robots: { index: false, follow: false } };
+  return { title: `${VERTICALEN[verticaal].titel} aanvragen`, robots: { index: false, follow: false } };
 }
 
 export default async function VerticaalPagina({

@@ -14,7 +14,7 @@ import { stuurMagicLink } from "@/emails/magic-link";
 import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
 import { CONSENT_TEKST_ALERTS, CONSENT_TEKST_MARKETING } from "@/app/claim/consent-teksten";
 
-export const metadata: Metadata = { title: "Claim je woning" };
+export const metadata: Metadata = { title: "Claim je woning", robots: { index: false, follow: false } };
 
 const formSchema = z.object({
   postcode: z.string().min(6).max(7),

@@ -6,7 +6,7 @@ import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
 import { checkoutQuery, veiligeVanUrl } from "@/app/premium/logic";
 import { parseProduct, PRODUCTEN } from "@/app/premium/producten";
 
-export const metadata: Metadata = { title: "Inloggen" };
+export const metadata: Metadata = { title: "Inloggen", robots: { index: false, follow: false } };
 
 /**
  * De inloglink uit de mail opent deze pagina; de token wordt pas verbruikt

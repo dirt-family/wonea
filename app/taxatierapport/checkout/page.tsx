@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
 import { isMoment, MOMENTEN, vindAdres } from "@/app/taxatierapport/helpers";
 
-export const metadata: Metadata = { title: "Taxatierapport: betaalstap" };
+export const metadata: Metadata = { title: "Taxatierapport: betaalstap", robots: { index: false, follow: false } };
 
 /**
  * PLACEHOLDER-checkout. Er is bewust geen betaalprovider gekoppeld: de knop

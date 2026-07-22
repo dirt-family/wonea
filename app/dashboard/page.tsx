@@ -13,7 +13,7 @@ import { BronLabel, inputClass, Kaart, KnopPrimair, KnopSecundair, SectieLabel, 
 import { CONSENT_TEKST_ALERTS, consentTekstversie } from "@/app/claim/consent-teksten";
 import { DeelRapport } from "@/app/dashboard/deel-rapport";
 
-export const metadata: Metadata = { title: "Mijn woningen" };
+export const metadata: Metadata = { title: "Mijn woningen", robots: { index: false, follow: false } };
 
 // ---------------------------------------------------------------------------
 // Server actions. Elke action verifieert de sessie en het eigenaarschap van

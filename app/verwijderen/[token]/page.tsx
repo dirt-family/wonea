@@ -11,7 +11,7 @@ import { nowIso } from "@/lib/util";
 import { stuurOptoutAfgerond } from "@/emails/optout";
 import { Kaart, KnopPrimair } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Verwijdering bevestigen" };
+export const metadata: Metadata = { title: "Verwijdering bevestigen", robots: { index: false, follow: false } };
 
 async function bevestig(formData: FormData) {
   "use server";

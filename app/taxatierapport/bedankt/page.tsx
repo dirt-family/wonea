@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = { title: "Aanvraag genoteerd" };
+export const metadata: Metadata = { title: "Aanvraag genoteerd", robots: { index: false, follow: false } };
 
 /** Rustige bevestiging: herhaalt wat er gebeurt en dat de testfase niets echt doorstuurt of afrekent. */
 export default function TaxatieBedanktPagina() {

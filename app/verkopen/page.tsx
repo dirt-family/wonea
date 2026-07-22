@@ -14,7 +14,7 @@ import { formatEuro, normalizePostcode } from "@/lib/util";
 import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
 import { CONSENT_TEKST, CONSENT_TEKSTVERSIE, consentTekstversie } from "@/app/verkopen/consent-teksten";
 
-export const metadata: Metadata = { title: "Je woning verkopen" };
+export const metadata: Metadata = { title: "Je woning verkopen", robots: { index: false, follow: false } };
 
 /**
  * Makelaarslead-funnel: adres, drie kwalificatievragen, e-mail + consent.
