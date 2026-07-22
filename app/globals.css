@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/*
+ * Wonea design tokens. Eigen identiteit: licht, rustig, vertrouwen-eerst.
+ * Bewust GEEN groen als merkkleur en geen dark patterns.
+ * Display: Source Serif 4 (notarieel vertrouwen). Body/UI: Inter.
+ */
+@theme {
+  --color-achtergrond: #faf9f7;
+  --color-paneel: #ffffff;
+  --color-inkt: #1f2733;
+  --color-inkt-zacht: #4b5563;
+  --color-gedempt: #6b7280;
+  --color-lijn: #e5e1da;
+  --color-merk: #16324f; /* diep blauw: primaire merk- en actiekleur */
+  --color-merk-licht: #235684;
+  --color-merk-wash: #eef3f8;
+  --color-accent: #b4740f; /* warm amber, spaarzaam voor nadruk */
+  --color-accent-wash: #faf3e6;
+  --color-positief: #2f6f4f;
+  --color-negatief: #9b3535;
+
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-sans: "Inter Variable", -apple-system, "Segoe UI", sans-serif;
+
+  --radius-kaart: 14px;
+}
+
+html {
+  background: var(--color-achtergrond);
+  color: var(--color-inkt);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  color: var(--color-merk);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
