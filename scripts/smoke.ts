@@ -15,7 +15,10 @@ const ROUTES: Check[] = [
   { pad: "/woz-check", verwachtStatus: 200 },
   { pad: "/verwijderen", verwachtStatus: 200, bevat: "twee stappen" },
   { pad: "/api/search?q=kleine+berg", verwachtStatus: 200, bevat: "resultaten" },
-  // Fase 2+: /claim /dashboard /buurt; Fase 3: /biedadvies; Fase 4: funnels + /admin
+  { pad: "/claim", verwachtStatus: 200 },
+  { pad: "/buurt/eindhoven/binnenstad", verwachtStatus: 200, bevat: "Binnenstad" },
+  { pad: "/widget?bron=demo", verwachtStatus: 200 },
+  // Fase 3: /biedadvies; Fase 4: funnels + /admin
 ];
 
 async function main() {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { addresses, wozValues } from "@/db/schema";
+import { addresses, municipalities, wozValues } from "@/db/schema";
 import { isSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation } from "@/lib/valuation";
 import { formatEuro, normalizePostcode } from "@/lib/util";
@@ -64,6 +64,7 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
   if (!adres) notFound();
 
   const { valuation, comparables, buurt } = getOrCreateValuation(adres);
+  const gemeente = buurt ? db.select().from(municipalities).where(eq(municipalities.code, buurt.gemeenteCode)).get() : undefined;
   const woz = db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)).orderBy(wozValues.peiljaar).all().at(-1);
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
   const adresQuery = `postcode=${adres.postcode}&nummer=${adres.nummerslug}`;
@@ -183,7 +184,16 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
 
           {buurt ? (
             <Kaart>
-              <SectieLabel>Buurt {buurt.naam}</SectieLabel>
+              <SectieLabel>
+                Buurt{" "}
+                {gemeente ? (
+                  <Link href={`/buurt/${gemeente.slug}/${buurt.slug}`} className="underline underline-offset-2 hover:text-merk">
+                    {buurt.naam}
+                  </Link>
+                ) : (
+                  buurt.naam
+                )}
+              </SectieLabel>
               <dl className="mt-3 space-y-3 text-sm">
                 {buurt.gemWoz ? (
                   <div className="flex justify-between gap-4">
