@@ -1,113 +1,94 @@
-import Link from "next/link";
-import { Kaart, SectieLabel } from "@/components/ui";
+import type { Metadata } from "next";
 import { Zoekbalk } from "@/components/zoekbalk";
+import { LegeStaat } from "@/components/ui";
+import { MiniWaardePreview } from "@/components/marketing/mini-waarde-preview";
+import { CtaKaarten } from "@/components/marketing/cta-kaarten";
+import { Bronnenstrip } from "@/components/marketing/bronnenstrip";
+import { WoningenRij } from "@/components/marketing/woningen-rij";
+import { FeatureKaarten } from "@/components/marketing/feature-kaarten";
+import { Vertrouwen } from "@/components/marketing/vertrouwen";
+import { StatistiekenBand } from "@/components/marketing/statistieken-band";
+import { PlaatsenTicker } from "@/components/marketing/plaatsen-ticker";
+import { getHomepageStats, getPlaatsen, getVoorbeeldWoning, getWoningenRij } from "@/lib/homepage-data";
 
-export default function HomePage() {
+/**
+ * Homepage volgens de structuur-blauwdruk in docs/BRAND.md: hero met echte
+ * mini-preview, CTA-kaarten, bronnenstrip, woningen-rij, feature-kaarten,
+ * vertrouwenssectie, statistieken-band (de ene donkere band), plaatsen-ticker.
+ *
+ * force-dynamic: de pagina toont live databasedata (tellingen, waardes) en we
+ * willen geen databasewerk tijdens `next build` (zelfde principe als de
+ * woningpagina's, die met lege generateStaticParams niets prerenderen).
+ */
+export const dynamic = "force-dynamic";
+
+// Titel en description erven bewust van de root (geen duplicaat); hier alleen
+// expliciete robots en de canonical voor de homepage.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
+};
+
+export default async function HomePage() {
+  const [voorbeeld, stats, plaatsen] = await Promise.all([getVoorbeeldWoning(), getHomepageStats(), getPlaatsen()]);
+  // Na getVoorbeeldWoning, zodat een vers aangemaakte valuation meetelt in de rij.
+  const woningen = await getWoningenRij(8);
+
   return (
     <div>
+      {/* 1. Hero: split. Links kop + zoekbalk, rechts de echte mini-preview. */}
       <section className="border-b border-lijn bg-paneel">
-        <div className="mx-auto max-w-5xl px-5 py-20">
-          <h1 className="max-w-2xl text-4xl font-semibold sm:text-5xl">
-            Wat je huis waard is, en waarom
-          </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-inkt-zacht">
-            Geen zwevend getal, maar een eerlijke bandbreedte met de verkopen eronder en een methode die we gewoon uitleggen.
-          </p>
-          <div className="mt-8">
-            <Zoekbalk />
+        <div className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-14 lg:grid-cols-[1fr_400px] lg:py-20">
+          <div>
+            <h1 className="max-w-xl text-4xl font-semibold sm:text-5xl">Wat je huis waard is, en waarom</h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-inkt-zacht">
+              Geen zwevend getal, maar een eerlijke bandbreedte met de verkopen eronder en een methode die we gewoon
+              uitleggen.
+            </p>
+            <div className="mt-8">
+              <Zoekbalk />
+            </div>
+            <p className="mt-4 text-sm text-gedempt">Gratis en zonder account.</p>
           </div>
-          <p className="mt-4 text-sm text-gedempt">
-            Gratis, zonder account. Liever niet op Wonea staan? Verwijderen kan altijd, in twee stappen.
-          </p>
+          <div className="hidden lg:block">
+            {voorbeeld ? (
+              <MiniWaardePreview voorbeeld={voorbeeld} />
+            ) : (
+              <LegeStaat
+                titel="Nog geen voorbeeldadres"
+                tekst="Zodra het testgebied gevuld is, staat hier een echte woningwaarde-preview met bandbreedte."
+              />
+            )}
+          </div>
         </div>
       </section>
 
+      {/* 2. Twee CTA-kaarten: budget en WOZ-check. */}
       <section className="mx-auto max-w-5xl px-5 py-16">
-        <SectieLabel>Zo werkt het</SectieLabel>
-        <div className="mt-6 grid gap-5 sm:grid-cols-3">
-          <Kaart>
-            <p className="font-display text-3xl font-semibold text-merk">1</p>
-            <h2 className="mt-3 text-lg font-semibold">Zoek je adres</h2>
-            <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-              Elke woning in ons testgebied heeft een eigen pagina met kenmerken uit openbare registers.
-            </p>
-          </Kaart>
-          <Kaart>
-            <p className="font-display text-3xl font-semibold text-merk">2</p>
-            <h2 className="mt-3 text-lg font-semibold">Zie de waarde, met marge</h2>
-            <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-              Je krijgt een bandbreedte, hoe zeker we zijn, en de verkopen waarop de schatting rust. Nooit schijnprecisie.
-            </p>
-          </Kaart>
-          <Kaart>
-            <p className="font-display text-3xl font-semibold text-merk">3</p>
-            <h2 className="mt-3 text-lg font-semibold">Jij houdt de regie</h2>
-            <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-              Claim je woning om de waarde te volgen, of verwijder de pagina juist. Allebei in een paar klikken.
-            </p>
-          </Kaart>
-        </div>
+        <CtaKaarten />
       </section>
 
-      <section className="mx-auto max-w-5xl px-5 pb-16">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Kaart className="bg-merk-wash">
-            <SectieLabel>Waarom een bandbreedte</SectieLabel>
-            <h2 className="mt-3 text-xl font-semibold">Elke onlineschatting zit ernaast. Wij zeggen hoeveel.</h2>
-            <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-              Zonder vraagprijs zit elk rekenmodel er gemiddeld zo'n zeven procent naast, ook dat van ons. Daarom tonen we een
-              bandbreedte en de verkopen waarop die is gebaseerd, in plaats van een getal dat zekerheid veinst.
-            </p>
-            <Link href="/methode" className="mt-4 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-              Lees hoe we rekenen
-            </Link>
-          </Kaart>
-          <Kaart>
-            <SectieLabel>Gratis WOZ-check</SectieLabel>
-            <h2 className="mt-3 text-xl font-semibold">Klopt je WOZ-waarde met de markt?</h2>
-            <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-              Vergelijk de WOZ-waarde van je beschikking met onze marktschatting. Scheelt het veel, dan leggen we uit hoe
-              bezwaar werkt, rechtstreeks bij je gemeente en gratis. Wij verdienen daar niets aan.
-            </p>
-            <Link href="/woz-check" className="mt-4 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-              Start de WOZ-check
-            </Link>
-          </Kaart>
-        </div>
-      </section>
+      {/* 3. Bronnenstrip: echte open bronnen, geen verzonnen social proof. */}
+      <Bronnenstrip />
 
-      <section className="mx-auto max-w-5xl px-5 pb-16">
-        <SectieLabel>Tools</SectieLabel>
-        <h2 className="mt-3 text-2xl font-semibold">Gratis inzicht, zonder account</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
-          Zeven tools rond wonen, kopen en verduurzamen. Elke tool noemt de bron waar hij op draait, en cijfers komen
-          altijd met bron en peildatum.
-        </p>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { titel: "Woningwaarde-check", zin: "De waarde van een adres, altijd als bandbreedte.", href: "/" },
-            { titel: "WOZ-check", zin: "Klopt de WOZ-waarde van je beschikking met de markt?", href: "/woz-check" },
-            { titel: "Budgetberekenaar", zin: "Wat je kunt lenen volgens de leennormen van 2026.", href: "/budget" },
-            { titel: "Actuele hypotheekrentes", zin: "Gemiddelde rentes per rentevaste periode, van DNB.", href: "/hypotheek-rentes" },
-            { titel: "Verduurzamingscheck", zin: "Wat isolatie, zonnepanelen of een warmtepomp opleveren.", href: "/verduurzamen" },
-            { titel: "Biedadvies", zin: "Een realistische biedrange per woning, met buurtcontext.", href: "/tools#biedadvies" },
-            { titel: "Vind een makelaar", zin: "Makelaars in de buurt, zonder betaalde posities.", href: "/makelaars" },
-          ].map((tool) => (
-            <Link
-              key={tool.titel}
-              href={tool.href}
-              className="block rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
-            >
-              <p className="font-semibold text-inkt">{tool.titel}</p>
-              <p className="mt-1 text-sm leading-relaxed text-inkt-zacht">{tool.zin}</p>
-            </Link>
-          ))}
-          <Link href="/tools" className="block rounded-[14px] border border-lijn bg-merk-wash p-5 transition-colors hover:border-merk">
-            <p className="font-semibold text-merk">Alle tools</p>
-            <p className="mt-1 text-sm leading-relaxed text-inkt-zacht">Bekijk alle tools met uitleg en de bron per tool.</p>
-          </Link>
-        </div>
-      </section>
+      {/* 4. Woningen-rij: horizontaal scrollende kaarten met echte adressen. */}
+      <div className="reveal">
+        <WoningenRij woningen={woningen} />
+      </div>
+
+      {/* 5. Drie feature-kaarten met echte mini-previews. */}
+      <div className="reveal">
+        <FeatureKaarten voorbeeld={voorbeeld} />
+      </div>
+
+      {/* 6. Volle-breedte vertrouwenssectie. */}
+      <Vertrouwen />
+
+      {/* 7. Statistieken-band: de ene donkere band, echte cijfers. */}
+      <StatistiekenBand stats={stats} />
+
+      {/* 8. Plaatsen-ticker: de enige marquee op de site. */}
+      <PlaatsenTicker plaatsen={plaatsen} />
     </div>
   );
 }

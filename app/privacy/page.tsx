@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Kaart } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Privacy en jouw data" };
+export const metadata: Metadata = {
+  title: "Privacy en jouw data",
+  description:
+    "Wat Wonea toont uit openbare registers, wat alleen met jouw toestemming gebeurt en hoe je je woning in twee stappen verwijdert.",
+  alternates: { canonical: "/privacy" },
+};
 
 export default function PrivacyPagina() {
   return (

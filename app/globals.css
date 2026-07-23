@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/*
+ ---break---
+ */
+@custom-variant dark (&:is(.dark *));
 
 /*
  * Wonea design tokens. Eigen identiteit: licht, rustig, vertrouwen-eerst.
@@ -71,3 +75,139 @@ h3 {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+ * Plaatsen-ticker (homepage): de enige marquee op de site (BRAND.md).
+ * Twee identieke banen schuiven samen 100% naar links en beginnen opnieuw;
+ * hover pauzeert; bij reduced motion wordt het een gewone scroller.
+ * ---------------------------------------------------------------------- */
+@keyframes marquee-lus {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.marquee {
+  display: flex;
+  overflow: hidden;
+}
+
+.marquee-baan {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2.5rem;
+  min-width: 100%;
+  width: max-content;
+  padding-right: 2.5rem;
+  animation: marquee-lus 45s linear infinite;
+}
+
+.marquee:hover .marquee-baan,
+.marquee:focus-within .marquee-baan {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    overflow-x: auto;
+  }
+  .marquee-baan {
+    animation: none;
+  }
+}
+
+/* -------------------------------------------------------------------------
+ * Scroll-reveal: subtiel en alleen waar de browser scroll-timelines kent.
+ * Progressive enhancement; reduced motion laat alles gewoon staan.
+ * ---------------------------------------------------------------------- */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in var(--duur-normaal) var(--ease-uit) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+/* -------------------------------------------------------------------------
+ * Grafiek-tokens (Bklit-chartlaag, her-skinned naar het Wonea-palet).
+ * De site is licht (thema-slot in BRAND.md): geen .dark-varianten.
+ * Reeksen: merk-tinten; amber alleen als vierde reeks-accent.
+ * ---------------------------------------------------------------------- */
+:root {
+  --foreground: var(--color-inkt);
+  --muted-foreground: var(--color-gedempt);
+  --chart-1: var(--color-merk);
+  --chart-2: var(--color-merk-500);
+  --chart-3: var(--color-merk-300);
+  --chart-4: var(--color-accent);
+  --chart-5: var(--color-merk-200);
+  --chart-background: var(--color-paneel);
+  --chart-foreground: var(--color-inkt);
+  --chart-foreground-muted: var(--color-gedempt);
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-3);
+  --chart-crosshair: var(--color-merk-400);
+  --chart-grid: var(--color-lijn);
+  --chart-brush-border: var(--chart-grid);
+  --chart-tooltip-background: color-mix(in srgb, var(--color-merk-900) 92%, transparent);
+  --chart-tooltip-foreground: #ffffff;
+  --chart-tooltip-muted: var(--color-merk-200);
+  --chart-marker-background: var(--color-merk-wash);
+  --chart-marker-border: var(--color-merk-200);
+  --chart-marker-foreground: var(--color-merk);
+  --chart-marker-badge-background: var(--color-merk);
+  --chart-marker-badge-foreground: #ffffff;
+  --chart-segment-background: var(--color-merk-wash);
+  --chart-segment-line: var(--color-merk-300);
+  --chart-label: var(--color-inkt-zacht);
+  --chart-scale-01: var(--color-merk-50);
+  --chart-scale-02: var(--color-merk-100);
+  --chart-scale-03: var(--color-merk-200);
+  --chart-scale-04: var(--color-merk-300);
+  --chart-scale-05: var(--color-merk-500);
+  --chart-scale-pattern-color: var(--color-merk-50);
+}
+@theme inline {
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-background: var(--chart-background);
+  --color-chart-foreground: var(--chart-foreground);
+  --color-chart-foreground-muted: var(--chart-foreground-muted);
+  --color-chart-crosshair: var(--chart-crosshair);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
+  --color-chart-label: var(--chart-label);
+  --color-chart-scale-01: var(--chart-scale-01);
+  --color-chart-scale-02: var(--chart-scale-02);
+  --color-chart-scale-03: var(--chart-scale-03);
+  --color-chart-scale-04: var(--chart-scale-04);
+  --color-chart-scale-05: var(--chart-scale-05);
+  --color-chart-scale-pattern-color: var(--chart-scale-pattern-color);
+}
+/* LET OP voor volgende registry-installs: shadcn injecteert hier soms opnieuw
+ * een .dark-blok en kapotte var(----...)-regels; verwijder die dan weer.
+ * De grafiek-tokens hierboven zijn de enige bron van waarheid. */

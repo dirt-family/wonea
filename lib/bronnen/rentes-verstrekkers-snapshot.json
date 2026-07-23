@@ -1,0 +1,301 @@
+{
+  "opgehaaldOp": "2026-07-23",
+  "bron": "Rentetarieven zoals gepubliceerd op de eigen websites van de geldverstrekkers",
+  "toelichting": "Per verstrekker de actuele rente voor 10 en 20 jaar vast, met en zonder NHG, in de standaardweergave van de eigen rentepagina van de bank. Tarieven verschillen per tariefklasse, product en voorwaarden (zie opmerking per rij); controleer altijd de actuele tarieven bij de bank zelf.",
+  "rijen": [
+    {
+      "verstrekker": "Rabobank",
+      "product": "Annuïteitenhypotheek (basisvoorwaarden)",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 3.83,
+      "bronUrl": "https://www.rabobank.nl/particulieren/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "annuïteitenhypotheek, basisvoorwaarden, zonder betaalpakket- en duurzaamheidskorting; tarieven volgens de bank geldig vanaf 23 juli 2026"
+    },
+    {
+      "verstrekker": "Rabobank",
+      "product": "Annuïteitenhypotheek (basisvoorwaarden)",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 4.38,
+      "bronUrl": "https://www.rabobank.nl/particulieren/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 90% van de marktwaarde; annuïteitenhypotheek, basisvoorwaarden, zonder betaalpakket- en duurzaamheidskorting; tarieven volgens de bank geldig vanaf 23 juli 2026"
+    },
+    {
+      "verstrekker": "Rabobank",
+      "product": "Annuïteitenhypotheek (basisvoorwaarden)",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.37,
+      "bronUrl": "https://www.rabobank.nl/particulieren/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "annuïteitenhypotheek, basisvoorwaarden, zonder betaalpakket- en duurzaamheidskorting; tarieven volgens de bank geldig vanaf 23 juli 2026"
+    },
+    {
+      "verstrekker": "Rabobank",
+      "product": "Annuïteitenhypotheek (basisvoorwaarden)",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 5.02,
+      "bronUrl": "https://www.rabobank.nl/particulieren/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 90% van de marktwaarde; annuïteitenhypotheek, basisvoorwaarden, zonder betaalpakket- en duurzaamheidskorting; tarieven volgens de bank geldig vanaf 23 juli 2026"
+    },
+    {
+      "verstrekker": "ABN AMRO",
+      "product": "Budget Hypotheek, annuïteiten",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 3.78,
+      "bronUrl": "https://www.abnamro.nl/nl/prive/hypotheken/actuele-hypotheekrente/index.html",
+      "peildatum": "2026-07-23",
+      "opmerking": "Budget Hypotheek, annuïteiten; inclusief huisbankkorting van 0,20%, alleen met ABN AMRO-betaalrekening"
+    },
+    {
+      "verstrekker": "ABN AMRO",
+      "product": "Budget Hypotheek, annuïteiten",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 4.16,
+      "bronUrl": "https://www.abnamro.nl/nl/prive/hypotheken/actuele-hypotheekrente/index.html",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 90% van de marktwaarde; Budget Hypotheek, annuïteiten; inclusief huisbankkorting van 0,20%, alleen met ABN AMRO-betaalrekening"
+    },
+    {
+      "verstrekker": "ABN AMRO",
+      "product": "Budget Hypotheek, annuïteiten",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.24,
+      "bronUrl": "https://www.abnamro.nl/nl/prive/hypotheken/actuele-hypotheekrente/index.html",
+      "peildatum": "2026-07-23",
+      "opmerking": "Budget Hypotheek, annuïteiten; inclusief huisbankkorting van 0,20%, alleen met ABN AMRO-betaalrekening"
+    },
+    {
+      "verstrekker": "ABN AMRO",
+      "product": "Budget Hypotheek, annuïteiten",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 4.75,
+      "bronUrl": "https://www.abnamro.nl/nl/prive/hypotheken/actuele-hypotheekrente/index.html",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 90% van de marktwaarde; Budget Hypotheek, annuïteiten; inclusief huisbankkorting van 0,20%, alleen met ABN AMRO-betaalrekening"
+    },
+    {
+      "verstrekker": "Obvion",
+      "product": "Woon Hypotheek, annuïtair",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 3.88,
+      "bronUrl": "https://www.obvion.nl/rente",
+      "peildatum": "2026-07-23",
+      "opmerking": "Woon Hypotheek, annuïtair, zonder duurzaamheidskorting"
+    },
+    {
+      "verstrekker": "Obvion",
+      "product": "Woon Hypotheek, annuïtair",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 4.26,
+      "bronUrl": "https://www.obvion.nl/rente",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse tot en met 106% van de marktwaarde; Woon Hypotheek, annuïtair, zonder duurzaamheidskorting"
+    },
+    {
+      "verstrekker": "Obvion",
+      "product": "Woon Hypotheek, annuïtair",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.27,
+      "bronUrl": "https://www.obvion.nl/rente",
+      "peildatum": "2026-07-23",
+      "opmerking": "Woon Hypotheek, annuïtair, zonder duurzaamheidskorting"
+    },
+    {
+      "verstrekker": "Obvion",
+      "product": "Woon Hypotheek, annuïtair",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 4.63,
+      "bronUrl": "https://www.obvion.nl/rente",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse tot en met 106% van de marktwaarde; Woon Hypotheek, annuïtair, zonder duurzaamheidskorting"
+    },
+    {
+      "verstrekker": "a.s.r.",
+      "product": "ASR hypotheek, annuïtair en lineair",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 4.2,
+      "bronUrl": "https://www.asr.nl/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "ASR hypotheek, annuïtair en lineair; tarieven volgens de bank per 22 juli 2026"
+    },
+    {
+      "verstrekker": "a.s.r.",
+      "product": "ASR hypotheek, annuïtair en lineair",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 4.29,
+      "bronUrl": "https://www.asr.nl/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 95% van de marktwaarde; ASR hypotheek, annuïtair en lineair; tarieven volgens de bank per 22 juli 2026"
+    },
+    {
+      "verstrekker": "a.s.r.",
+      "product": "ASR hypotheek, annuïtair en lineair",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.39,
+      "bronUrl": "https://www.asr.nl/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "ASR hypotheek, annuïtair en lineair; tarieven volgens de bank per 22 juli 2026"
+    },
+    {
+      "verstrekker": "a.s.r.",
+      "product": "ASR hypotheek, annuïtair en lineair",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 4.52,
+      "bronUrl": "https://www.asr.nl/hypotheek/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 95% van de marktwaarde; ASR hypotheek, annuïtair en lineair; tarieven volgens de bank per 22 juli 2026"
+    },
+    {
+      "verstrekker": "MUNT Hypotheken",
+      "product": "MUNT Hypotheek, annuïtair/lineair",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 4.11,
+      "bronUrl": "https://www.munthypotheken.nl/rente/",
+      "peildatum": "2026-07-23",
+      "opmerking": "annuïtair/lineair, offerterente (dagrente is 0,15% hoger); tarieven volgens de bank per 23 juli 2026"
+    },
+    {
+      "verstrekker": "MUNT Hypotheken",
+      "product": "MUNT Hypotheek, annuïtair/lineair",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 4.27,
+      "bronUrl": "https://www.munthypotheken.nl/rente/",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 90% van de marktwaarde; annuïtair/lineair, offerterente (dagrente is 0,15% hoger); tarieven volgens de bank per 23 juli 2026"
+    },
+    {
+      "verstrekker": "MUNT Hypotheken",
+      "product": "MUNT Hypotheek, annuïtair/lineair",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.34,
+      "bronUrl": "https://www.munthypotheken.nl/rente/",
+      "peildatum": "2026-07-23",
+      "opmerking": "annuïtair/lineair, offerterente (dagrente is 0,15% hoger); tarieven volgens de bank per 23 juli 2026"
+    },
+    {
+      "verstrekker": "MUNT Hypotheken",
+      "product": "MUNT Hypotheek, annuïtair/lineair",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 4.54,
+      "bronUrl": "https://www.munthypotheken.nl/rente/",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse boven 90% van de marktwaarde; annuïtair/lineair, offerterente (dagrente is 0,15% hoger); tarieven volgens de bank per 23 juli 2026"
+    },
+    {
+      "verstrekker": "Nationale-Nederlanden",
+      "product": "Annuïteiten / Lineaire Hypotheek",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 4.11,
+      "bronUrl": "https://www.nn.nl/Particulier/Hypotheken/Hypotheekrente.htm",
+      "peildatum": "2026-07-23",
+      "opmerking": "Annuïteiten / Lineaire Hypotheek, bestaande bouw"
+    },
+    {
+      "verstrekker": "Nationale-Nederlanden",
+      "product": "Annuïteiten / Lineaire Hypotheek",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 4.46,
+      "bronUrl": "https://www.nn.nl/Particulier/Hypotheken/Hypotheekrente.htm",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse tot 100% van de marktwaarde; Annuïteiten / Lineaire Hypotheek, bestaande bouw"
+    },
+    {
+      "verstrekker": "Nationale-Nederlanden",
+      "product": "Annuïteiten / Lineaire Hypotheek",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.18,
+      "bronUrl": "https://www.nn.nl/Particulier/Hypotheken/Hypotheekrente.htm",
+      "peildatum": "2026-07-23",
+      "opmerking": "Annuïteiten / Lineaire Hypotheek, bestaande bouw"
+    },
+    {
+      "verstrekker": "Nationale-Nederlanden",
+      "product": "Annuïteiten / Lineaire Hypotheek",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 5.16,
+      "bronUrl": "https://www.nn.nl/Particulier/Hypotheken/Hypotheekrente.htm",
+      "peildatum": "2026-07-23",
+      "opmerking": "tariefklasse tot 100% van de marktwaarde; Annuïteiten / Lineaire Hypotheek, bestaande bouw"
+    },
+    {
+      "verstrekker": "Florius",
+      "product": "Verduurzaam Hypotheek",
+      "rentevastJaren": 10,
+      "nhg": "ja",
+      "rentePct": 3.93,
+      "bronUrl": "https://www.florius.nl/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "Verduurzaam Hypotheek, alleen voor verduurzaming van de woning; rente is gelijk met en zonder NHG; tarieven volgens de bank per maandag 20 juli 2026"
+    },
+    {
+      "verstrekker": "Florius",
+      "product": "Verduurzaam Hypotheek",
+      "rentevastJaren": 10,
+      "nhg": "nee",
+      "rentePct": 3.93,
+      "bronUrl": "https://www.florius.nl/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "Verduurzaam Hypotheek, alleen voor verduurzaming van de woning; rente is gelijk met en zonder NHG; tarieven volgens de bank per maandag 20 juli 2026"
+    },
+    {
+      "verstrekker": "Florius",
+      "product": "Verduurzaam Hypotheek",
+      "rentevastJaren": 20,
+      "nhg": "ja",
+      "rentePct": 4.25,
+      "bronUrl": "https://www.florius.nl/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "Verduurzaam Hypotheek, alleen voor verduurzaming van de woning; rente is gelijk met en zonder NHG; tarieven volgens de bank per maandag 20 juli 2026"
+    },
+    {
+      "verstrekker": "Florius",
+      "product": "Verduurzaam Hypotheek",
+      "rentevastJaren": 20,
+      "nhg": "nee",
+      "rentePct": 4.25,
+      "bronUrl": "https://www.florius.nl/hypotheekrente",
+      "peildatum": "2026-07-23",
+      "opmerking": "Verduurzaam Hypotheek, alleen voor verduurzaming van de woning; rente is gelijk met en zonder NHG; tarieven volgens de bank per maandag 20 juli 2026"
+    }
+  ],
+  "overgeslagen": [
+    {
+      "verstrekker": "ING",
+      "reden": "anti-bot-muur: de site levert ook aan een gewone browser een lege shell; geen omweg gebouwd"
+    },
+    {
+      "verstrekker": "SNS",
+      "reden": "SNS is opgegaan in ASN Bank; snsbank.nl toont alleen de interactieve ASN-rentetool, geen tabel"
+    },
+    {
+      "verstrekker": "ASN Bank",
+      "reden": "publiceert tarieven alleen als PDF-download en interactieve tool, geen parseerbare HTML-tabel"
+    }
+  ]
+}

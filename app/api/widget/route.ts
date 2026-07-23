@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { addresses, consents, widgetCaptures } from "@/db/schema";
 import { isSuppressed } from "@/lib/suppression";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { normalizePostcode, nowIso, randomToken } from "@/lib/util";
 import { stuurWidgetDoubleOptin } from "@/emails/widget";
 import { WIDGET_CONSENT_TEKST } from "@/app/widget/consent";
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
   const echo: Echo = { postcode: str(raw.postcode).slice(0, 8), nummer: str(raw.nummer).slice(0, 12), bron: schoonDomein(raw.bron) };
 
-  const ip = request.headers.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(request.headers);
   if (rateLimited(`widget:${ip}`)) return antwoord(isJson, request, echo, { fout: "te-vaak" });
 
   // Honeypot: mensen zien dit veld niet en laten het leeg. Gevuld = bot;

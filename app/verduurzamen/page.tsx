@@ -68,6 +68,13 @@ export default async function VerduurzamenPagina({
               </div>
               <KnopPrimair type="submit">Bekijk mijn energielabel</KnopPrimair>
             </form>
+            <p className="mt-4 border-t border-lijn pt-4 text-sm leading-relaxed text-inkt-zacht">
+              Liever eerst rekenen zonder adres?{" "}
+              <Link href="/verduurzamen/advies" className="font-semibold text-merk underline underline-offset-2">
+                Stel je totaalplan samen
+              </Link>{" "}
+              met je woningtype en bouwjaar.
+            </p>
           </Kaart>
         </>
       ) : (
@@ -116,14 +123,14 @@ export default async function VerduurzamenPagina({
           </Kaart>
 
           <Kaart className="mt-5 bg-merk-wash">
-            <SectieLabel>Advies per maatregel</SectieLabel>
+            <SectieLabel>Jouw totaalplan</SectieLabel>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
-              Bekijk per maatregel (isolatie, warmtepomp, zonneboiler en zonnepanelen) de indicatieve kosten, het
-              ISDE-subsidiebedrag 2026, de jaarbesparing en de terugverdientijd, plus de extra hypotheek-leenruimte bij
-              jouw energielabel. Met bron en peildatum bij elk cijfer.
+              Kies je maatregelen (isolatie, warmtepomp, zonneboiler, zonnepanelen) en zie in een paar stappen de
+              besparing per jaar, het ISDE-subsidiebedrag 2026, de netto-investering en de terugverdientijd, plus de
+              extra hypotheek-leenruimte bij jouw energielabel. Met bron en peildatum bij elk cijfer.
             </p>
             <div className="mt-4">
-              <KnopPrimair href={`/verduurzamen/advies?${adresQuery}`}>Bekijk het advies per maatregel</KnopPrimair>
+              <KnopPrimair href={`/verduurzamen/advies?${adresQuery}`}>Stel je totaalplan samen</KnopPrimair>
             </div>
           </Kaart>
 

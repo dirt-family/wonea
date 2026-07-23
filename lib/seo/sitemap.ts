@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import { baseUrl, todayIso } from "@/lib/util";
+import { gidsSitemapEntries } from "@/lib/gids";
 import { MIN_COMPARABLES_VOOR_INDEX } from "@/lib/seo/gating";
 
 /**
@@ -23,8 +24,13 @@ import { MIN_COMPARABLES_VOOR_INDEX } from "@/lib/seo/gating";
 
 export const MAX_ADRESSEN_PER_SHARD = 45000;
 
-/** Vaste pagina's in /sitemaps/statisch.xml. Alleen indexeerbare pagina's. */
-const STATISCHE_PADEN = ["/", "/methode", "/over-ons", "/woz-check", "/privacy", "/tools"];
+/**
+ * Vaste pagina's in /sitemaps/statisch.xml. Alleen indexeerbare pagina's.
+ * De gids-URL's (hub, categorieen met artikelen, artikelen) komen erbij via
+ * gidsSitemapEntries() in lib/gids: die volgen de artikeldata en dragen hun
+ * eigen lastmod (de bijgewerkt-datum van het artikel).
+ */
+const STATISCHE_PADEN = ["/", "/methode", "/over-ons", "/woz-check", "/privacy", "/tools", "/hypotheek-rentes", "/makelaars", "/budget", "/kosten-koper", "/overbieden"];
 
 // Spiegel van lib/comparables.ts (MAANDEN_TERUG = 24).
 function comparablesCutoff(): string {
@@ -109,11 +115,14 @@ export async function bouwSitemapIndexXml(): Promise<string> {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${regels.join("\n")}\n</sitemapindex>\n`;
 }
 
-/** Shard met de vaste pagina's. */
+/** Shard met de vaste pagina's, inclusief de gids-URL's uit lib/gids. */
 export function bouwStatischeShardXml(): string {
   const base = baseUrl();
   const vandaag = todayIso();
-  const regels = STATISCHE_PADEN.map((pad) => urlEntry(pad === "/" ? `${base}/` : `${base}${pad}`, vandaag));
+  const regels = [
+    ...STATISCHE_PADEN.map((pad) => urlEntry(pad === "/" ? `${base}/` : `${base}${pad}`, vandaag)),
+    ...gidsSitemapEntries().map((entry) => urlEntry(`${base}${entry.pad}`, entry.lastmod)),
+  ];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${regels.join("\n")}\n</urlset>\n`;
 }
 

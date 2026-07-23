@@ -1,31 +1,72 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { count, eq, gte, isNotNull } from "drizzle-orm";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { addresses, optouts } from "@/db/schema";
+import { addresses, municipalities, neighborhoods, optouts } from "@/db/schema";
 import { applyOptoutCascade } from "@/lib/suppression";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { nowIso } from "@/lib/util";
 import { stuurOptoutAfgerond } from "@/emails/optout";
 import { Kaart, KnopPrimair } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Verwijdering bevestigen", robots: { index: false, follow: false } };
 
+/**
+ * Misbruik-rem op de bevestiging zelf (suppressie is permanent): naast de
+ * per-IP-limiet een globale dagcap op BEVESTIGDE verwijderingen. Echte
+ * eigenaren halen die nooit; een script dat de dataset wil leegtrekken wel.
+ */
+const BEVESTIG_DAGCAP = 20;
+
+async function bevestigDagcapBereikt(): Promise<boolean> {
+  const vandaag = `${new Date().toISOString().slice(0, 10)}T00:00:00`;
+  const rijen = await db
+    .select({ n: count() })
+    .from(optouts)
+    .where(gte(optouts.bevestigdAt, vandaag));
+  return (rijen[0]?.n ?? 0) >= BEVESTIG_DAGCAP;
+}
+
 async function bevestig(formData: FormData) {
   "use server";
+  const hdrs = await headers();
+  if (rateLimited(`optout-bevestig:${clientIp(hdrs)}`, 3)) redirect("/verwijderen?fout=te-vaak");
+
   const token = String(formData.get("token") ?? "");
   const optout = (await db.select().from(optouts).where(eq(optouts.token, token)).limit(1))[0];
   if (!optout) redirect("/verwijderen?fout=onbekend");
   if (!optout.bevestigdAt) {
+    if (await bevestigDagcapBereikt()) redirect("/verwijderen?fout=dagcap");
     await db.update(optouts).set({ bevestigdAt: nowIso() }).where(eq(optouts.id, optout.id));
     await applyOptoutCascade(optout.adresId);
     const adres = (await db.select().from(addresses).where(eq(addresses.id, optout.adresId)).limit(1))[0];
     if (optout.email && adres) {
       await stuurOptoutAfgerond(optout.email, `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`);
     }
+
+    // AVG/merkbelofte: alle ISR-pagina's die dit adres kunnen tonen meteen
+    // verversen, niet alleen de woningpagina (anders blijft het adres tot een
+    // dag zichtbaar op buurt- en woningmarktpagina's).
     revalidatePath(`/woning/${optout.postcode}/${optout.nummerslug}`);
+    revalidatePath("/woningmarkt");
+    revalidateTag("homepage");
+    const plek = (
+      await db
+        .select({ gemeenteSlug: municipalities.slug, buurtSlug: neighborhoods.slug })
+        .from(addresses)
+        .innerJoin(neighborhoods, eq(addresses.buurtCode, neighborhoods.buurtCode))
+        .innerJoin(municipalities, eq(neighborhoods.gemeenteCode, municipalities.code))
+        .where(eq(addresses.id, optout.adresId))
+        .limit(1)
+    )[0];
+    if (plek) {
+      revalidatePath(`/woningmarkt/${plek.gemeenteSlug}`);
+      revalidatePath(`/buurt/${plek.gemeenteSlug}/${plek.buurtSlug}`);
+    }
   }
   redirect("/verwijderen/klaar");
 }

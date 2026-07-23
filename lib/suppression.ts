@@ -1,4 +1,4 @@
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { addresses, alertSubscriptions, claims, emailsOutbox, optouts, sharedReports, users as usersTable } from "@/db/schema";
 import { nowIso } from "@/lib/util";
@@ -19,6 +19,39 @@ export async function isSuppressed(postcode: string, nummerslug: string): Promis
     .where(and(eq(optouts.postcode, postcode), eq(optouts.nummerslug, nummerslug), isNotNull(optouts.bevestigdAt)))
     .limit(1);
   return rows.length > 0;
+}
+
+/**
+ * Batch-variant van isSuppressed: één query voor meerdere adressen, geeft de
+ * set "postcode|nummerslug"-sleutels terug die een BEVESTIGDE opt-out hebben.
+ * Voor lijstpaden (zoeken, rijen) zodat er geen N losse roundtrips ontstaan;
+ * deze module blijft de enige toegangslaag voor suppressie.
+ */
+export async function suppressedKeySet(
+  adressen: readonly { postcode: string; nummerslug: string }[],
+): Promise<Set<string>> {
+  if (adressen.length === 0) return new Set();
+  const rows = await db
+    .select({ postcode: optouts.postcode, nummerslug: optouts.nummerslug })
+    .from(optouts)
+    .where(
+      and(
+        isNotNull(optouts.bevestigdAt),
+        or(...adressen.map((a) => and(eq(optouts.postcode, a.postcode), eq(optouts.nummerslug, a.nummerslug)))),
+      ),
+    );
+  return new Set(rows.map((r) => `${r.postcode}|${r.nummerslug}`));
+}
+
+/** Batch-variant op adres-id: 1 query, geeft de set onderdrukte ids terug. */
+export async function suppressedAdresIdSet(adresIds: readonly number[]): Promise<Set<number>> {
+  const uniek = [...new Set(adresIds)];
+  if (uniek.length === 0) return new Set();
+  const rows = await db
+    .select({ adresId: optouts.adresId })
+    .from(optouts)
+    .where(and(isNotNull(optouts.bevestigdAt), inArray(optouts.adresId, uniek)));
+  return new Set(rows.map((r) => r.adresId));
 }
 
 export async function isAddressIdSuppressed(adresId: number): Promise<boolean> {

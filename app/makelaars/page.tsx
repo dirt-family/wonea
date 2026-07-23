@@ -13,7 +13,11 @@ import { inputClass, Kaart, KnopPrimair, LeadCta, LegeStaat, SectieLabel, Uitkla
 export const metadata: Metadata = {
   title: "Vind een makelaar",
   description: "Zoek makelaarskantoren per plaats, op basis van de open kaartendatabase OpenStreetMap.",
-  robots: { index: false, follow: false },
+  alternates: { canonical: "/makelaars" },
+  // Bewust indexeerbaar (rekenhulpen = index): statische pagina zonder
+  // adresdata. Staat daarom ook in /sitemaps/statisch.xml (lib/seo/sitemap.ts);
+  // indexeren en opnemen in de sitemap horen bij elkaar.
+  robots: { index: true, follow: true },
 };
 
 /**

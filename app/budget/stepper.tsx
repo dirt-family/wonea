@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  GerelateerdeRekenhulpen,
+  RekenModule,
+  RekenmoduleSamenvatting,
+  type SamenvattingRij,
+  type StapDefinitie,
+} from "@/components/rekenmodule";
+import {
   Bandbreedte,
   inputClass,
   LeadCta,
   SectieLabel,
-  StappenBalk,
   StatTegel,
   UitklapUitleg,
   UitkomstKaart,
@@ -25,10 +31,13 @@ import {
 import type { EnergielabelKlasse } from "@/lib/hypotheek";
 
 /**
- * Stepper van de budgetberekenaar: drie korte vraagstappen en een uitkomst,
- * volledig client-side. Er wordt niets verstuurd of opgeslagen; de rekenkern
- * (lib/hypotheek.ts via app/budget/berekening.ts) is puur en draait in de
- * browser. De DNB-rente-voorinvulling komt als prop van de serverpagina.
+ * Budgetberekenaar op het rekenmodule-framework (referentie-implementatie,
+ * zie components/rekenmodule/). Deze laag levert alleen de drie vraagstappen,
+ * hun validaties en de uitkomst-view; het frame regelt StappenBalk, navigatie,
+ * ?stap= in de URL, focus en sessie-persistentie. Er wordt niets verstuurd of
+ * opgeslagen buiten de browser; de rekenkern (lib/hypotheek.ts via
+ * app/budget/berekening.ts) is puur en draait client-side. De
+ * DNB-rente-voorinvulling komt als prop van de serverpagina.
  */
 
 export type RenteVoorinvulling = {
@@ -42,13 +51,6 @@ export type RenteVoorinvulling = {
   bron: string;
 };
 
-const STAPPEN = ["Inkomen", "Situatie", "Energielabel", "Uitkomst"];
-
-// Zelfde stijl als KnopPrimair/KnopSecundair (ui.tsx heeft geen onClick-variant).
-const knopPrimairCls =
-  "inline-flex items-center justify-center rounded-full bg-merk px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-merk-licht focus:outline-2 focus:outline-offset-2 focus:outline-merk";
-const knopSecundairCls =
-  "inline-flex items-center justify-center rounded-full border border-lijn bg-paneel px-6 py-3 text-sm font-semibold text-merk transition-colors hover:border-merk focus:outline-2 focus:outline-offset-2 focus:outline-merk";
 const radioCls = "flex items-center gap-3 rounded-lg border border-lijn px-4 py-3 text-sm text-inkt";
 
 function parseBedrag(s: string): number | null {
@@ -69,9 +71,6 @@ function renteTekst(pct: number): string {
 }
 
 export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvulling }) {
-  const [stap, setStap] = useState(0);
-  const [fout, setFout] = useState<string | null>(null);
-
   const [inkomen1, setInkomen1] = useState("");
   const [samen, setSamen] = useState(false);
   const [inkomen2, setInkomen2] = useState("");
@@ -87,41 +86,26 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
     if (dnb !== undefined) setRente(renteTekst(dnb));
   }
 
-  function valideerStap(huidige: number): string | null {
-    if (huidige === 0) {
-      const i1 = parseBedrag(inkomen1);
-      if (i1 == null || i1 < 1) return "Vul je bruto jaarinkomen in, in hele euro's. Afronden mag.";
-      if (samen) {
-        const i2 = parseBedrag(inkomen2);
-        if (i2 == null || i2 < 0) return "Vul ook het bruto jaarinkomen van de tweede aanvrager in, of zet het vinkje uit.";
-      }
-    }
-    if (huidige === 1) {
-      if (rentevast == null) return "Kies een rentevaste periode.";
-      const r = parseRente(rente);
-      if (r == null || r < 0.1 || r > 15) return "Vul de rente in procenten in, bijvoorbeeld 3,74.";
-      if (verplichtingen.trim()) {
-        const v = parseBedrag(verplichtingen);
-        if (v == null || v < 0) return "Vul je maandelijkse verplichtingen in euro in, of laat het veld leeg.";
-      }
-      if (aow == null) return "Geef aan of je de AOW-leeftijd hebt bereikt.";
+  function valideerInkomen(): string | null {
+    const i1 = parseBedrag(inkomen1);
+    if (i1 == null || i1 < 1) return "Vul je bruto jaarinkomen in, in hele euro's. Afronden mag.";
+    if (samen) {
+      const i2 = parseBedrag(inkomen2);
+      if (i2 == null || i2 < 0) return "Vul ook het bruto jaarinkomen van de tweede aanvrager in, of zet het vinkje uit.";
     }
     return null;
   }
 
-  function volgende() {
-    const melding = valideerStap(stap);
-    if (melding) {
-      setFout(melding);
-      return;
+  function valideerSituatie(): string | null {
+    if (rentevast == null) return "Kies een rentevaste periode.";
+    const r = parseRente(rente);
+    if (r == null || r < 0.1 || r > 15) return "Vul de rente in procenten in, bijvoorbeeld 3,74.";
+    if (verplichtingen.trim()) {
+      const v = parseBedrag(verplichtingen);
+      if (v == null || v < 0) return "Vul je maandelijkse verplichtingen in euro in, of laat het veld leeg.";
     }
-    setFout(null);
-    setStap((s) => Math.min(s + 1, 3));
-  }
-
-  function terug() {
-    setFout(null);
-    setStap((s) => Math.max(s - 1, 0));
+    if (aow == null) return "Geef aan of je de AOW-leeftijd hebt bereikt.";
+    return null;
   }
 
   /** Alleen aanroepen op de uitkomststap: alle eerdere stappen zijn dan gevalideerd. */
@@ -137,20 +121,32 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
     };
   }
 
+  /** Herstel uit sessionStorage: elk veld eerst op type en waarde controleren. */
+  function herstel(data: Record<string, unknown>) {
+    if (typeof data.inkomen1 === "string") setInkomen1(data.inkomen1);
+    if (typeof data.samen === "boolean") setSamen(data.samen);
+    if (typeof data.inkomen2 === "string") setInkomen2(data.inkomen2);
+    if (typeof data.rentevast === "number" && (RENTEVAST_KEUZES as readonly number[]).includes(data.rentevast)) {
+      setRentevast(data.rentevast as RentevastKeuze);
+    }
+    if (typeof data.rente === "string") setRente(data.rente);
+    if (typeof data.verplichtingen === "string") setVerplichtingen(data.verplichtingen);
+    if (data.aow === "ja" || data.aow === "nee") setAow(data.aow);
+    if (data.label === "" || ENERGIELABEL_OPTIES.some((o) => o.klasse === data.label)) {
+      setLabel(data.label as EnergielabelKlasse | "");
+    }
+  }
+
   const dnbGekozen = rentevast != null ? voorinvulling.perKeuze[rentevast] : undefined;
 
-  return (
-    <div>
-      <StappenBalk stappen={STAPPEN} actief={stap} />
-
-      {fout ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{fout}</p>
-      ) : null}
-
-      {/* Stap 1: inkomen(s) */}
-      {stap === 0 ? (
-        <div className="mt-6 space-y-5">
-          <h2 className="text-xl font-semibold">Wat verdien je?</h2>
+  const stappen: StapDefinitie[] = [
+    {
+      id: "inkomen",
+      titel: "Inkomen",
+      vraag: "Wat verdien je?",
+      valideer: valideerInkomen,
+      inhoud: (
+        <>
           <Veld label="Bruto jaarinkomen" hint="Je bruto inkomen per jaar, inclusief vakantiegeld en vaste toeslagen. Afronden mag.">
             <input
               type="text"
@@ -185,13 +181,16 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
               />
             </Veld>
           ) : null}
-        </div>
-      ) : null}
-
-      {/* Stap 2: situatie */}
-      {stap === 1 ? (
-        <div className="mt-6 space-y-5">
-          <h2 className="text-xl font-semibold">Je situatie</h2>
+        </>
+      ),
+    },
+    {
+      id: "situatie",
+      titel: "Situatie",
+      vraag: "Wat is jouw situatie?",
+      valideer: valideerSituatie,
+      inhoud: (
+        <>
           <fieldset>
             <legend className="mb-2 block text-sm font-medium text-inkt">Hoe lang wil je de rente vastzetten?</legend>
             <div className="space-y-2">
@@ -273,13 +272,16 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
               de AOW-leeftijd bereikt, kies dan ja.
             </p>
           </fieldset>
-        </div>
-      ) : null}
-
-      {/* Stap 3: energielabel (optioneel) */}
-      {stap === 2 ? (
-        <div className="mt-6 space-y-5">
-          <h2 className="text-xl font-semibold">Energielabel van de woning</h2>
+        </>
+      ),
+    },
+    {
+      id: "energielabel",
+      titel: "Energielabel",
+      vraag: "Energielabel van de woning",
+      // Optionele stap: geen validatie.
+      inhoud: (
+        <>
           <p className="text-sm leading-relaxed text-inkt-zacht">
             Optioneel. Een beter energielabel geeft meer leenruimte: de wet laat per label een vast bedrag buiten
             beschouwing, bovenop wat je op basis van je inkomen kunt lenen. Weet je het label nog niet, sla deze stap dan
@@ -320,43 +322,64 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
               2026).
             </p>
           </fieldset>
-        </div>
-      ) : null}
+        </>
+      ),
+    },
+  ];
 
-      {/* Uitkomst */}
-      {stap === 3 ? <Uitkomst invoer={invoer()} voorinvulling={voorinvulling} naarStart={() => setStap(0)} /> : null}
-
-      {stap < 3 ? (
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          {stap > 0 ? (
-            <button type="button" onClick={terug} className={knopSecundairCls}>
-              Terug
-            </button>
-          ) : null}
-          <button type="button" onClick={volgende} className={knopPrimairCls}>
-            {stap === 2 ? "Bekijk je uitkomst" : "Volgende"}
-          </button>
-        </div>
-      ) : null}
-    </div>
+  return (
+    <RekenModule
+      moduleId="budget"
+      stappen={stappen}
+      uitkomstTitel="Uitkomst"
+      uitkomstKnopTekst="Bekijk je uitkomst"
+      sessie={{
+        snapshot: () => ({ inkomen1, samen, inkomen2, rentevast, rente, verplichtingen, aow, label }),
+        herstel,
+      }}
+      uitkomst={(api) => <Uitkomst invoer={invoer()} voorinvulling={voorinvulling} gaNaarStap={api.gaNaarStap} />}
+    />
   );
 }
+
+/** Vervolgblok onder de uitkomst: verwante rekenhulpen voor de volgende vraag. */
+const GERELATEERD = [
+  { titel: "Kosten koper", zin: "Hoeveel eigen geld je nodig hebt bovenop je hypotheek.", href: "/kosten-koper" },
+  { titel: "Actuele hypotheekrentes", zin: "De gemiddelde rente per rentevaste periode, met peilmaand.", href: "/hypotheek-rentes" },
+  { titel: "Overbieden", zin: "Wat een bod boven de vraagprijs betekent voor je eigen geld.", href: "/overbieden" },
+];
 
 function Uitkomst({
   invoer,
   voorinvulling,
-  naarStart,
+  gaNaarStap,
 }: {
   invoer: BudgetInvoer;
   voorinvulling: RenteVoorinvulling;
-  naarStart: () => void;
+  gaNaarStap: (stapIndex: number) => void;
 }) {
   const u = berekenBudget(invoer);
   const labelGekozen = invoer.energielabelKlasse !== undefined;
   const provisieLabel = `${renteTekst(u.nhgProvisiePct)}%`;
+  const labelOptie = ENERGIELABEL_OPTIES.find((o) => o.klasse === invoer.energielabelKlasse);
+
+  const samenvatting: SamenvattingRij[] = [
+    { label: "Bruto jaarinkomen", waarde: formatEuro(invoer.inkomen1), stapIndex: 0 },
+    ...(invoer.inkomen2 !== undefined
+      ? [{ label: "Inkomen tweede aanvrager", waarde: formatEuro(invoer.inkomen2), stapIndex: 0 }]
+      : []),
+    { label: "Rentevast", waarde: `${invoer.rentevastJaren} jaar, ${renteTekst(invoer.rentePct)}%`, stapIndex: 1 },
+    {
+      label: "Verplichtingen per maand",
+      waarde: invoer.verplichtingenPerMaand ? formatEuro(invoer.verplichtingenPerMaand) : "geen",
+      stapIndex: 1,
+    },
+    { label: "AOW-leeftijd bereikt", waarde: invoer.aowLeeftijdBereikt ? "ja" : "nee", stapIndex: 1 },
+    { label: "Energielabel", waarde: labelOptie ? labelOptie.label : "niet opgegeven", stapIndex: 2 },
+  ];
 
   return (
-    <div className="mt-6 space-y-5">
+    <div className="space-y-5">
       <UitkomstKaart label="Maximale hypotheek (indicatie)" bedrag={formatEuro(u.maximaal)}>
         {u.maximaal > 0 ? (
           <>
@@ -431,6 +454,8 @@ function Uitkomst({
         </div>
       ) : null}
 
+      <RekenmoduleSamenvatting rijen={samenvatting} gaNaarStap={gaNaarStap} />
+
       <UitklapUitleg titel="Zo rekenen we">
         <ul className="list-disc space-y-2 pl-5">
           <li>
@@ -478,6 +503,8 @@ function Uitkomst({
         </p>
       </UitklapUitleg>
 
+      <GerelateerdeRekenhulpen items={GERELATEERD} />
+
       <LeadCta
         titel="Van indicatie naar echt advies"
         tekst="Deze uitkomst is een indicatie op basis van de wettelijke normen. Een onafhankelijke hypotheekadviseur kijkt naar je volledige situatie en rekent je echte leenruimte en maandlasten door."
@@ -485,10 +512,6 @@ function Uitkomst({
         href="/hypotheek"
         ontvanger="een onafhankelijke hypotheekadviseur"
       />
-
-      <button type="button" onClick={naarStart} className={knopSecundairCls}>
-        Pas je antwoorden aan
-      </button>
     </div>
   );
 }

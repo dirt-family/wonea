@@ -1,55 +1,61 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { addresses, municipalities, wozValues } from "@/db/schema";
-import { isSuppressed } from "@/lib/suppression";
+import { municipalities, wozValues } from "@/db/schema";
 import { findComparables } from "@/lib/comparables";
 import { isAdresIndexeerbaar } from "@/lib/seo/gating";
 import { breadcrumbJsonLd, jsonLdScriptProps, woningJsonLd, type Kruimel } from "@/lib/seo/jsonld";
-import { getOrCreateValuation } from "@/lib/valuation";
-import { baseUrl, formatEuro, normalizePostcode } from "@/lib/util";
-import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/ui";
-import { MarktSignalenKaart } from "@/components/markt/signalen";
-
-type Params = { postcode: string; nummerslug: string };
+import { getOrCreateValuation, valuationHistorie } from "@/lib/valuation";
+import { getRenteBucket, peilmaandLabel } from "@/lib/bronnen/rentes";
+import { baseUrl, formatEuro } from "@/lib/util";
+import { DeltaPil, Kaart, ModuleTag } from "@/components/ui";
+import {
+  deltaRichting,
+  formatPct,
+  jaarDelta,
+  maandPunten,
+  vindWoningAdres,
+  wozBuurtVergelijk,
+  wozReeks,
+  type WoningParams,
+} from "@/components/woning/data";
+import { KerncijferStrip } from "@/components/woning/kerncijfers";
+import { WaardeUitleg } from "@/components/woning/waarde-uitleg";
+import { BiedModule } from "@/components/woning/biedmodule";
+import { EnergieModule } from "@/components/woning/energie";
+import { WozCheckModule } from "@/components/woning/woz-check";
+import { MaandlastMini } from "@/components/woning/maandlast";
+import { KenmerkenModule } from "@/components/woning/kenmerken";
+import { WoningSidebar } from "@/components/woning/sidebar";
 
 /**
+ * Woningpagina v2: de 10-punts module-opbouw uit docs/PROTOTYPE-OOGST.md
+ * (broodkruimel, titelblok met waarde en jaarpil, kerncijfer-strip,
+ * waarde-uitleg, biedmodule, energie, WOZ-check, maandlast-minirekenhulp,
+ * kenmerken, sticky sidebar). Bewust NIET gebouwd: interesse/populariteit
+ * (geen kijkcijfer-bron), omgevingsrisico (geen bron gekoppeld) en een
+ * fotogallerij (geen foto's; geen placeholder-nep).
+ *
  * ISR on-demand (PLAN par. 1 "Rendering"): niets prerenderen bij build (lege
  * generateStaticParams), elke bezochte URL wordt na de eerste request 24 uur
  * gecachet. Dit gaat SAMEN met de write in getOrCreateValuation, en is zelfs de
  * veiligste variant: de valuation-insert (max 1 rij per adres per dag) gebeurt
  * alleen bij (re)generatie van de pagina, dus hooguit ~1x per 24u per adres in
- * plaats van bij elke bezoeker. Dat verlaagt de druk op SQLite's ene writer.
+ * plaats van bij elke bezoeker. Dat verlaagt de druk op de database.
  * Lege generateStaticParams betekent ook: geen DB-writes tijdens `next build`.
  * Opt-out blijft direct zichtbaar: de verwijderflow purget deze route al via
  * revalidatePath (app/verwijderen/[token]). Onderbouwing: docs/PERFORMANCE.md.
  */
 export const revalidate = 86400;
 export const dynamicParams = true;
-export function generateStaticParams(): Params[] {
+export function generateStaticParams(): WoningParams[] {
   return [];
 }
 
-async function vindAdres(params: Params) {
-  const postcode = normalizePostcode(params.postcode);
-  if (!postcode) return null;
-  const nummerslug = params.nummerslug.toLowerCase();
-  const adres = (
-    await db
-      .select()
-      .from(addresses)
-      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-      .limit(1)
-  )[0];
-  if (!adres) return null;
-  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
-  return adres;
-}
-
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const adres = await vindAdres(await params);
+export async function generateMetadata({ params }: { params: Promise<WoningParams> }): Promise<Metadata> {
+  const adres = await vindWoningAdres(await params);
   if (!adres) return { title: "Woning niet gevonden", robots: { index: false, follow: false } };
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
 
@@ -65,53 +71,52 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const indexeerbaar = await isAdresIndexeerbaar(adres, { nComparables: comparables.comparables.length });
 
   return {
-    title: `${naam}, ${adres.postcode} ${adres.plaats}: woningwaarde en bandbreedte`,
+    // Zonder postcode en zonder "en bandbreedte": zo blijft de gerenderde
+    // titel (met " | Wonea") bij normale adressen onder de 60 tekens; de
+    // postcode staat al in de URL en de bandbreedte in de description.
+    title: `${naam}, ${adres.plaats}: woningwaarde`,
     description: `Geschatte waarde van ${naam} in ${adres.plaats}, met eerlijke bandbreedte, de verkopen erachter en een uitgelegde methode.`,
     robots: indexeerbaar ? { index: true, follow: true } : { index: false, follow: false },
   };
 }
 
-function ConfidenceTekst({ confidence, n, niveau }: { confidence: string; n: number; niveau: "straat" | "buurt" }) {
-  const plek = niveau === "straat" ? "in deze straat" : "in deze buurt";
-  if (confidence === "hoog") return <>Gebaseerd op {n} recente verkopen {plek}. Dat geeft een relatief zekere schatting.</>;
-  if (confidence === "middel") return <>Gebaseerd op {n} recente verkopen {plek}. Voldoende voor een richting, niet voor zekerheid.</>;
-  return <>Er zijn weinig recente verkopen {plek} ({n}), dus de marge is bewust breed. Zo eerlijk is het.</>;
-}
-
-function Bandbreedte({ laag, waarde, hoog }: { laag: number; waarde: number; hoog: number }) {
-  const positie = hoog === laag ? 50 : ((waarde - laag) / (hoog - laag)) * 100;
-  return (
-    <div className="mt-4">
-      <div className="relative h-2 rounded-full bg-merk-wash">
-        <div className="absolute inset-y-0 left-0 right-0 rounded-full border border-lijn" />
-        <div className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-merk shadow" style={{ left: `calc(${positie}% - 8px)` }} />
-      </div>
-      <div className="mt-2 flex justify-between text-sm text-inkt-zacht">
-        <span>{formatEuro(laag)}</span>
-        <span>{formatEuro(hoog)}</span>
-      </div>
-    </div>
-  );
-}
-
-export default async function WoningPagina({ params }: { params: Promise<Params> }) {
-  const adres = await vindAdres(await params);
+export default async function WoningPagina({ params }: { params: Promise<WoningParams> }) {
+  const adres = await vindWoningAdres(await params);
   if (!adres) notFound();
 
   const { valuation, comparables, buurt } = await getOrCreateValuation(adres);
   const gemeente = buurt
     ? (await db.select().from(municipalities).where(eq(municipalities.code, buurt.gemeenteCode)).limit(1))[0]
     : undefined;
-  const woz = (await db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)).orderBy(wozValues.peiljaar)).at(-1);
+
+  const wozRijen = wozReeks(await db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)));
+  const laatsteWoz = wozRijen.at(-1) ?? null;
+  const historie = await valuationHistorie(adres.id);
+  const punten = maandPunten(historie.map((rij) => ({ datum: rij.datum, waarde: rij.waarde })));
+  const jaarPct = valuation ? jaarDelta(historie.map((rij) => ({ datum: rij.datum, waarde: rij.waarde })), valuation.waarde) : null;
+
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
   const adresQuery = `postcode=${adres.postcode}&nummer=${adres.nummerslug}`;
-  const labelSlecht = ["D", "E", "F", "G"].includes((adres.energielabel ?? "").toUpperCase());
-  const maandFmt = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
+
+  const wozCheck = laatsteWoz
+    ? wozBuurtVergelijk({
+        wozWaarde: laatsteWoz.waarde,
+        oppervlakteM2: adres.oppervlakteM2,
+        gemWoz: buurt?.gemWoz ?? null,
+        ankerM2Prijs: buurt?.ankerM2Prijs ?? null,
+      })
+    : null;
+
+  // Minirekenhulp: startbod uit de schatting (of anders de WOZ), standaard-
+  // rente uit het DNB-gemiddelde. Geen van beide bekend = module weglaten.
+  const renteBucket = getRenteBucket("vanaf_10");
+  const standaardBod = valuation?.waarde ?? laatsteWoz?.waarde ?? null;
 
   // Structured data: kruimelpad + woningkenmerken. BEWUST zonder prijs of
   // waardeschatting; zie de harde regel in lib/seo/jsonld.ts.
   const kruimels: Kruimel[] = [
     { naam: "Wonea", url: `${baseUrl()}/` },
+    ...(gemeente ? [{ naam: adres.plaats, url: `${baseUrl()}/woningmarkt/${gemeente.slug}` }] : []),
     ...(buurt && gemeente ? [{ naam: `Buurt ${buurt.naam}`, url: `${baseUrl()}/buurt/${gemeente.slug}/${buurt.slug}` }] : []),
     { naam, url: `${baseUrl()}/woning/${adres.postcode}/${adres.nummerslug}` },
   ];
@@ -120,214 +125,119 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
     <div className="mx-auto max-w-5xl px-5 py-10">
       <script {...jsonLdScriptProps(breadcrumbJsonLd(kruimels))} />
       <script {...jsonLdScriptProps(woningJsonLd(adres))} />
+
+      {/* 1. Broodkruimel: Home / Plaats / Buurt / Adres */}
       <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
-        <Link href="/" className="hover:text-merk">Wonea</Link> / {adres.plaats} / {adres.straat}
+        <Link href="/" className="hover:text-merk">
+          Wonea
+        </Link>
+        {" / "}
+        {gemeente ? (
+          <Link href={`/woningmarkt/${gemeente.slug}`} className="hover:text-merk">
+            {adres.plaats}
+          </Link>
+        ) : (
+          adres.plaats
+        )}
+        {buurt && gemeente ? (
+          <>
+            {" / "}
+            <Link href={`/buurt/${gemeente.slug}/${buurt.slug}`} className="hover:text-merk">
+              {buurt.naam}
+            </Link>
+          </>
+        ) : null}
+        {" / "}
+        <span className="text-inkt">{naam}</span>
       </nav>
-      <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">{naam}</h1>
-      <p className="mt-1 text-inkt-zacht">{adres.postcode} {adres.plaats}{buurt ? `, buurt ${buurt.naam}` : ""}</p>
+
+      {/* 2. Titelblok: adres links, geschatte waarde met jaarontwikkeling rechts */}
+      <div className="mt-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div>
+          <h1 className="text-3xl font-semibold sm:text-4xl">{naam}</h1>
+          <p className="mt-2 text-inkt-zacht">
+            {adres.postcode} {adres.plaats}
+            {buurt ? `, ${buurt.naam}` : ""} · {adres.woningtype} · {adres.oppervlakteM2} m2 · bouwjaar {adres.bouwjaar}
+          </p>
+        </div>
+        {valuation ? (
+          <div className="sm:text-right">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">Geschatte waarde</p>
+            <p className="mt-1 font-display text-4xl font-semibold tabular-nums text-merk">{formatEuro(valuation.waarde)}</p>
+            {jaarPct !== null ? (
+              <p className="mt-2">
+                <DeltaPil richting={deltaRichting(jaarPct)}>{formatPct(jaarPct)} in een jaar</DeltaPil>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      {/* 3. Kerncijfer-strip (geen vraagprijs: die data hebben we niet) */}
+      <KerncijferStrip
+        woz={laatsteWoz}
+        prijsPerM2={valuation ? Math.round(valuation.waarde / adres.oppervlakteM2) : null}
+        buurtM2Prijs={buurt?.ankerM2Prijs ? Math.round(buurt.ankerM2Prijs) : null}
+        energielabel={adres.energielabel}
+        energielabelBron={adres.energielabelBron}
+        bandbreedte={valuation ? { laag: valuation.intervalLaag, hoog: valuation.intervalHoog } : null}
+      />
 
       <div className="mt-8 grid gap-5 lg:grid-cols-3">
-        <Kaart className="lg:col-span-2">
-          <SectieLabel>Geschatte woningwaarde</SectieLabel>
-          {valuation ? (
-            <>
-              <p className="mt-3 font-display text-5xl font-semibold text-merk">{formatEuro(valuation.waarde)}</p>
-              <Bandbreedte laag={valuation.intervalLaag} waarde={valuation.waarde} hoog={valuation.intervalHoog} />
-              <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
-                <ConfidenceTekst confidence={valuation.confidence} n={valuation.nComparables} niveau={comparables.niveau} />
-              </p>
-              <p className="mt-3 text-xs text-gedempt">
-                Dit is een modelmatige schatting ({valuation.modelVersie}), geen taxatie. <Link href="/methode" className="underline underline-offset-2 hover:text-merk">Zo rekenen we</Link>.
-              </p>
-            </>
-          ) : (
-            <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-              Voor dit adres kunnen we nog geen eerlijke schatting maken: er zijn te weinig recente verkopen in de buurt en
-              geen bruikbaar buurtgemiddelde. Liever geen getal dan een verzonnen getal.
-            </p>
-          )}
-        </Kaart>
+        <div className="space-y-5 lg:col-span-2">
+          {/* 4. Wat is dit huis waard? */}
+          <WaardeUitleg valuation={valuation} niveau={comparables.niveau} punten={punten} wozRijen={wozRijen} />
 
-        <Kaart>
-          <SectieLabel>Kenmerken</SectieLabel>
-          <dl className="mt-3 space-y-3 text-sm">
-            <div className="flex justify-between gap-4"><dt className="text-gedempt">Bouwjaar</dt><dd className="font-medium">{adres.bouwjaar}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-gedempt">Woonoppervlakte</dt><dd className="font-medium">{adres.oppervlakteM2} m2</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-gedempt">Type</dt><dd className="font-medium">{adres.woningtype}</dd></div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-gedempt">Energielabel</dt>
-              <dd className="text-right font-medium">
-                {adres.energielabel ?? "onbekend"}
-                {adres.energielabel && adres.energielabelBron === "indicatie" ? (
-                  <span className="mt-1 block"><BronLabel>indicatie op basis van bouwjaar</BronLabel></span>
-                ) : null}
-              </dd>
-            </div>
-          </dl>
-        </Kaart>
-      </div>
+          {/* 5. De eerlijke biedmodule */}
+          <BiedModule comparables={comparables.comparables} niveau={comparables.niveau} postcode={adres.postcode} nummerslug={adres.nummerslug} />
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-3">
-        <Kaart className="lg:col-span-2">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <SectieLabel>De verkopen achter deze schatting</SectieLabel>
-            {comparables.comparables.some((c) => c.bron === "seed") ? <VoorbeelddataLabel /> : null}
-          </div>
-          {comparables.comparables.length > 0 ? (
-            <>
-              <p className="mt-3 text-sm text-inkt-zacht">
-                {comparables.niveau === "straat" ? "Recente verkopen in deze straat" : "Recente verkopen in deze buurt"}, zelfde
-                woningtype en vergelijkbare grootte.
-              </p>
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
-                      <th className="py-2 pr-4 font-medium">Wanneer</th>
-                      <th className="py-2 pr-4 font-medium">Straat</th>
-                      <th className="py-2 pr-4 font-medium">Prijs</th>
-                      <th className="py-2 pr-4 font-medium">Oppervlakte</th>
-                      <th className="py-2 font-medium">Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparables.comparables.map((c) => (
-                      <tr key={c.id} className="border-b border-lijn last:border-0">
-                        <td className="py-2.5 pr-4">{maandFmt.format(new Date(c.datum))}</td>
-                        <td className="py-2.5 pr-4">{c.straat ?? "onbekend"}</td>
-                        <td className="py-2.5 pr-4 font-medium">{formatEuro(c.prijs)}</td>
-                        <td className="py-2.5 pr-4">{c.oppervlakteM2} m2</td>
-                        <td className="py-2.5">{c.woningtype}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-inkt-zacht">
-              Geen recente vergelijkbare verkopen gevonden. De schatting hierboven leunt daarom op het buurtgemiddelde en heeft
-              een brede marge.
-            </p>
-          )}
-        </Kaart>
+          {/* 6. Energie en verduurzamen */}
+          <EnergieModule
+            energielabel={adres.energielabel}
+            energielabelBron={adres.energielabelBron}
+            woningtype={adres.woningtype}
+            adresQuery={adresQuery}
+          />
 
-        <div className="space-y-5">
-          <Kaart>
-            <SectieLabel>WOZ-waarde</SectieLabel>
-            {woz ? (
-              <>
-                <p className="mt-3 font-display text-2xl font-semibold text-merk">{formatEuro(woz.waarde)}</p>
-                <p className="mt-1 text-xs text-gedempt">peiljaar {woz.peiljaar}</p>
-                {woz.bron === "seed" ? <p className="mt-2"><BronLabel>voorbeeldwaarde, niet je echte WOZ</BronLabel></p> : null}
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-inkt-zacht">Wij tonen hier geen WOZ-waarde zonder bron.</p>
-            )}
-            <Link href={`/woz-check?${adresQuery}`} className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-              Vergelijk met je eigen WOZ-beschikking
-            </Link>
-          </Kaart>
+          {/* 7. WOZ-check; alleen met een WOZ en een buurtgemiddelde om tegen af te zetten */}
+          {wozCheck && laatsteWoz ? <WozCheckModule vergelijk={wozCheck} wozBron={laatsteWoz.bron} adresQuery={adresQuery} /> : null}
 
-          {buurt ? (
+          {/* 8. Maandlast-minirekenhulp; zonder startbod en DNB-rente laten we hem weg */}
+          {standaardBod !== null && renteBucket ? (
             <Kaart>
-              <SectieLabel>
-                Buurt{" "}
-                {gemeente ? (
-                  <Link href={`/buurt/${gemeente.slug}/${buurt.slug}`} className="underline underline-offset-2 hover:text-merk">
-                    {buurt.naam}
-                  </Link>
-                ) : (
-                  buurt.naam
-                )}
-              </SectieLabel>
-              <dl className="mt-3 space-y-3 text-sm">
-                {buurt.gemWoz ? (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-gedempt">Gemiddelde WOZ</dt>
-                    <dd className="font-medium">{formatEuro(buurt.gemWoz)}</dd>
-                  </div>
-                ) : null}
-                {buurt.inwoners ? (
-                  <div className="flex justify-between gap-4"><dt className="text-gedempt">Inwoners</dt><dd className="font-medium">{buurt.inwoners}</dd></div>
-                ) : null}
-              </dl>
-              <p className="mt-3 text-xs text-gedempt">Afgeleid van CBS-buurtcijfers.</p>
-            </Kaart>
-          ) : null}
-
-          {buurt ? (
-            <MarktSignalenKaart
-              variant="compact"
-              buurtCode={buurt.buurtCode}
-              buurtNaam={buurt.naam}
-              buurtHref={gemeente ? `/buurt/${gemeente.slug}/${buurt.slug}` : undefined}
-            />
-          ) : null}
-
-          {labelSlecht ? (
-            <Kaart className="bg-accent-wash">
-              <SectieLabel>Verduurzamen</SectieLabel>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h2 className="text-xl font-semibold">Wat kost dit per maand?</h2>
+                <ModuleTag>rekenhulp</ModuleTag>
+              </div>
               <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-                Label {adres.energielabel}: isolatie, zonnepanelen of een warmtepomp verlagen je energierekening en tellen mee
-                in de waarde.
+                Schuif met je bod en de rente en zie wat dat bruto per maand betekent bij een annuiteitenhypotheek van 30
+                jaar over het hele bod.
               </p>
-              <Link href={`/verduurzamen?${adresQuery}`} className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-                Bekijk wat dit oplevert
-              </Link>
+              <MaandlastMini standaardBod={standaardBod} standaardRentePct={renteBucket.rentePct} />
+              <p className="mt-4 text-xs leading-relaxed text-gedempt">
+                Standaardrente: {renteBucket.rentePct.toLocaleString("nl-NL")}%, het DNB-gemiddelde voor nieuwe hypotheken
+                met een rentevaste periode langer dan 10 jaar ({peilmaandLabel()}). Bedoeld om je een gevoel te geven,
+                niet om op te baseren.{" "}
+                <Link href="/budget" className="underline underline-offset-2 hover:text-merk">
+                  Bereken je echte leenruimte
+                </Link>
+                .
+              </p>
             </Kaart>
           ) : null}
+
+          {/* 9. Kenmerken */}
+          <KenmerkenModule adres={adres} />
         </div>
+
+        {/* 10. Sticky sidebar */}
+        <WoningSidebar
+          valuation={valuation ? { waarde: valuation.waarde, intervalLaag: valuation.intervalLaag, intervalHoog: valuation.intervalHoog } : null}
+          adresQuery={adresQuery}
+        />
       </div>
 
-      <div className="mt-5 grid gap-5 sm:grid-cols-2">
-        <Kaart className="bg-merk-wash">
-          <SectieLabel>Jouw woning?</SectieLabel>
-          <h2 className="mt-2 text-lg font-semibold">Volg de waarde van dit adres</h2>
-          <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-            Claim deze woning en ontvang maandelijks de waardeontwikkeling. Gratis, en je zit nergens aan vast.
-          </p>
-          <Link href={`/claim?${adresQuery}`} className="mt-4 inline-flex items-center justify-center rounded-full bg-merk px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-merk-licht">
-            Dit is mijn woning
-          </Link>
-        </Kaart>
-        <Kaart>
-          <SectieLabel>Biedadvies</SectieLabel>
-          <h2 className="mt-2 text-lg font-semibold">Wat is een realistisch bod?</h2>
-          <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-            Bekijk wat er in deze buurt over of onder de vraagprijs wordt geboden en wat dat betekent voor jouw bod.
-          </p>
-          <Link
-            href={`/biedadvies/${adres.postcode}/${adres.nummerslug}`}
-            className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4"
-          >
-            Naar het biedadvies
-          </Link>
-        </Kaart>
-      </div>
-
-      <Kaart className="mt-5">
-        <SectieLabel>Meer inzicht voor dit adres</SectieLabel>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/budget" className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
-            <p className="text-sm font-semibold text-merk">Budgetberekenaar</p>
-            <p className="mt-1 text-xs leading-relaxed text-gedempt">Wat je maximaal kunt lenen, volgens de wettelijke leennormen 2026.</p>
-          </Link>
-          <Link href={`/verduurzamen?${adresQuery}`} className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
-            <p className="text-sm font-semibold text-merk">Verduurzamen</p>
-            <p className="mt-1 text-xs leading-relaxed text-gedempt">Wat isolatie, zonnepanelen of een warmtepomp dit huis opleveren.</p>
-          </Link>
-          <Link href={`/woz-check?${adresQuery}`} className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
-            <p className="text-sm font-semibold text-merk">WOZ-check</p>
-            <p className="mt-1 text-xs leading-relaxed text-gedempt">Vergelijk je WOZ-beschikking met de geschatte marktwaarde.</p>
-          </Link>
-          <Link href={`/biedadvies/${adres.postcode}/${adres.nummerslug}`} className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
-            <p className="text-sm font-semibold text-merk">Biedadvies</p>
-            <p className="mt-1 text-xs leading-relaxed text-gedempt">Wat een realistisch bod is, gezien de overbieding in deze buurt.</p>
-          </Link>
-        </div>
-      </Kaart>
-
+      {/* Merkbelofte: verwijderen kan altijd. Dit blok blijft, los van de module-opbouw. */}
       <div className="mt-10 rounded-[14px] border border-lijn bg-paneel p-6">
         <h2 className="text-base font-semibold">Liever niet op Wonea?</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">

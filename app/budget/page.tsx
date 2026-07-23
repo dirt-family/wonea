@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   title: "Budgetberekenaar: hoeveel kan ik lenen?",
   description:
     "Bereken je maximale hypotheek en bruto maandlast volgens de wettelijke leennormen van 2026, met eerlijke bandbreedte en bronvermelding.",
-  robots: { index: false, follow: false },
+  alternates: { canonical: "/budget" },
+  // Bewust indexeerbaar: statische rekenhulp zonder adresdata, zelfde patroon
+  // als /tools. Staat daarom ook in /sitemaps/statisch.xml (lib/seo/sitemap.ts);
+  // indexeren en opnemen in de sitemap horen bij elkaar.
+  robots: { index: true, follow: true },
 };
 
 export default function BudgetPagina() {

@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { count, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { addresses, optouts } from "@/db/schema";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { normalizePostcode, nowIso, randomToken } from "@/lib/util";
 import { stuurOptoutBevestiging } from "@/emails/optout";
 import { inputClass, Kaart, KnopPrimair, Veld } from "@/components/ui";
@@ -20,11 +21,26 @@ const formSchema = z.object({
   bedrijfsnaam: z.string().max(0).optional(), // honeypot: mensen laten dit leeg
 });
 
+/**
+ * Misbruik-rem (naast de per-IP-limiet): suppressie is permanent, dus een
+ * scriptbare massa-opt-out zou de dataset onherstelbaar leegtrekken. Zolang
+ * e-mailbevestiging optioneel is, geldt een globale dagcap op nieuwe
+ * aanvragen; echte eigenaren halen die nooit, scripts wel.
+ */
+const OPTOUT_DAGCAP = 20;
+
+async function dagcapBereikt(): Promise<boolean> {
+  const vandaag = `${new Date().toISOString().slice(0, 10)}T00:00:00`;
+  const rijen = await db.select({ n: count() }).from(optouts).where(gte(optouts.aangevraagdAt, vandaag));
+  return (rijen[0]?.n ?? 0) >= OPTOUT_DAGCAP;
+}
+
 async function startVerwijdering(formData: FormData) {
   "use server";
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
   if (rateLimited(`optout:${ip}`)) redirect("/verwijderen?fout=te-vaak");
+  if (await dagcapBereikt()) redirect("/verwijderen?fout=dagcap");
 
   const parsed = formSchema.safeParse({
     postcode: formData.get("postcode") ?? "",
@@ -86,6 +102,8 @@ async function startVerwijdering(formData: FormData) {
 
 const FOUTEN: Record<string, string> = {
   "te-vaak": "Te veel verzoeken achter elkaar. Probeer het over een minuut opnieuw.",
+  dagcap:
+    "Er zijn vandaag ongebruikelijk veel verwijderverzoeken gedaan. Om misbruik te voorkomen kan het nu even niet; probeer het morgen opnieuw of mail ons via de privacyverklaring.",
   ongeldig: "Controleer je invoer en probeer het opnieuw.",
   postcode: "Die postcode herkennen we niet. Gebruik het formaat 1234 AB.",
   onbekend: "Dit adres staat niet (meer) op Wonea. Dan valt er ook niets te verwijderen.",

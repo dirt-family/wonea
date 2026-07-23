@@ -1,0 +1,62 @@
+{
+  "name": "wonea-banners",
+  "version": "1.0.0",
+  "description": "Wonea bewegende banners (Remotion): 8 concepten x 3 formaten (breed 1920x600, vierkant 1080x1080, story 1080x1920). Renders landen in ../public/banners/.",
+  "repository": {},
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.497",
+    "@remotion/fonts": "^4.0.497",
+    "@remotion/tailwind-v4": "4.0.497",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.497",
+    "tailwindcss": "4.0.0"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.497",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc",
+    "render:hero-breed": "remotion render hero-breed ../public/banners/hero-breed.mp4",
+    "render:hero-vierkant": "remotion render hero-vierkant ../public/banners/hero-vierkant.mp4",
+    "render:hero-story": "remotion render hero-story ../public/banners/hero-story.mp4",
+    "render:waarde-breed": "remotion render waarde-breed ../public/banners/waarde-breed.mp4",
+    "render:waarde-vierkant": "remotion render waarde-vierkant ../public/banners/waarde-vierkant.mp4",
+    "render:waarde-story": "remotion render waarde-story ../public/banners/waarde-story.mp4",
+    "render:woz-breed": "remotion render woz-breed ../public/banners/woz-breed.mp4",
+    "render:woz-vierkant": "remotion render woz-vierkant ../public/banners/woz-vierkant.mp4",
+    "render:woz-story": "remotion render woz-story ../public/banners/woz-story.mp4",
+    "render:budget-breed": "remotion render budget-breed ../public/banners/budget-breed.mp4",
+    "render:budget-vierkant": "remotion render budget-vierkant ../public/banners/budget-vierkant.mp4",
+    "render:budget-story": "remotion render budget-story ../public/banners/budget-story.mp4",
+    "render:hypotheek-breed": "remotion render hypotheek-breed ../public/banners/hypotheek-breed.mp4",
+    "render:hypotheek-vierkant": "remotion render hypotheek-vierkant ../public/banners/hypotheek-vierkant.mp4",
+    "render:hypotheek-story": "remotion render hypotheek-story ../public/banners/hypotheek-story.mp4",
+    "render:biedadvies-breed": "remotion render biedadvies-breed ../public/banners/biedadvies-breed.mp4",
+    "render:biedadvies-vierkant": "remotion render biedadvies-vierkant ../public/banners/biedadvies-vierkant.mp4",
+    "render:biedadvies-story": "remotion render biedadvies-story ../public/banners/biedadvies-story.mp4",
+    "render:verduurzamen-breed": "remotion render verduurzamen-breed ../public/banners/verduurzamen-breed.mp4",
+    "render:verduurzamen-vierkant": "remotion render verduurzamen-vierkant ../public/banners/verduurzamen-vierkant.mp4",
+    "render:verduurzamen-story": "remotion render verduurzamen-story ../public/banners/verduurzamen-story.mp4",
+    "render:makelaar-breed": "remotion render makelaar-breed ../public/banners/makelaar-breed.mp4",
+    "render:makelaar-vierkant": "remotion render makelaar-vierkant ../public/banners/makelaar-vierkant.mp4",
+    "render:makelaar-story": "remotion render makelaar-story ../public/banners/makelaar-story.mp4",
+    "render:breed": "npm run render:hero-breed && npm run render:waarde-breed && npm run render:woz-breed && npm run render:budget-breed && npm run render:hypotheek-breed && npm run render:biedadvies-breed && npm run render:verduurzamen-breed && npm run render:makelaar-breed",
+    "render:vierkant": "npm run render:hero-vierkant && npm run render:waarde-vierkant && npm run render:woz-vierkant && npm run render:budget-vierkant && npm run render:hypotheek-vierkant && npm run render:biedadvies-vierkant && npm run render:verduurzamen-vierkant && npm run render:makelaar-vierkant",
+    "render:story": "npm run render:hero-story && npm run render:waarde-story && npm run render:woz-story && npm run render:budget-story && npm run render:hypotheek-story && npm run render:biedadvies-story && npm run render:verduurzamen-story && npm run render:makelaar-story",
+    "render:alle": "npm run render:breed && npm run render:vierkant && npm run render:story"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}

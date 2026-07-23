@@ -47,6 +47,9 @@ export async function getOrCreateValuation(adres: Adres): Promise<ValuationView>
   });
   if (!result) return { valuation: null, comparables, buurt };
 
+  // onConflictDoNothing + herselectie: twee gelijktijdige eerste hits van de
+  // dag (pagina + og-preview) racen anders naar dubbele dagrijen; de unieke
+  // index (adresId, datum) maakt de tweede insert een no-op.
   const inserted = await db
     .insert(valuations)
     .values({
@@ -60,9 +63,17 @@ export async function getOrCreateValuation(adres: Adres): Promise<ValuationView>
       modelVersie: result.modelVersie,
       inputsJson: JSON.stringify({ uitleg: result.uitleg, niveau: comparables.niveau, comparableIds: comparables.comparables.map((c) => c.id) }),
     })
+    .onConflictDoNothing({ target: [valuations.adresId, valuations.datum] })
     .returning();
+  if (inserted[0]) return { valuation: inserted[0], comparables, buurt };
 
-  return { valuation: inserted[0], comparables, buurt };
+  // Conflict: een parallelle request won de race; lees die rij terug.
+  const bestaande = await db
+    .select()
+    .from(valuations)
+    .where(and(eq(valuations.adresId, adres.id), eq(valuations.datum, vandaag)))
+    .limit(1);
+  return { valuation: bestaande[0] ?? null, comparables, buurt };
 }
 
 /** Waardehistorie voor grafieken en alerts (oudste eerst). */

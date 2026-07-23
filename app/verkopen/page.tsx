@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { addresses } from "@/db/schema";
 import { createLead } from "@/lib/leads";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { isSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation } from "@/lib/valuation";
 import { formatEuro, normalizePostcode } from "@/lib/util";
@@ -85,7 +85,7 @@ const verzendSchema = z.object({
 async function verstuurAanvraag(formData: FormData) {
   "use server";
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
 
   const parsed = verzendSchema.safeParse({
     postcode: formData.get("postcode") ?? "",

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { addresses, claims, sharedReports } from "@/db/schema";
 import { currentUser } from "@/lib/auth";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { isAddressIdSuppressed, isSuppressed } from "@/lib/suppression";
 import { nowIso, randomToken } from "@/lib/util";
 
@@ -19,7 +19,7 @@ const postSchema = z.object({ claimId: z.number().int().positive() });
 const deleteSchema = z.object({ token: z.string().min(16).max(128) });
 
 function requestIp(request: Request): string {
-  return request.headers.get("x-forwarded-for") ?? "lokaal";
+  return clientIp(request.headers);
 }
 
 async function parseJson(request: Request): Promise<unknown | null> {

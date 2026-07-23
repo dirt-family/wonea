@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { addresses } from "@/db/schema";
 import { createMagicToken, magicLinkRateLimited } from "@/lib/auth";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { isSuppressed } from "@/lib/suppression";
 import { baseUrl, normalizePostcode } from "@/lib/util";
 import { stuurMagicLink } from "@/emails/magic-link";
@@ -45,7 +45,7 @@ async function vindClaimbaarAdres(postcodeInput: string, nummerInput: string) {
 async function startClaim(formData: FormData) {
   "use server";
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
 
   const parsed = formSchema.safeParse({
     postcode: formData.get("postcode") ?? "",

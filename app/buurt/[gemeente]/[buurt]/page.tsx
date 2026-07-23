@@ -1,19 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, desc, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { marketStats, municipalities, neighborhoods, sales } from "@/db/schema";
-import { isAddressIdSuppressed } from "@/lib/suppression";
+import {
+  buurtKarakteristiek,
+  buurtKerncijfers,
+  buurtPrijsontwikkeling,
+  recenteVerkopenInBuurt,
+  vergelijkbareBuurten,
+  vindBuurtMetGemeente,
+  woningenInBuurt,
+  type PrijsPunt,
+} from "@/lib/buurt-data";
 import { isBuurtIndexeerbaar } from "@/lib/seo/gating";
 import { formatEuro } from "@/lib/util";
-import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/ui";
+import { BronLabel, EnergieLabelBadge, Kaart, ModuleTag, StatTegel, VoorbeelddataLabel } from "@/components/ui";
 import { MarktSignalenKaart } from "@/components/markt/signalen";
 
 /**
- * Buurtpagina: kerncijfers, recente verkopen en prijsontwikkeling op
- * buurtniveau. BEWUST geen lijst van individuele adressen (privacy-rust).
- * Verkopen met een adres_id (bron kadaster) respecteren de suppressielijst.
+ * Buurtpagina, opgebouwd volgens docs/PROTOTYPE-OOGST.md ("Buurtpagina"):
+ * broodkruimel + titel met karakteristiek-zin (alleen uit data), stats-rij,
+ * prijsontwikkeling (alleen bij echte reeks), woningen-kaartenrij, recente
+ * verkopen op buurtniveau en vergelijkbare buurten. Bewust WEGGELATEN:
+ * voorzieningen, bewoners-statistieken en veiligheid (geen bron geingest;
+ * backlog) en "Volg deze buurt" (de alert-flow is per adres-claim, er bestaat
+ * geen buurt-abonnement om aan te koppelen).
  */
 
 type Params = { gemeente: string; buurt: string };
@@ -33,30 +43,15 @@ export function generateStaticParams(): Params[] {
   return [];
 }
 
-async function vindBuurt(params: Params) {
-  const gemeente = (
-    await db.select().from(municipalities).where(eq(municipalities.slug, params.gemeente.toLowerCase())).limit(1)
-  )[0];
-  if (!gemeente) return null;
-  const buurt = (
-    await db
-      .select()
-      .from(neighborhoods)
-      .where(and(eq(neighborhoods.gemeenteCode, gemeente.code), eq(neighborhoods.slug, params.buurt.toLowerCase())))
-      .limit(1)
-  )[0];
-  if (!buurt) return null;
-  return { gemeente, buurt };
-}
-
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const data = await vindBuurt(await params);
+  const p = await params;
+  const data = await vindBuurtMetGemeente(p.gemeente, p.buurt);
   if (!data) return { title: "Buurt niet gevonden", robots: { index: false, follow: false } };
   // Gebiedswhitelist (lib/seo/gating.ts): buurtpagina's mogen alleen de index
   // in als de buurt bewust is vrijgegeven. Default is noindex.
   const indexeerbaar = await isBuurtIndexeerbaar(data.buurt.buurtCode);
   return {
-    title: `Buurt ${data.buurt.naam} in ${data.gemeente.naam}: woningmarkt en prijzen`,
+    title: `Buurt ${data.buurt.naam} in ${data.gemeente.naam}: woningmarkt`,
     description: `Kerncijfers, recente verkopen en prijsontwikkeling van buurt ${data.buurt.naam} in ${data.gemeente.naam}, met bronnen en uitleg.`,
     robots: indexeerbaar ? { index: true, follow: true } : { index: false, follow: false },
   };
@@ -66,19 +61,18 @@ function maandLabel(maand: string): string {
   return new Intl.DateTimeFormat("nl-NL", { month: "short", year: "numeric" }).format(new Date(`${maand}-01`));
 }
 
-/** Kleine inline lijngrafiek van de mediaanprijs per maand. Kleur via currentColor (token text-merk). */
-function PrijsLijn({ punten }: { punten: { maand: string; mediaan: number }[] }) {
+/**
+ * Staafgrafiek van de mediaanprijs per maand (server-side SVG, currentColor).
+ * Staven beginnen op nul: eerlijke verhoudingen, geen aangezette y-as die
+ * kleine verschillen dramatisch maakt.
+ */
+function PrijsStaven({ punten }: { punten: PrijsPunt[] }) {
   const w = 560;
-  const h = 130;
-  const pad = 8;
-  const waarden = punten.map((p) => p.mediaan);
-  const min = Math.min(...waarden);
-  const max = Math.max(...waarden);
-  const span = max - min || 1;
-  const stap = punten.length > 1 ? (w - pad * 2) / (punten.length - 1) : 0;
-  const coords = punten
-    .map((p, i) => `${(pad + i * stap).toFixed(1)},${(h - pad - ((p.mediaan - min) / span) * (h - pad * 2)).toFixed(1)}`)
-    .join(" ");
+  const h = 150;
+  const pad = 4;
+  const max = Math.max(...punten.map((p) => p.mediaan));
+  const gap = 6;
+  const staafBreedte = (w - pad * 2 - gap * (punten.length - 1)) / punten.length;
   const eerste = punten[0];
   const laatste = punten[punten.length - 1];
   return (
@@ -89,9 +83,23 @@ function PrijsLijn({ punten }: { punten: { maand: string; mediaan: number }[] })
         role="img"
         aria-label={`Mediaanprijs per maand, van ${formatEuro(eerste.mediaan)} in ${maandLabel(eerste.maand)} naar ${formatEuro(laatste.mediaan)} in ${maandLabel(laatste.maand)}`}
       >
-        <polyline points={coords} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {punten.map((p, i) => {
+          const hoogte = (p.mediaan / max) * (h - pad * 2);
+          return (
+            <rect
+              key={p.maand}
+              x={(pad + i * (staafBreedte + gap)).toFixed(1)}
+              y={(h - pad - hoogte).toFixed(1)}
+              width={staafBreedte.toFixed(1)}
+              height={hoogte.toFixed(1)}
+              rx="3"
+              fill="currentColor"
+              opacity={i === punten.length - 1 ? 1 : 0.55}
+            />
+          );
+        })}
       </svg>
-      <figcaption className="mt-2 flex justify-between text-xs text-gedempt">
+      <figcaption className="mt-2 flex justify-between text-xs text-gedempt tabular-nums">
         <span>{maandLabel(eerste.maand)}: {formatEuro(eerste.mediaan)}</span>
         <span>{maandLabel(laatste.maand)}: {formatEuro(laatste.mediaan)}</span>
       </figcaption>
@@ -99,189 +107,199 @@ function PrijsLijn({ punten }: { punten: { maand: string; mediaan: number }[] })
   );
 }
 
+/** Verschil in m2-prijs met de eigen buurt, in gewone taal en zonder oordeel. */
+function verschilTekst(verschilPct: number): string {
+  const abs = Math.abs(verschilPct).toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  if (Math.abs(verschilPct) < 2) return "vergelijkbaar met deze buurt";
+  return verschilPct > 0 ? `${abs}% boven deze buurt` : `${abs}% onder deze buurt`;
+}
+
 export default async function BuurtPagina({ params }: { params: Promise<Params> }) {
-  const data = await vindBuurt(await params);
+  const p = await params;
+  const data = await vindBuurtMetGemeente(p.gemeente, p.buurt);
   if (!data) notFound();
   const { gemeente, buurt } = data;
 
-  // Recente verkopen: seed-verkopen hebben nooit een adres_id; kadaster-rijen
-  // wel, en die vallen weg zodra het adres gesupprimeerd is.
-  const verkopenRuw = await db
-    .select()
-    .from(sales)
-    .where(eq(sales.buurtCode, buurt.buurtCode))
-    .orderBy(desc(sales.datum))
-    .limit(36);
-  const verkopenGefilterd = await Promise.all(
-    verkopenRuw.map(async (s) => ({ s, behouden: s.adresId == null || !(await isAddressIdSuppressed(s.adresId)) })),
-  );
-  const recenteVerkopen = verkopenGefilterd
-    .filter((x) => x.behouden)
-    .map((x) => x.s)
-    .slice(0, 12);
-
-  const stats = (
-    await db
-      .select()
-      .from(marketStats)
-      .where(eq(marketStats.buurtCode, buurt.buurtCode))
-      .orderBy(marketStats.maand)
-  ).slice(-12);
-  const laatsteMaand = stats.at(-1);
-  const trendPunten = stats
-    .filter((s): s is typeof s & { mediaanPrijs: number } => s.mediaanPrijs != null)
-    .map((s) => ({ maand: s.maand, mediaan: s.mediaanPrijs }));
+  const [karakteristiek, kerncijfers, prijsreeks, woningen, verkopen, buren] = await Promise.all([
+    buurtKarakteristiek(buurt.buurtCode),
+    buurtKerncijfers(buurt.buurtCode),
+    buurtPrijsontwikkeling(buurt.buurtCode),
+    woningenInBuurt(buurt.buurtCode, 8),
+    recenteVerkopenInBuurt(buurt.buurtCode, 12),
+    vergelijkbareBuurten(buurt.buurtCode, 3),
+  ]);
 
   const maandFmt = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
       <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
-        <Link href="/" className="hover:text-merk">Wonea</Link> / {gemeente.naam} / {buurt.naam}
+        <Link href="/" className="hover:text-merk">Wonea</Link> /{" "}
+        <Link href={`/woningmarkt/${gemeente.slug}`} className="hover:text-merk">{gemeente.naam}</Link> / {buurt.naam}
       </nav>
       <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">Buurt {buurt.naam}</h1>
       <p className="mt-1 text-inkt-zacht">Gemeente {gemeente.naam}</p>
+      {karakteristiek ? <p className="mt-3 max-w-2xl text-sm leading-relaxed text-inkt-zacht">{karakteristiek}</p> : null}
 
-      <div className="mt-8 grid gap-5 sm:grid-cols-3">
-        <Kaart>
-          <SectieLabel>Gemiddelde WOZ</SectieLabel>
-          {buurt.gemWoz ? (
-            <>
-              <p className="mt-3 font-display text-3xl font-semibold text-merk">{formatEuro(buurt.gemWoz)}</p>
-              <p className="mt-2"><BronLabel>CBS</BronLabel></p>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-inkt-zacht">Geen CBS-cijfer beschikbaar voor deze buurt.</p>
-          )}
-        </Kaart>
-        <Kaart>
-          <SectieLabel>Inwoners</SectieLabel>
-          {buurt.inwoners ? (
-            <>
-              <p className="mt-3 font-display text-3xl font-semibold text-merk">{buurt.inwoners.toLocaleString("nl-NL")}</p>
-              <p className="mt-2"><BronLabel>CBS</BronLabel></p>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-inkt-zacht">Geen CBS-cijfer beschikbaar voor deze buurt.</p>
-          )}
-        </Kaart>
-        <Kaart>
-          <SectieLabel>Prijs per m2</SectieLabel>
-          {buurt.ankerM2Prijs ? (
-            <>
-              <p className="mt-3 font-display text-3xl font-semibold text-merk">{formatEuro(Math.round(buurt.ankerM2Prijs))}</p>
-              <p className="mt-2"><BronLabel>afgeleide: gemiddelde WOZ gedeeld door gemiddelde oppervlakte</BronLabel></p>
-            </>
-          ) : (
-            <p className="mt-3 text-sm text-inkt-zacht">Nog niet te berekenen voor deze buurt.</p>
-          )}
-        </Kaart>
+      {/* Stats-rij: alle cijfers echt; een tegel zonder bron laten we weg.
+          Geen delta bij de m2-prijs: er is geen historische reeks van dit
+          cijfer, dus ook geen delta-claim. */}
+      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {buurt.ankerM2Prijs != null ? (
+          <StatTegel
+            label="Prijs per m2"
+            waarde={formatEuro(Math.round(buurt.ankerM2Prijs))}
+            delta="gemiddelde WOZ gedeeld door gemiddelde oppervlakte"
+            deltaRichting="neutraal"
+          />
+        ) : null}
+        {buurt.gemWoz != null ? (
+          <StatTegel label="Gemiddelde WOZ" waarde={formatEuro(buurt.gemWoz)} delta="bron: CBS" deltaRichting="neutraal" />
+        ) : null}
+        <StatTegel
+          label="Woningen in ons bestand"
+          waarde={kerncijfers.aantalWoningen.toLocaleString("nl-NL")}
+          delta="adressen in het testgebied"
+          deltaRichting="neutraal"
+        />
+        <StatTegel
+          label="Recente verkopen"
+          waarde={kerncijfers.aantalRecenteVerkopen.toLocaleString("nl-NL")}
+          delta="laatste 12 maanden"
+          deltaRichting="neutraal"
+        />
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-3">
-        <Kaart className="lg:col-span-2">
+      {/* Prijsontwikkeling: alleen bij een echte reeks. */}
+      {prijsreeks ? (
+        <Kaart className="mt-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <SectieLabel>Recente verkopen in deze buurt</SectieLabel>
-            {recenteVerkopen.some((s) => s.bron === "seed") ? <VoorbeelddataLabel /> : null}
+            <h2 className="text-xl font-semibold">Prijsontwikkeling</h2>
+            {prijsreeks.heeftSeed ? <VoorbeelddataLabel /> : <ModuleTag>per maand</ModuleTag>}
           </div>
-          {recenteVerkopen.length > 0 ? (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
-                    <th className="py-2 pr-4 font-medium">Wanneer</th>
-                    <th className="py-2 pr-4 font-medium">Straat</th>
-                    <th className="py-2 pr-4 font-medium">Prijs</th>
-                    <th className="py-2 pr-4 font-medium">Oppervlakte</th>
-                    <th className="py-2 font-medium">Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recenteVerkopen.map((s) => (
-                    <tr key={s.id} className="border-b border-lijn last:border-0">
-                      <td className="py-2.5 pr-4">{maandFmt.format(new Date(s.datum))}</td>
-                      <td className="py-2.5 pr-4">{s.straat ?? "onbekend"}</td>
-                      <td className="py-2.5 pr-4 font-medium">{formatEuro(s.prijs)}</td>
-                      <td className="py-2.5 pr-4">{s.oppervlakteM2} m2</td>
-                      <td className="py-2.5">{s.woningtype}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-inkt-zacht">Geen recente verkopen bekend in deze buurt.</p>
-          )}
-          <p className="mt-4 text-xs leading-relaxed text-gedempt">
-            We tonen verkopen op straat- en buurtniveau, bewust zonder huisnummers of lijst van individuele adressen.
+          <p className="mt-2 text-sm text-inkt-zacht">
+            Mediaan verkoopprijs per maand, laatste {prijsreeks.punten.length} maanden.
           </p>
+          <PrijsStaven punten={prijsreeks.punten} />
         </Kaart>
+      ) : null}
 
-        <Kaart>
-          <SectieLabel>Zoek een adres</SectieLabel>
-          <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-            De geschatte waarde van een specifieke woning, altijd met bandbreedte, vind je via de zoekbalk op de homepage.
-          </p>
-          <Link href="/" className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-            Naar de zoekbalk
-          </Link>
-          <p className="mt-5 text-sm leading-relaxed text-inkt-zacht">
-            Benieuwd hoe we rekenen en waarom we altijd een bandbreedte tonen?
-          </p>
-          <Link href="/methode" className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-            Onze methode
-          </Link>
-        </Kaart>
-      </div>
-
-      <Kaart className="mt-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <SectieLabel>Prijsontwikkeling</SectieLabel>
-          {stats.some((s) => s.bron === "seed") ? <VoorbeelddataLabel /> : null}
-        </div>
-        {trendPunten.length >= 2 ? (
-          <>
-            <p className="mt-3 text-sm text-inkt-zacht">Mediaan verkoopprijs per maand, laatste {trendPunten.length} maanden.</p>
-            <PrijsLijn punten={trendPunten} />
-          </>
+      {/* Woningen in de buurt: echte adressen met een echte schatting. */}
+      <section className="mt-12">
+        <h2 className="text-2xl font-semibold">Woningen in {buurt.naam}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
+          Adressen in ons bestand met een recente waardeschatting. Het is een indicatie, geen taxatie, dus zie het als
+          een goed startpunt.
+        </p>
+        {woningen.length > 0 ? (
+          <div className="mt-6 flex gap-4 overflow-x-auto pb-2" role="list">
+            {woningen.map((woning) => {
+              const naam = `${woning.straat} ${woning.huisnummer}${woning.toevoeging ? ` ${woning.toevoeging}` : ""}`;
+              return (
+                <Link
+                  key={woning.adresId}
+                  role="listitem"
+                  href={`/woning/${woning.postcode}/${woning.nummerslug}`}
+                  className="block w-64 shrink-0 rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-inkt">{naam}</p>
+                      <p className="mt-0.5 text-xs text-gedempt">{woning.postcode} {woning.plaats}</p>
+                    </div>
+                    {woning.energielabel ? <EnergieLabelBadge label={woning.energielabel} klein /> : null}
+                  </div>
+                  <p className="mt-3 font-display text-xl font-semibold text-merk tabular-nums">{formatEuro(woning.waarde)}</p>
+                  <p className="mt-1 text-xs text-inkt-zacht tabular-nums">
+                    {formatEuro(woning.intervalLaag)} tot {formatEuro(woning.intervalHoog)}
+                  </p>
+                  <p className="mt-2 text-xs text-gedempt tabular-nums">
+                    {woning.oppervlakteM2} m2, {woning.woningtype}, bouwjaar {woning.bouwjaar}
+                  </p>
+                  {woning.energielabel && woning.energielabelBron === "indicatie" ? (
+                    <p className="mt-2"><BronLabel>label: indicatie op basis van bouwjaar</BronLabel></p>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
         ) : (
-          <p className="mt-3 text-sm text-inkt-zacht">
-            Nog te weinig maandcijfers om een prijsontwikkeling te tonen. Liever geen lijn dan een verzonnen lijn.
+          <p className="mt-4 text-sm text-inkt-zacht">
+            Nog geen woningen met een waardeschatting in deze buurt. Zoek een adres via de zoekbalk op de homepage; de
+            schatting verschijnt daarna ook hier.
           </p>
         )}
+      </section>
 
-        {laatsteMaand && (laatsteMaand.doorlooptijdDagen != null || laatsteMaand.overbiedingPct != null) ? (
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            {laatsteMaand.doorlooptijdDagen != null ? (
-              <div className="rounded-lg bg-merk-wash p-4">
-                <SectieLabel>Doorlooptijd</SectieLabel>
-                <p className="mt-2 font-display text-2xl font-semibold text-merk">{laatsteMaand.doorlooptijdDagen} dagen</p>
-                <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-                  Woningen die in {maandLabel(laatsteMaand.maand)} in deze buurt werden verkocht, stonden gemiddeld{" "}
-                  {laatsteMaand.doorlooptijdDagen} dagen te koop. Hoe korter, hoe krapper de markt.
-                </p>
-              </div>
-            ) : null}
-            {laatsteMaand.overbiedingPct != null ? (
-              <div className="rounded-lg bg-merk-wash p-4">
-                <SectieLabel>Overbieden</SectieLabel>
-                <p className="mt-2 font-display text-2xl font-semibold text-merk">
-                  {laatsteMaand.overbiedingPct >= 0 ? "+" : "-"}
-                  {Math.abs(laatsteMaand.overbiedingPct).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}%
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-                  {laatsteMaand.overbiedingPct >= 0
-                    ? `Kopers betaalden in ${maandLabel(laatsteMaand.maand)} gemiddeld ${Math.abs(laatsteMaand.overbiedingPct).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}% boven de vraagprijs.`
-                    : `Kopers betaalden in ${maandLabel(laatsteMaand.maand)} gemiddeld ${Math.abs(laatsteMaand.overbiedingPct).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}% onder de vraagprijs.`}{" "}
-                  Dat zegt iets over de onderhandelingsruimte, niet over een individuele woning.
-                </p>
-              </div>
-            ) : null}
+      {/* Recente verkopen op buurtniveau. */}
+      <Kaart className="mt-12">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Recente verkopen in deze buurt</h2>
+          {verkopen.some((verkoop) => verkoop.bron === "seed") ? <VoorbeelddataLabel /> : <ModuleTag>buurtniveau</ModuleTag>}
+        </div>
+        {verkopen.length > 0 ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
+                  <th className="py-2 pr-4 font-medium">Wanneer</th>
+                  <th className="py-2 pr-4 font-medium">Straat</th>
+                  <th className="py-2 pr-4 font-medium">Prijs</th>
+                  <th className="py-2 pr-4 font-medium">Oppervlakte</th>
+                  <th className="py-2 font-medium">Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {verkopen.map((verkoop) => (
+                  <tr key={verkoop.id} className="border-b border-lijn last:border-0">
+                    <td className="py-2.5 pr-4">{maandFmt.format(new Date(verkoop.datum))}</td>
+                    <td className="py-2.5 pr-4">{verkoop.straat ?? "onbekend"}</td>
+                    <td className="py-2.5 pr-4 font-medium tabular-nums">{formatEuro(verkoop.prijs)}</td>
+                    <td className="py-2.5 pr-4 tabular-nums">{verkoop.oppervlakteM2} m2</td>
+                    <td className="py-2.5">{verkoop.woningtype}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : null}
+        ) : (
+          <p className="mt-3 text-sm text-inkt-zacht">Geen recente verkopen bekend in deze buurt.</p>
+        )}
+        <p className="mt-4 text-xs leading-relaxed text-gedempt">
+          We tonen verkopen op straat- en buurtniveau, bewust zonder huisnummers of lijst van individuele adressen.
+        </p>
       </Kaart>
 
+      {/* Marktsignalen: bestaande module, uitleg in gewone taal. */}
       <MarktSignalenKaart variant="volledig" buurtCode={buurt.buurtCode} className="mt-5" />
+
+      {/* Vergelijkbare buurten: zelfde gemeente, dichtstbijzijnde m2-prijs. */}
+      {buren.length > 0 ? (
+        <section className="mt-12">
+          <h2 className="text-2xl font-semibold">Vergelijkbare buurten</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
+            Buurten in {gemeente.naam} met een m2-prijs die het dichtst bij {buurt.naam} ligt.
+          </p>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {buren.map((buur) => (
+              <Link
+                key={buur.buurtCode}
+                href={`/buurt/${gemeente.slug}/${buur.slug}`}
+                className="block rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
+              >
+                <p className="font-semibold text-inkt">{buur.naam}</p>
+                <p className="mt-2 font-display text-xl font-semibold text-merk tabular-nums">
+                  {formatEuro(Math.round(buur.ankerM2Prijs))} per m2
+                </p>
+                <p className="mt-1 text-xs text-gedempt tabular-nums">{verschilTekst(buur.verschilPct)}</p>
+                {buur.gemWoz != null ? (
+                  <p className="mt-2 text-xs text-inkt-zacht tabular-nums">Gemiddelde WOZ: {formatEuro(buur.gemWoz)}</p>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

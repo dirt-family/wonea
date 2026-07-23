@@ -85,7 +85,7 @@ export function StatTegel({ label, waarde, delta, deltaRichting }: { label: stri
   return (
     <div className="rounded-[14px] border border-lijn bg-paneel p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">{label}</p>
-      <p className="mt-2 font-display text-2xl font-semibold text-merk">{waarde}</p>
+      <p className="mt-2 font-display text-2xl font-semibold tabular-nums text-merk">{waarde}</p>
       {delta ? <p className={`mt-1 text-sm ${deltaKleur}`}>{delta}</p> : null}
     </div>
   );
@@ -96,7 +96,7 @@ export function UitkomstKaart({ label, bedrag, children }: { label: string; bedr
   return (
     <Kaart className="bg-merk-wash">
       <SectieLabel>{label}</SectieLabel>
-      <p className="mt-3 font-display text-5xl font-semibold text-merk">{bedrag}</p>
+      <p className="mt-3 font-display text-5xl font-semibold tabular-nums text-merk">{bedrag}</p>
       {children}
     </Kaart>
   );
@@ -176,6 +176,66 @@ export function LeadCta({ titel, tekst, knopTekst, href, ontvanger }: { titel: s
       <KnopPrimair href={href}>{knopTekst}</KnopPrimair>
       <p className="mt-3 text-xs text-gedempt">Je aanvraag gaat na jouw akkoord naar {ontvanger}. Niet naar anderen.</p>
     </Kaart>
+  );
+}
+
+/* ------------------------------------------------------------------------- */
+/* v2-componenten, geoogst uit Mitch' prototype (docs/PROTOTYPE-OOGST.md)      */
+/* ------------------------------------------------------------------------- */
+
+/** Delta-pill: kleine richting-indicator bij een cijfer (+4,2% dit jaar). */
+export function DeltaPil({ richting, children }: { richting: "op" | "neer" | "vlak"; children: ReactNode }) {
+  const kleur =
+    richting === "op"
+      ? "bg-positief-wash text-positief"
+      : richting === "neer"
+        ? "bg-negatief-wash text-negatief"
+        : "bg-merk-wash text-inkt-zacht";
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${kleur}`}>{children}</span>;
+}
+
+/** Energielabel-badge in de gangbare labelkleuren. A+..A++++ tonen we als A. */
+const LABEL_KLEUREN: Record<string, string> = {
+  A: "#2C9B45",
+  B: "#6BB23A",
+  C: "#C7C23B",
+  D: "#E7A12E",
+  E: "#E07B2E",
+  F: "#D9542B",
+  G: "#C0392B",
+};
+export function EnergieLabelBadge({ label, klein = false }: { label: string; klein?: boolean }) {
+  const basis = label.replace(/\+/g, "").toUpperCase().charAt(0);
+  const kleur = LABEL_KLEUREN[basis];
+  if (!kleur) return null;
+  const maat = klein ? "h-7 w-7 text-sm" : "h-10 w-10 text-lg";
+  return (
+    <span
+      className={`inline-grid place-items-center rounded-lg font-bold text-white ${maat} ${basis === "C" ? "text-inkt" : ""}`}
+      style={{ backgroundColor: kleur }}
+      aria-label={`Energielabel ${label.toUpperCase()}`}
+    >
+      {label.toUpperCase()}
+    </span>
+  );
+}
+
+/** Klein module-tagje rechtsboven in een kaartkop ("gratis", "rekenhulp"). */
+export function ModuleTag({ children }: { children: ReactNode }) {
+  return <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-gedempt">{children}</span>;
+}
+
+/** Feitenlijst: label-waarde-rijen in 2 kolommen (kenmerken van een woning). */
+export function FeitenLijst({ feiten }: { feiten: [string, ReactNode][] }) {
+  return (
+    <dl className="grid gap-x-7 sm:grid-cols-2">
+      {feiten.map(([label, waarde]) => (
+        <div key={label} className="flex justify-between border-b border-lijn py-2.5 text-sm last:border-0 sm:[&:nth-last-child(2)]:border-0">
+          <dt className="text-inkt-zacht">{label}</dt>
+          <dd className="font-semibold tabular-nums">{waarde}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

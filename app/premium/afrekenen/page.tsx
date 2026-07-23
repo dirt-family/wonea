@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { createMagicToken, currentUser, magicLinkRateLimited } from "@/lib/auth";
 import { hasEntitlement } from "@/lib/premium";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { baseUrl, formatEuro } from "@/lib/util";
 import { inputClass, Kaart, KnopPrimair, KnopSecundair, SectieLabel, Veld } from "@/components/ui";
 import { checkoutQuery, koopPremium, veiligeVanUrl } from "@/app/premium/logic";
@@ -46,7 +46,7 @@ async function stuurLoginLink(formData: FormData) {
   if (!parsed.success) redirect(`/premium/afrekenen?${q}&fout=ongeldig`);
 
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
   if (rateLimited(`premium-login:${ip}`)) redirect(`/premium/afrekenen?${q}&fout=te-vaak`);
   const email = parsed.data.email.toLowerCase().trim();
   if (magicLinkRateLimited(email)) redirect(`/premium/afrekenen?${q}&fout=te-vaak`);
@@ -76,7 +76,7 @@ async function rekenAf(formData: FormData) {
   if (!user) redirect(`/premium/afrekenen?${q}`);
 
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
   if (rateLimited(`premium-koop:${ip}`, 10)) redirect(`/premium/afrekenen?${q}&fout=te-vaak`);
 
   const resultaat = await koopPremium(user.id, product);

@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { verstuurVerduurzamingsLead } from "@/app/verduurzamen/logic";
 import { isVerticaal, type Verticaal } from "@/app/verduurzamen/verticalen";
 
@@ -48,7 +48,7 @@ function antwoordenUitFormData(verticaal: Verticaal, formData: FormData): Record
 
 export async function verstuurAanvraag(_vorige: FunnelFormState, formData: FormData): Promise<FunnelFormState> {
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
   if (rateLimited(`lead:verduurzamen:${ip}`)) {
     return { fout: "Te veel aanvragen achter elkaar. Probeer het over een minuut opnieuw." };
   }

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { addresses } from "@/db/schema";
 import { currentUser } from "@/lib/auth";
 import { createLead } from "@/lib/leads";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { isSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation } from "@/lib/valuation";
 import { normalizePostcode } from "@/lib/util";
@@ -52,7 +52,7 @@ export async function verstuurHypotheekLead(formData: FormData): Promise<void> {
   };
 
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
   if (rateLimited(`hypotheek:${ip}`)) redirect(terug("te-vaak"));
 
   // Zonder aangevinkte toestemming versturen we niets; aparte, eerlijke melding.

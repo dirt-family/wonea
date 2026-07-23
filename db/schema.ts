@@ -108,7 +108,9 @@ export const valuations = pgTable(
     modelVersie: text("model_versie").notNull(),
     inputsJson: text("inputs_json").notNull(), // JSON van modelinputs, voor uitlegbaarheid
   },
-  (t) => [index("idx_valuations_adres_datum").on(t.adresId, t.datum)],
+  // Uniek per adres per dag: gelijktijdige eerste hits (pagina + og-preview)
+  // kunnen anders dubbele dagrijen produceren die historie en alerts vervuilen.
+  (t) => [uniqueIndex("uq_valuations_adres_datum").on(t.adresId, t.datum)],
 );
 
 export const wozValues = pgTable(

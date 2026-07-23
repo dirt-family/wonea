@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { createLead } from "@/lib/leads";
-import { rateLimited } from "@/lib/ratelimit";
+import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { normalizePostcode } from "@/lib/util";
 import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
 import { CONSENT_TEKST, CONSENT_TEKSTVERSIE, consentTekstversie } from "@/app/taxatierapport/consent-teksten";
@@ -30,7 +30,7 @@ const formSchema = z.object({
 async function vraagRapportAan(formData: FormData) {
   "use server";
   const hdrs = await headers();
-  const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
+  const ip = clientIp(hdrs);
 
   const parsed = formSchema.safeParse({
     postcode: formData.get("postcode") ?? "",
