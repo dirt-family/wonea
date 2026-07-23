@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq, like, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { addresses } from "@/db/schema";
@@ -25,19 +25,19 @@ export async function GET(request: Request) {
     rows = await db
       .select()
       .from(addresses)
-      .where(and(like(addresses.postcode, `${alsPostcode}%`), eq(addresses.status, "actief")))
+      .where(and(ilike(addresses.postcode, `${alsPostcode}%`), eq(addresses.status, "actief")))
       .limit(24);
   } else if (straatNummer) {
     rows = await db
       .select()
       .from(addresses)
-      .where(and(like(addresses.straat, `${straatNummer[1]}%`), like(addresses.nummerslug, `${straatNummer[2].toLowerCase()}%`), eq(addresses.status, "actief")))
+      .where(and(ilike(addresses.straat, `${straatNummer[1]}%`), ilike(addresses.nummerslug, `${straatNummer[2].toLowerCase()}%`), eq(addresses.status, "actief")))
       .limit(24);
   } else {
     rows = await db
       .select()
       .from(addresses)
-      .where(and(or(like(addresses.straat, `${q}%`), like(addresses.plaats, `${q}%`)), eq(addresses.status, "actief")))
+      .where(and(or(ilike(addresses.straat, `${q}%`), ilike(addresses.plaats, `${q}%`)), eq(addresses.status, "actief")))
       .limit(24);
   }
 
