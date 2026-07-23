@@ -39,28 +39,28 @@ export function postcode4(postcode: string): string {
 }
 
 /** Niveau 1: staat het gebied (buurt of postcode4) op de whitelist? */
-export function heeftGebiedsWhitelist(buurtCode: string, postcode: string): boolean {
-  const buurtRij = db
+export async function heeftGebiedsWhitelist(buurtCode: string, postcode: string): Promise<boolean> {
+  const buurtRij = await db
     .select({ id: indexGating.id })
     .from(indexGating)
     .where(and(eq(indexGating.scope, "buurt"), eq(indexGating.code, buurtCode), eq(indexGating.indexeerbaar, true)))
-    .get();
-  if (buurtRij) return true;
-  const pc4Rij = db
+    .limit(1);
+  if (buurtRij.length > 0) return true;
+  const pc4Rij = await db
     .select({ id: indexGating.id })
     .from(indexGating)
     .where(and(eq(indexGating.scope, "postcode4"), eq(indexGating.code, postcode4(postcode)), eq(indexGating.indexeerbaar, true)))
-    .get();
-  return !!pc4Rij;
+    .limit(1);
+  return pc4Rij.length > 0;
 }
 
-function heeftEigenaarWoz(adresId: number): boolean {
-  const rij = db
+async function heeftEigenaarWoz(adresId: number): Promise<boolean> {
+  const rij = await db
     .select({ id: wozValues.id })
     .from(wozValues)
     .where(and(eq(wozValues.adresId, adresId), eq(wozValues.bron, "eigenaar")))
-    .get();
-  return !!rij;
+    .limit(1);
+  return rij.length > 0;
 }
 
 /**
@@ -69,12 +69,12 @@ function heeftEigenaarWoz(adresId: number): boolean {
  * functie geen eigen comparables-query nodig heeft en per drempel puur
  * testbaar blijft.
  */
-export function isAdresIndexeerbaar(adres: AdresVoorGating, opties: { nComparables: number }): boolean {
+export async function isAdresIndexeerbaar(adres: AdresVoorGating, opties: { nComparables: number }): Promise<boolean> {
   // Suppressie wint altijd, ook van de whitelist.
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return false;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return false;
 
   // Niveau 1: gebiedswhitelist (default leeg = alles noindex).
-  if (!heeftGebiedsWhitelist(adres.buurtCode, adres.postcode)) return false;
+  if (!(await heeftGebiedsWhitelist(adres.buurtCode, adres.postcode))) return false;
 
   // Niveau 2: datadiepte.
   if (opties.nComparables >= MIN_COMPARABLES_VOOR_INDEX) return true;
@@ -86,13 +86,13 @@ export function isAdresIndexeerbaar(adres: AdresVoorGating, opties: { nComparabl
  * Mag de buurtpagina de index in? Buurtpagina's gaten alleen op de
  * buurt-whitelist (een buurt heeft geen eenduidige postcode4 in het schema).
  */
-export function isBuurtIndexeerbaar(buurtCode: string): boolean {
-  const rij = db
+export async function isBuurtIndexeerbaar(buurtCode: string): Promise<boolean> {
+  const rij = await db
     .select({ id: indexGating.id })
     .from(indexGating)
     .where(and(eq(indexGating.scope, "buurt"), eq(indexGating.code, buurtCode), eq(indexGating.indexeerbaar, true)))
-    .get();
-  return !!rij;
+    .limit(1);
+  return rij.length > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -106,18 +106,18 @@ export function isGatingScope(s: string): s is GatingScope {
 }
 
 /** Upsert van een whitelist-rij (allow = indexeerbaar true, disallow = false). */
-export function setGating(scope: GatingScope, code: string, indexeerbaar: boolean, reden?: string | null): void {
-  db.insert(indexGating)
+export async function setGating(scope: GatingScope, code: string, indexeerbaar: boolean, reden?: string | null): Promise<void> {
+  await db
+    .insert(indexGating)
     .values({ scope, code, indexeerbaar, reden: reden ?? null })
     .onConflictDoUpdate({
       target: [indexGating.scope, indexGating.code],
       set: { indexeerbaar, reden: reden ?? null },
-    })
-    .run();
+    });
 }
 
 export function listGating() {
-  return db.select().from(indexGating).orderBy(indexGating.scope, indexGating.code).all();
+  return db.select().from(indexGating).orderBy(indexGating.scope, indexGating.code);
 }
 
 // ---------------------------------------------------------------------------

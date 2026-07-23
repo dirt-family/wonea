@@ -1,16 +1,16 @@
-import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { boolean, index, integer, pgTable, real, serial, text, uniqueIndex } from "drizzle-orm/pg-core";
 
 // ---------------------------------------------------------------------------
 // Geografie
 // ---------------------------------------------------------------------------
 
-export const municipalities = sqliteTable("municipalities", {
+export const municipalities = pgTable("municipalities", {
   code: text("code").primaryKey(), // CBS gemeentecode, bv. GM0772
   naam: text("naam").notNull(),
   slug: text("slug").notNull().unique(),
 });
 
-export const neighborhoods = sqliteTable(
+export const neighborhoods = pgTable(
   "neighborhoods",
   {
     buurtCode: text("buurt_code").primaryKey(), // CBS buurtcode, bv. BU07720110
@@ -38,10 +38,10 @@ export type EnergielabelBron = "echt" | "indicatie";
 export type AdresStatus = "actief" | "opted_out";
 export type DataBron = "bag" | "seed";
 
-export const addresses = sqliteTable(
+export const addresses = pgTable(
   "addresses",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     bagId: text("bag_id"), // BAG verblijfsobject-id, null bij seed
     straat: text("straat").notNull(),
     huisnummer: integer("huisnummer").notNull(),
@@ -72,10 +72,10 @@ export const addresses = sqliteTable(
 
 // Verkopen. HARDE REGEL: bron=seed heeft NOOIT een adres_id; synthetische
 // koopsommen hangen alleen aan buurt/straat, nooit aan een echt adres.
-export const sales = sqliteTable(
+export const sales = pgTable(
   "sales",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     buurtCode: text("buurt_code")
       .notNull()
       .references(() => neighborhoods.buurtCode),
@@ -92,10 +92,10 @@ export const sales = sqliteTable(
 
 export type Confidence = "hoog" | "middel" | "laag";
 
-export const valuations = sqliteTable(
+export const valuations = pgTable(
   "valuations",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     adresId: integer("adres_id")
       .notNull()
       .references(() => addresses.id),
@@ -111,10 +111,10 @@ export const valuations = sqliteTable(
   (t) => [index("idx_valuations_adres_datum").on(t.adresId, t.datum)],
 );
 
-export const wozValues = sqliteTable(
+export const wozValues = pgTable(
   "woz_values",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     adresId: integer("adres_id")
       .notNull()
       .references(() => addresses.id),
@@ -129,14 +129,14 @@ export const wozValues = sqliteTable(
 // Gebruikers, claims, consent
 // ---------------------------------------------------------------------------
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   verifiedAt: text("verified_at"), // ISO datetime
   createdAt: text("created_at").notNull(),
 });
 
-export const sessions = sqliteTable(
+export const sessions = pgTable(
   "sessions",
   {
     id: text("id").primaryKey(), // random token
@@ -149,10 +149,10 @@ export const sessions = sqliteTable(
   (t) => [index("idx_sessions_user").on(t.userId)],
 );
 
-export const magicTokens = sqliteTable(
+export const magicTokens = pgTable(
   "magic_tokens",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     email: text("email").notNull(),
     tokenHash: text("token_hash").notNull().unique(), // sha256 hex
     expiresAt: text("expires_at").notNull(), // 15 min na aanmaak
@@ -164,10 +164,10 @@ export const magicTokens = sqliteTable(
 
 // Claims zijn zelfverklaringen: e-mail bewezen, relatie met het adres niet.
 // Meerdere claims per adres zijn toegestaan; verificatie is een livegang-TODO.
-export const claims = sqliteTable(
+export const claims = pgTable(
   "claims",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id),
@@ -182,8 +182,8 @@ export const claims = sqliteTable(
 );
 
 // Hypotheekgegevens per claim; voedt de triggers overwaarde en oversluiten.
-export const mortgageInfo = sqliteTable("mortgage_info", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const mortgageInfo = pgTable("mortgage_info", {
+  id: serial("id").primaryKey(),
   claimId: integer("claim_id")
     .notNull()
     .references(() => claims.id)
@@ -198,10 +198,10 @@ export const mortgageInfo = sqliteTable("mortgage_info", {
 // met doel en letterlijke tekstversie.
 export type ConsentDoel = "alerts" | "marketing" | "widget" | "lead_doorgifte";
 
-export const consents = sqliteTable(
+export const consents = pgTable(
   "consents",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id").references(() => users.id),
     email: text("email").notNull(),
     doel: text("doel").$type<ConsentDoel>().notNull(),
@@ -213,16 +213,16 @@ export const consents = sqliteTable(
   (t) => [index("idx_consents_email").on(t.email)],
 );
 
-export const alertSubscriptions = sqliteTable(
+export const alertSubscriptions = pgTable(
   "alert_subscriptions",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     claimId: integer("claim_id")
       .notNull()
       .references(() => claims.id)
       .unique(),
     frequentie: text("frequentie").$type<"maandelijks">().notNull().default("maandelijks"),
-    actief: integer("actief", { mode: "boolean" }).notNull().default(true),
+    actief: boolean("actief").notNull().default(true),
     laatstVerzonden: text("laatst_verzonden"),
   },
   (t) => [index("idx_alerts_claim").on(t.claimId)],
@@ -241,10 +241,10 @@ export type EmailType =
   | "widget_double_optin"
   | "claim_beeindigd";
 
-export const emailsOutbox = sqliteTable(
+export const emailsOutbox = pgTable(
   "emails_outbox",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     to: text("to").notNull(),
     subject: text("subject").notNull(),
     html: text("html").notNull(),
@@ -262,10 +262,10 @@ export const emailsOutbox = sqliteTable(
 export type LeadType = "hypotheek" | "makelaar" | "taxatie" | "verduurzaming";
 export type LeadStatus = "nieuw" | "gekwalificeerd" | "doorgestuurd" | "gesloten" | "afgewezen";
 
-export const leads = sqliteTable(
+export const leads = pgTable(
   "leads",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     type: text("type").$type<LeadType>().notNull(),
     subtype: text("subtype"), // bv. zonnepanelen | warmtepomp | isolatie | overwaarde | oversluiten | aankoop
     adresId: integer("adres_id").references(() => addresses.id),
@@ -281,10 +281,10 @@ export const leads = sqliteTable(
   (t) => [index("idx_leads_type_status").on(t.type, t.status), index("idx_leads_created").on(t.createdAt)],
 );
 
-export const leadEvents = sqliteTable(
+export const leadEvents = pgTable(
   "lead_events",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     leadId: integer("lead_id")
       .notNull()
       .references(() => leads.id),
@@ -294,10 +294,10 @@ export const leadEvents = sqliteTable(
   (t) => [index("idx_lead_events_lead").on(t.leadId)],
 );
 
-export const premiumEntitlements = sqliteTable(
+export const premiumEntitlements = pgTable(
   "premium_entitlements",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id),
@@ -315,10 +315,10 @@ export const premiumEntitlements = sqliteTable(
 
 // De suppressielijst is LEIDEND boven elke databron en overleeft her-ingest.
 // lib/suppression.ts is de enige toegangslaag; render- en API-paden checken daar.
-export const optouts = sqliteTable(
+export const optouts = pgTable(
   "optouts",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     adresId: integer("adres_id")
       .notNull()
       .references(() => addresses.id),
@@ -333,10 +333,10 @@ export const optouts = sqliteTable(
   (t) => [uniqueIndex("uq_optouts_adres_key").on(t.postcode, t.nummerslug), index("idx_optouts_adres").on(t.adresId)],
 );
 
-export const widgetCaptures = sqliteTable(
+export const widgetCaptures = pgTable(
   "widget_captures",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     email: text("email").notNull(),
     adresId: integer("adres_id").references(() => addresses.id),
     bronDomein: text("bron_domein").notNull(),
@@ -350,10 +350,10 @@ export const widgetCaptures = sqliteTable(
 
 // Deel-je-rapport: publiek token, alleen data die ook op de publieke
 // adrespagina staat. Intrekbaar; opt-out van het adres revoceert altijd.
-export const sharedReports = sqliteTable(
+export const sharedReports = pgTable(
   "shared_reports",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     token: text("token").notNull().unique(),
     claimId: integer("claim_id")
       .notNull()
@@ -371,22 +371,22 @@ export const sharedReports = sqliteTable(
 // SEO-gating en marktsignalen
 // ---------------------------------------------------------------------------
 
-export const indexGating = sqliteTable(
+export const indexGating = pgTable(
   "index_gating",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     scope: text("scope").$type<"buurt" | "postcode4">().notNull(),
     code: text("code").notNull(), // buurt_code of postcode4
-    indexeerbaar: integer("indexeerbaar", { mode: "boolean" }).notNull().default(false),
+    indexeerbaar: boolean("indexeerbaar").notNull().default(false),
     reden: text("reden"),
   },
   (t) => [uniqueIndex("uq_gating_scope_code").on(t.scope, t.code)],
 );
 
-export const marketStats = sqliteTable(
+export const marketStats = pgTable(
   "market_stats",
   {
-    id: integer("id").primaryKey({ autoIncrement: true }),
+    id: serial("id").primaryKey(),
     buurtCode: text("buurt_code")
       .notNull()
       .references(() => neighborhoods.buurtCode),

@@ -21,7 +21,7 @@ const ANTWOORDEN: Record<string, Record<string, unknown>> = {
 const VERWACHTE_WAARDE: Record<string, number> = { zonnepanelen: 35, warmtepomp: 50, isolatie: 30 };
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   ({ db } = await import("@/lib/db"));
   schema = await import("@/db/schema");
   logic = await import("@/app/verduurzamen/logic");
@@ -29,23 +29,24 @@ beforeAll(async () => {
   ({ leadwaarde } = await import("@/lib/config/leadwaarde"));
   ({ eq } = await import("drizzle-orm"));
 
-  db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" }).run();
-  db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" }).run();
-  adresId = db
-    .insert(schema.addresses)
-    .values({
-      straat: "Labelstraat", huisnummer: 12, toevoeging: null, nummerslug: "12", postcode: "5611AB", plaats: "Test",
-      buurtCode: "BU1", bouwjaar: 1962, oppervlakteM2: 120, woningtype: "tussenwoning", energielabel: "F",
-      energielabelBron: "indicatie", bron: "seed", status: "actief",
-    })
-    .returning({ id: schema.addresses.id })
-    .get().id;
+  await db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" });
+  await db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" });
+  adresId = (
+    await db
+      .insert(schema.addresses)
+      .values({
+        straat: "Labelstraat", huisnummer: 12, toevoeging: null, nummerslug: "12", postcode: "5611AB", plaats: "Test",
+        buurtCode: "BU1", bouwjaar: 1962, oppervlakteM2: 120, woningtype: "tussenwoning", energielabel: "F",
+        energielabelBron: "indicatie", bron: "seed", status: "actief",
+      })
+      .returning({ id: schema.addresses.id })
+  )[0].id;
 });
 
 describe("verstuurVerduurzamingsLead", () => {
   for (const verticaal of ["zonnepanelen", "warmtepomp", "isolatie"] as const) {
-    it(`maakt een ${verticaal}-lead met juist subtype, juiste leadwaarde en gelogde consent`, () => {
-      const resultaat = logic.verstuurVerduurzamingsLead({
+    it(`maakt een ${verticaal}-lead met juist subtype, juiste leadwaarde en gelogde consent`, async () => {
+      const resultaat = await logic.verstuurVerduurzamingsLead({
         verticaal,
         postcode: "5611 ab", // ruwe invoer: logic normaliseert zelf
         nummer: "12",
@@ -55,7 +56,7 @@ describe("verstuurVerduurzamingsLead", () => {
       expect("leadId" in resultaat).toBe(true);
       if (!("leadId" in resultaat)) return;
 
-      const lead = db.select().from(schema.leads).where(eq(schema.leads.id, resultaat.leadId)).get();
+      const lead = (await db.select().from(schema.leads).where(eq(schema.leads.id, resultaat.leadId)).limit(1))[0];
       expect(lead).toBeDefined();
       expect(lead!.type).toBe("verduurzaming");
       expect(lead!.subtype).toBe(verticaal);
@@ -71,7 +72,7 @@ describe("verstuurVerduurzamingsLead", () => {
 
       // AVG art. 7: consent-rij met letterlijke tekstversie, doel en bron.
       expect(lead!.consentId).not.toBeNull();
-      const consent = db.select().from(schema.consents).where(eq(schema.consents.id, lead!.consentId!)).get();
+      const consent = (await db.select().from(schema.consents).where(eq(schema.consents.id, lead!.consentId!)).limit(1))[0];
       expect(consent).toBeDefined();
       expect(consent!.doel).toBe("lead_doorgifte");
       expect(consent!.bron).toBe("funnel:verduurzamen");
@@ -84,11 +85,11 @@ describe("verstuurVerduurzamingsLead", () => {
     });
   }
 
-  it("weigert ongeldige antwoorden zonder een lead of consent aan te maken", () => {
-    const leadsVoor = db.select().from(schema.leads).all().length;
-    const consentsVoor = db.select().from(schema.consents).all().length;
+  it("weigert ongeldige antwoorden zonder een lead of consent aan te maken", async () => {
+    const leadsVoor = (await db.select().from(schema.leads)).length;
+    const consentsVoor = (await db.select().from(schema.consents)).length;
 
-    const resultaat = logic.verstuurVerduurzamingsLead({
+    const resultaat = await logic.verstuurVerduurzamingsLead({
       verticaal: "zonnepanelen",
       postcode: "5611AB",
       nummer: "12",
@@ -98,7 +99,7 @@ describe("verstuurVerduurzamingsLead", () => {
     expect(resultaat).toEqual({ fout: "antwoorden" });
 
     // Isolatie zonder gekozen delen is ook ongeldig (min 1).
-    const leeg = logic.verstuurVerduurzamingsLead({
+    const leeg = await logic.verstuurVerduurzamingsLead({
       verticaal: "isolatie",
       postcode: "5611AB",
       nummer: "12",
@@ -107,12 +108,12 @@ describe("verstuurVerduurzamingsLead", () => {
     });
     expect(leeg).toEqual({ fout: "antwoorden" });
 
-    expect(db.select().from(schema.leads).all().length).toBe(leadsVoor);
-    expect(db.select().from(schema.consents).all().length).toBe(consentsVoor);
+    expect((await db.select().from(schema.leads)).length).toBe(leadsVoor);
+    expect((await db.select().from(schema.consents)).length).toBe(consentsVoor);
   });
 
-  it("weigert een onbekend adres", () => {
-    const resultaat = logic.verstuurVerduurzamingsLead({
+  it("weigert een onbekend adres", async () => {
+    const resultaat = await logic.verstuurVerduurzamingsLead({
       verticaal: "warmtepomp",
       postcode: "9999ZZ",
       nummer: "1",
@@ -122,24 +123,25 @@ describe("verstuurVerduurzamingsLead", () => {
     expect(resultaat).toEqual({ fout: "adres" });
   });
 
-  it("weigert een gesuppresseerd adres (opt-out is leidend)", () => {
-    const suppressedId = db
-      .insert(schema.addresses)
-      .values({
-        straat: "Wegstraat", huisnummer: 3, toevoeging: null, nummerslug: "3", postcode: "5611EF", plaats: "Test",
-        buurtCode: "BU1", bouwjaar: 1970, oppervlakteM2: 95, woningtype: "hoekwoning", energielabel: "E",
-        energielabelBron: "indicatie", bron: "seed", status: "actief",
-      })
-      .returning({ id: schema.addresses.id })
-      .get().id;
-    db.insert(schema.optouts)
+  it("weigert een gesuppresseerd adres (opt-out is leidend)", async () => {
+    const suppressedId = (
+      await db
+        .insert(schema.addresses)
+        .values({
+          straat: "Wegstraat", huisnummer: 3, toevoeging: null, nummerslug: "3", postcode: "5611EF", plaats: "Test",
+          buurtCode: "BU1", bouwjaar: 1970, oppervlakteM2: 95, woningtype: "hoekwoning", energielabel: "E",
+          energielabelBron: "indicatie", bron: "seed", status: "actief",
+        })
+        .returning({ id: schema.addresses.id })
+    )[0].id;
+    await db
+      .insert(schema.optouts)
       .values({
         adresId: suppressedId, postcode: "5611EF", nummerslug: "3", token: "optout-funnel-test",
         aangevraagdAt: "2026-07-22", bevestigdAt: "2026-07-22T10:00:00Z",
-      })
-      .run();
+      });
 
-    const resultaat = logic.verstuurVerduurzamingsLead({
+    const resultaat = await logic.verstuurVerduurzamingsLead({
       verticaal: "isolatie",
       postcode: "5611EF",
       nummer: "3",
@@ -148,16 +150,14 @@ describe("verstuurVerduurzamingsLead", () => {
     });
     expect(resultaat).toEqual({ fout: "adres" });
 
-    const leadsVoorAdres = db.select().from(schema.leads).all().filter((l) => l.adresId === suppressedId);
+    const leadsVoorAdres = (await db.select().from(schema.leads)).filter((l) => l.adresId === suppressedId);
     expect(leadsVoorAdres).toHaveLength(0);
   });
 
-  it("zet een bevestigingsmail in de outbox die het partijtype en de testfase noemt", () => {
-    const mail = db
-      .select()
-      .from(schema.emailsOutbox)
-      .all()
-      .find((m) => m.type === "lead_bevestiging" && m.to === "zonnepanelen@voorbeeld.nl");
+  it("zet een bevestigingsmail in de outbox die het partijtype en de testfase noemt", async () => {
+    const mail = (await db.select().from(schema.emailsOutbox)).find(
+      (m) => m.type === "lead_bevestiging" && m.to === "zonnepanelen@voorbeeld.nl",
+    );
     expect(mail).toBeDefined();
     expect(mail!.subject).toBe("Je verduurzamings-aanvraag bij Wonea");
     expect(mail!.html).toContain("maximaal twee gecertificeerde installatiebedrijven uit de regio");

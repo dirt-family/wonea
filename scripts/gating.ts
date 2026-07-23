@@ -24,6 +24,7 @@
  * buurt-/plaatsquery), handmatig terug te brengen tot dit CSV-formaat.
  */
 import { readFileSync } from "node:fs";
+import { sql } from "../lib/db";
 import { isGatingScope, listGating, parseZoekvraagCsv, setGating } from "../lib/seo/gating";
 
 const STANDAARD_DREMPEL = 10;
@@ -55,18 +56,18 @@ function valideerCode(scope: "buurt" | "postcode4", code: string): void {
   }
 }
 
-function doeAllowDisallow(indexeerbaar: boolean, args: string[]): void {
+async function doeAllowDisallow(indexeerbaar: boolean, args: string[]): Promise<void> {
   const [scope, code, reden] = args;
   if (!scope || !code) hulp();
   if (!isGatingScope(scope)) stop(`Onbekende scope "${scope}": gebruik buurt of postcode4.`);
   if (indexeerbaar && !reden) stop('Reden verplicht bij allow: npx tsx scripts/gating.ts allow buurt BU07720001 "reden".');
   valideerCode(scope, code);
-  setGating(scope, code, indexeerbaar, reden ?? null);
+  await setGating(scope, code, indexeerbaar, reden ?? null);
   console.log(`${indexeerbaar ? "Vrijgegeven" : "Geblokkeerd"}: ${scope} ${code}${reden ? ` (${reden})` : ""}`);
 }
 
-function doeList(): void {
-  const rijen = listGating();
+async function doeList(): Promise<void> {
+  const rijen = await listGating();
   if (rijen.length === 0) {
     console.log("Whitelist is leeg: alle adres- en buurtpagina's staan op noindex (de default).");
     return;
@@ -77,7 +78,7 @@ function doeList(): void {
   }
 }
 
-function doeImport(args: string[]): void {
+async function doeImport(args: string[]): Promise<void> {
   const pad = args[0];
   if (!pad) hulp();
   let drempel = STANDAARD_DREMPEL;
@@ -96,7 +97,7 @@ function doeImport(args: string[]): void {
 
   const { rijen, overgeslagen } = parseZoekvraagCsv(inhoud, drempel);
   for (const rij of rijen) {
-    setGating(rij.scope, rij.code, rij.indexeerbaar, `zoekvraag-import: volume ${rij.zoekvolume} (drempel ${drempel})`);
+    await setGating(rij.scope, rij.code, rij.indexeerbaar, `zoekvraag-import: volume ${rij.zoekvolume} (drempel ${drempel})`);
   }
   const vrijgegeven = rijen.filter((r) => r.indexeerbaar).length;
   console.log(`Import klaar: ${rijen.length} rijen verwerkt, ${vrijgegeven} vrijgegeven, ${rijen.length - vrijgegeven} geblokkeerd.`);
@@ -106,7 +107,7 @@ function doeImport(args: string[]): void {
   }
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const [commando, ...rest] = process.argv.slice(2);
   switch (commando) {
     case "allow":
@@ -122,4 +123,9 @@ function main(): void {
   }
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => sql.end());

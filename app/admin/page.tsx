@@ -53,8 +53,8 @@ async function draaiMaandelijkseAlerts() {
   redirect(`/admin?alerts=${encodeURIComponent(melding)}`);
 }
 
-function telRijen(query: { get: () => { n: number } | undefined }): number {
-  return query.get()?.n ?? 0;
+async function telRijen(query: PromiseLike<{ n: number }[]>): Promise<number> {
+  return (await query)[0]?.n ?? 0;
 }
 
 function Stat({ label, waarde }: { label: string; waarde: string }) {
@@ -70,30 +70,31 @@ export default async function AdminOverzichtPagina({ searchParams }: { searchPar
   const sp = await searchParams;
 
   // Leads per type en status (1 groepsquery, daarna opzoekbaar per cel).
-  const perTypeStatus = db
+  const perTypeStatus = await db
     .select({ type: leads.type, status: leads.status, n: sql<number>`count(*)` })
     .from(leads)
-    .groupBy(leads.type, leads.status)
-    .all();
+    .groupBy(leads.type, leads.status);
   const cel = new Map(perTypeStatus.map((r) => [`${r.type}:${r.status}`, r.n]));
   const totaalLeads = perTypeStatus.reduce((som, r) => som + r.n, 0);
 
   // Pipeline: som van de geschatte waarde van alle open leads.
   const pipelineWaarde =
-    db
-      .select({ som: sql<number>`coalesce(sum(${leads.estValueEur}), 0)` })
-      .from(leads)
-      .where(inArray(leads.status, OPEN_LEAD_STATUSSEN))
-      .get()?.som ?? 0;
+    (
+      await db
+        .select({ som: sql<number>`coalesce(sum(${leads.estValueEur}), 0)` })
+        .from(leads)
+        .where(inArray(leads.status, OPEN_LEAD_STATUSSEN))
+        .limit(1)
+    )[0]?.som ?? 0;
 
   // Datastatus: hoe vol staat de database.
-  const nAdressen = telRijen(db.select({ n: sql<number>`count(*)` }).from(addresses));
-  const nVerkopen = telRijen(db.select({ n: sql<number>`count(*)` }).from(sales));
-  const nValuations = telRijen(db.select({ n: sql<number>`count(*)` }).from(valuations));
-  const nClaims = telRijen(db.select({ n: sql<number>`count(*)` }).from(claims));
-  const nActieveAlerts = telRijen(db.select({ n: sql<number>`count(*)` }).from(alertSubscriptions).where(eq(alertSubscriptions.actief, true)));
-  const nOptouts = telRijen(db.select({ n: sql<number>`count(*)` }).from(optouts).where(isNotNull(optouts.bevestigdAt)));
-  const nOutbox = telRijen(db.select({ n: sql<number>`count(*)` }).from(emailsOutbox));
+  const nAdressen = await telRijen(db.select({ n: sql<number>`count(*)` }).from(addresses));
+  const nVerkopen = await telRijen(db.select({ n: sql<number>`count(*)` }).from(sales));
+  const nValuations = await telRijen(db.select({ n: sql<number>`count(*)` }).from(valuations));
+  const nClaims = await telRijen(db.select({ n: sql<number>`count(*)` }).from(claims));
+  const nActieveAlerts = await telRijen(db.select({ n: sql<number>`count(*)` }).from(alertSubscriptions).where(eq(alertSubscriptions.actief, true)));
+  const nOptouts = await telRijen(db.select({ n: sql<number>`count(*)` }).from(optouts).where(isNotNull(optouts.bevestigdAt)));
+  const nOutbox = await telRijen(db.select({ n: sql<number>`count(*)` }).from(emailsOutbox));
 
   const getal = (n: number) => n.toLocaleString("nl-NL");
 

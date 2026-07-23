@@ -1,28 +1,29 @@
-import Database from "better-sqlite3";
-import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import path from "node:path";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "@/db/schema";
 
 // Singleton via globalThis: Next dev/HMR maakt modules opnieuw aan, maar de
-// DB-handle moet 1x bestaan (anders handle-lek / locked database).
+// connectie-pool moet 1x bestaan (anders pool-lek / te veel verbindingen).
 const globalForDb = globalThis as unknown as {
-  woneaSqlite?: Database.Database;
-  woneaDb?: BetterSQLite3Database<typeof schema>;
+  woneaSql?: ReturnType<typeof postgres>;
+  woneaDb?: PostgresJsDatabase<typeof schema>;
 };
 
 function createClient() {
-  const file = process.env.WONEA_DB_PATH ?? path.join(process.cwd(), "data", "wonea.db");
-  const sqlite = new Database(file);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
-  return sqlite;
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL ontbreekt. Zet hem in .env (lokale Postgres) of in de host-omgeving (Neon).");
+  }
+  // sslmode staat in de URL (Neon: require; lokaal: geen). postgres-js leest dat zelf.
+  // max laag houden i.v.m. Neon-verbindingslimieten en serverless.
+  return postgres(url, { max: process.env.NODE_ENV === "production" ? 5 : 10 });
 }
 
-export const sqlite: Database.Database = globalForDb.woneaSqlite ?? createClient();
-export const db: BetterSQLite3Database<typeof schema> = globalForDb.woneaDb ?? drizzle(sqlite, { schema });
+export const sql: ReturnType<typeof postgres> = globalForDb.woneaSql ?? createClient();
+export const db: PostgresJsDatabase<typeof schema> = globalForDb.woneaDb ?? drizzle(sql, { schema });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForDb.woneaSqlite = sqlite;
+  globalForDb.woneaSql = sql;
   globalForDb.woneaDb = db;
 }
 

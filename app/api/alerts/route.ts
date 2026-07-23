@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   const vandaag = todayIso();
   const dezeMaand = vandaag.slice(0, 7);
 
-  const abonnementen = db.select().from(alertSubscriptions).where(eq(alertSubscriptions.actief, true)).all();
+  const abonnementen = await db.select().from(alertSubscriptions).where(eq(alertSubscriptions.actief, true));
 
   let verzonden = 0;
   const geskipt: Record<string, number> = {};
@@ -61,30 +61,29 @@ export async function POST(request: Request) {
         continue;
       }
 
-      const claim = db.select().from(claims).where(eq(claims.id, sub.claimId)).get();
+      const claim = (await db.select().from(claims).where(eq(claims.id, sub.claimId)).limit(1))[0];
       if (!claim || claim.endedAt) {
         skip("claim_beeindigd");
         continue;
       }
 
-      const adres = db.select().from(addresses).where(eq(addresses.id, claim.adresId)).get();
-      if (!adres || adres.status === "opted_out" || isAddressIdSuppressed(adres.id) || isSuppressed(adres.postcode, adres.nummerslug)) {
+      const adres = (await db.select().from(addresses).where(eq(addresses.id, claim.adresId)).limit(1))[0];
+      if (!adres || adres.status === "opted_out" || (await isAddressIdSuppressed(adres.id)) || (await isSuppressed(adres.postcode, adres.nummerslug))) {
         skip("adres_verwijderd");
         continue;
       }
 
-      const user = db.select().from(users).where(eq(users.id, claim.userId)).get();
+      const user = (await db.select().from(users).where(eq(users.id, claim.userId)).limit(1))[0];
       if (!user) {
         skip("gebruiker_onbekend");
         continue;
       }
 
       // Consent (doel alerts) moet bestaan en niet ingetrokken zijn (AVG art. 7).
-      const alertConsents = db
+      const alertConsents = await db
         .select()
         .from(consents)
-        .where(and(eq(consents.email, user.email), eq(consents.doel, "alerts")))
-        .all();
+        .where(and(eq(consents.email, user.email), eq(consents.doel, "alerts")));
       const actieveConsent = alertConsents.find((c) => !c.revokedAt);
       if (!actieveConsent) {
         skip(alertConsents.length > 0 ? "consent_ingetrokken" : "consent_ontbreekt");
@@ -92,7 +91,7 @@ export async function POST(request: Request) {
       }
 
       // Verse valuation van vandaag (of de al bestaande rij van vandaag).
-      const { valuation } = getOrCreateValuation(adres);
+      const { valuation } = await getOrCreateValuation(adres);
       if (!valuation) {
         skip("geen_waarde_mogelijk");
         continue;
@@ -104,21 +103,23 @@ export async function POST(request: Request) {
       let vorigeWaarde: number | null = null;
       if (sub.laatstVerzonden) {
         const grens = sub.laatstVerzonden;
-        const vorige = [...valuationHistorie(adres.id)].reverse().find((v) => v.id !== valuation.id && v.datum <= grens);
+        const vorige = [...(await valuationHistorie(adres.id))].reverse().find((v) => v.id !== valuation.id && v.datum <= grens);
         vorigeWaarde = vorige?.waarde ?? null;
       }
 
       // Nieuwe verkopen in de buurt sinds de vorige alert (of de afgelopen maand).
       const sinds = sub.laatstVerzonden ? sub.laatstVerzonden.slice(0, 10) : isoMaandTerug();
       const nieuweVerkopen =
-        db
-          .select({ n: sql<number>`count(*)` })
-          .from(sales)
-          .where(and(eq(sales.buurtCode, adres.buurtCode), gte(sales.datum, sinds)))
-          .get()?.n ?? 0;
+        (
+          await db
+            .select({ n: sql<number>`count(*)` })
+            .from(sales)
+            .where(and(eq(sales.buurtCode, adres.buurtCode), gte(sales.datum, sinds)))
+            .limit(1)
+        )[0]?.n ?? 0;
 
       const adresNaam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`;
-      stuurWaardeAlert({
+      await stuurWaardeAlert({
         to: user.email,
         adresNaam,
         woningPad: `/woning/${adres.postcode}/${adres.nummerslug}`,
@@ -129,7 +130,7 @@ export async function POST(request: Request) {
         nieuweVerkopen,
       });
 
-      db.update(alertSubscriptions).set({ laatstVerzonden: nowIso() }).where(eq(alertSubscriptions.id, sub.id)).run();
+      await db.update(alertSubscriptions).set({ laatstVerzonden: nowIso() }).where(eq(alertSubscriptions.id, sub.id));
       verzonden++;
     } catch (err) {
       console.error(`Alert-run: fout bij abonnement ${sub.id}`, err);

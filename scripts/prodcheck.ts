@@ -24,7 +24,7 @@
  * Zie docs/PERFORMANCE.md voor het waarom achter elk beleid.
  */
 import { eq } from "drizzle-orm";
-import { db } from "../lib/db";
+import { db, sql } from "../lib/db";
 import { addresses } from "../db/schema";
 import { isSuppressed } from "../lib/suppression";
 
@@ -60,10 +60,16 @@ async function meet(pad: string): Promise<{ res: Response; ms: number } | null> 
 }
 
 /** Eerste actieve, niet-gesupprimeerde rij: een adres dat zeker moet renderen. */
-function vindTestAdres(): { pad: string; label: string } | null {
+async function vindTestAdres(): Promise<{ pad: string; label: string } | null> {
   try {
-    const rows = db.select().from(addresses).where(eq(addresses.status, "actief")).orderBy(addresses.id).limit(25).all();
-    const adres = rows.find((a) => !isSuppressed(a.postcode, a.nummerslug));
+    const rows = await db.select().from(addresses).where(eq(addresses.status, "actief")).orderBy(addresses.id).limit(25);
+    let adres: (typeof rows)[number] | undefined;
+    for (const rij of rows) {
+      if (!(await isSuppressed(rij.postcode, rij.nummerslug))) {
+        adres = rij;
+        break;
+      }
+    }
     if (!adres) return null;
     return {
       pad: `/woning/${adres.postcode}/${adres.nummerslug}`,
@@ -87,7 +93,7 @@ async function main() {
 
   // 2 + 3. Adrespagina, twee keer: eerste render vult de ISR-cache, de tweede
   // hoort daaruit te komen. Alleen de 200 is hard; timing/cache-status is info.
-  const adres = vindTestAdres();
+  const adres = await vindTestAdres();
   if (!adres) {
     if (fouten === 0) fout("adrespagina", "geen actief, niet-gesupprimeerd adres in de database. Draai eerst: npm run setup");
   } else {
@@ -139,4 +145,9 @@ async function main() {
   console.log("Prodcheck: alles groen.");
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => sql.end());

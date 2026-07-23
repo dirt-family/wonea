@@ -20,18 +20,20 @@ import { consentTekstversie, FUNNEL_BRON, PARTIJ_TYPE, VERTICAAL_SCHEMAS, type V
 export type Adres = typeof addresses.$inferSelect;
 
 /** Zoekt een adres op waarvoor de funnel mag draaien (bestaat, niet gesupprimeerd). */
-export function vindVerduurzaamAdres(postcodeInput: string, nummerInput: string): Adres | null {
+export async function vindVerduurzaamAdres(postcodeInput: string, nummerInput: string): Promise<Adres | null> {
   const postcode = normalizePostcode(postcodeInput);
   if (!postcode) return null;
   const slug = nummerInput.toLowerCase().replace(/\s+/g, "");
   if (!slug) return null;
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }
 
@@ -50,14 +52,14 @@ export type VerduurzamingInput = {
 
 export type VerduurzamingResultaat = { leadId: number } | { fout: "adres" | "antwoorden" };
 
-export function verstuurVerduurzamingsLead(input: VerduurzamingInput): VerduurzamingResultaat {
-  const adres = vindVerduurzaamAdres(input.postcode, input.nummer);
+export async function verstuurVerduurzamingsLead(input: VerduurzamingInput): Promise<VerduurzamingResultaat> {
+  const adres = await vindVerduurzaamAdres(input.postcode, input.nummer);
   if (!adres) return { fout: "adres" };
 
   const parsed = VERTICAAL_SCHEMAS[input.verticaal].safeParse(input.antwoorden);
   if (!parsed.success) return { fout: "antwoorden" };
 
-  const { leadId } = createLead({
+  const { leadId } = await createLead({
     type: "verduurzaming",
     subtype: input.verticaal,
     adresId: adres.id,

@@ -26,17 +26,19 @@ const formSchema = z.object({
   bedrijfsnaam: z.string().max(0).optional(), // honeypot: mensen laten dit leeg
 });
 
-function vindClaimbaarAdres(postcodeInput: string, nummerInput: string) {
+async function vindClaimbaarAdres(postcodeInput: string, nummerInput: string) {
   const postcode = normalizePostcode(postcodeInput);
   if (!postcode) return null;
   const slug = nummerInput.toLowerCase().replace(/\s+/g, "");
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }
 
@@ -65,10 +67,10 @@ async function startClaim(formData: FormData) {
   const email = parsed.data.email.toLowerCase().trim();
   if (magicLinkRateLimited(email)) redirect(`/claim?fout=te-vaak&${terug}`);
 
-  const adres = vindClaimbaarAdres(postcode, nummerslug);
+  const adres = await vindClaimbaarAdres(postcode, nummerslug);
   if (!adres) redirect("/claim?fout=onbekend");
 
-  const token = createMagicToken(email);
+  const token = await createMagicToken(email);
   const verzilverUrl =
     `${baseUrl()}/claim/verzilver?` +
     new URLSearchParams({
@@ -81,7 +83,7 @@ async function startClaim(formData: FormData) {
     }).toString();
 
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`;
-  stuurMagicLink({
+  await stuurMagicLink({
     to: email,
     adresNaam: naam,
     rol: parsed.data.rol,
@@ -123,7 +125,7 @@ export default async function ClaimPagina({
   }
 
   const heeftParams = Boolean(sp.postcode && sp.nummer);
-  const adres = heeftParams ? vindClaimbaarAdres(sp.postcode!, sp.nummer!) : null;
+  const adres = heeftParams ? await vindClaimbaarAdres(sp.postcode!, sp.nummer!) : null;
   const foutmelding = sp.fout ? (FOUTEN[sp.fout] ?? "Er ging iets mis. Probeer het opnieuw.") : heeftParams && !adres ? FOUTEN.onbekend : null;
 
   return (

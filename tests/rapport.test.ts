@@ -64,7 +64,7 @@ function maakRequest(method: "POST" | "DELETE", body: unknown, ip: string): Requ
 }
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   // Vitest/esbuild compileert JSX hier met de klassieke runtime; de
   // servercomponent-render in de tests heeft daarom React in scope nodig.
   (globalThis as { React?: unknown }).React = (await import("react")).default;
@@ -75,29 +75,30 @@ beforeAll(async () => {
   rapportPagina = await import("@/app/rapport/[token]/page");
   buurtPagina = await import("@/app/buurt/[gemeente]/[buurt]/page");
 
-  db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" }).run();
-  db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" }).run();
+  await db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" });
+  await db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" });
 
   const adresBasis = {
     straat: "Teststraat", toevoeging: null, postcode: "5611AB", plaats: "Test", buurtCode: "BU1",
     bouwjaar: 1990, oppervlakteM2: 100, woningtype: "tussenwoning" as const, energielabel: "C",
     energielabelBron: "indicatie" as const, bron: "seed" as const, status: "actief" as const,
   };
-  adres1Id = db.insert(schema.addresses).values({ ...adresBasis, huisnummer: 10, nummerslug: "10" }).returning({ id: schema.addresses.id }).get().id;
-  adres2Id = db.insert(schema.addresses).values({ ...adresBasis, huisnummer: 11, nummerslug: "11" }).returning({ id: schema.addresses.id }).get().id;
+  adres1Id = (await db.insert(schema.addresses).values({ ...adresBasis, huisnummer: 10, nummerslug: "10" }).returning({ id: schema.addresses.id }))[0].id;
+  adres2Id = (await db.insert(schema.addresses).values({ ...adresBasis, huisnummer: 11, nummerslug: "11" }).returning({ id: schema.addresses.id }))[0].id;
 
-  const user1Id = db.insert(schema.users).values({ email: "een@voorbeeld.nl", verifiedAt: "2026-01-01", createdAt: "2026-01-01" }).returning({ id: schema.users.id }).get().id;
-  const user2Id = db.insert(schema.users).values({ email: "twee@voorbeeld.nl", verifiedAt: "2026-01-01", createdAt: "2026-01-01" }).returning({ id: schema.users.id }).get().id;
-  db.insert(schema.sessions).values({ id: sid1, userId: user1Id, expiresAt: "2999-01-01T00:00:00.000Z", createdAt: "2026-01-01" }).run();
-  db.insert(schema.sessions).values({ id: sid2, userId: user2Id, expiresAt: "2999-01-01T00:00:00.000Z", createdAt: "2026-01-01" }).run();
+  const user1Id = (await db.insert(schema.users).values({ email: "een@voorbeeld.nl", verifiedAt: "2026-01-01", createdAt: "2026-01-01" }).returning({ id: schema.users.id }))[0].id;
+  const user2Id = (await db.insert(schema.users).values({ email: "twee@voorbeeld.nl", verifiedAt: "2026-01-01", createdAt: "2026-01-01" }).returning({ id: schema.users.id }))[0].id;
+  await db.insert(schema.sessions).values({ id: sid1, userId: user1Id, expiresAt: "2999-01-01T00:00:00.000Z", createdAt: "2026-01-01" });
+  await db.insert(schema.sessions).values({ id: sid2, userId: user2Id, expiresAt: "2999-01-01T00:00:00.000Z", createdAt: "2026-01-01" });
 
-  claim1Id = db.insert(schema.claims).values({ userId: user1Id, adresId: adres1Id, rol: "eigenaar", createdAt: "2026-01-01" }).returning({ id: schema.claims.id }).get().id;
-  claimBeeindigdId = db
-    .insert(schema.claims)
-    .values({ userId: user1Id, adresId: adres1Id, rol: "bewoner", createdAt: "2026-01-01", endedAt: "2026-02-01" })
-    .returning({ id: schema.claims.id })
-    .get().id;
-  claim2Id = db.insert(schema.claims).values({ userId: user1Id, adresId: adres2Id, rol: "eigenaar", createdAt: "2026-01-01" }).returning({ id: schema.claims.id }).get().id;
+  claim1Id = (await db.insert(schema.claims).values({ userId: user1Id, adresId: adres1Id, rol: "eigenaar", createdAt: "2026-01-01" }).returning({ id: schema.claims.id }))[0].id;
+  claimBeeindigdId = (
+    await db
+      .insert(schema.claims)
+      .values({ userId: user1Id, adresId: adres1Id, rol: "bewoner", createdAt: "2026-01-01", endedAt: "2026-02-01" })
+      .returning({ id: schema.claims.id })
+  )[0].id;
+  claim2Id = (await db.insert(schema.claims).values({ userId: user1Id, adresId: adres2Id, rol: "eigenaar", createdAt: "2026-01-01" }).returning({ id: schema.claims.id }))[0].id;
 });
 
 describe("POST /api/rapport", () => {
@@ -121,7 +122,7 @@ describe("POST /api/rapport", () => {
     expect(body.token.length).toBeGreaterThanOrEqual(16);
 
     const { eq } = await import("drizzle-orm");
-    const rij = db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, body.token)).get();
+    const rij = (await db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, body.token)).limit(1))[0];
     expect(rij).toBeDefined();
     expect(rij!.claimId).toBe(claim1Id);
     expect(rij!.adresId).toBe(adres1Id);
@@ -156,7 +157,7 @@ describe("DELETE /api/rapport", () => {
     expect(res.status).toBe(404);
 
     const { eq } = await import("drizzle-orm");
-    const rij = db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, token)).get();
+    const rij = (await db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, token)).limit(1))[0];
     expect(rij!.revokedAt).toBeNull();
   });
 
@@ -166,7 +167,7 @@ describe("DELETE /api/rapport", () => {
     expect(res.status).toBe(200);
 
     const { eq } = await import("drizzle-orm");
-    const rij = db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, token)).get();
+    const rij = (await db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, token)).limit(1))[0];
     expect(rij!.revokedAt).not.toBeNull();
 
     // Ingetrokken token = notFound op de publieke rapportpagina.
@@ -187,10 +188,10 @@ describe("suppressie wint altijd", () => {
     expect(element).toBeTruthy();
 
     // Opt-out bevestigd + cascade (zoals app/verwijderen/[token] doet).
-    db.insert(schema.optouts)
-      .values({ adresId: adres2Id, postcode: "5611AB", nummerslug: "11", token: "optout-token-11", aangevraagdAt: "2026-07-22", bevestigdAt: "2026-07-22T12:00:00Z" })
-      .run();
-    suppression.applyOptoutCascade(adres2Id);
+    await db
+      .insert(schema.optouts)
+      .values({ adresId: adres2Id, postcode: "5611AB", nummerslug: "11", token: "optout-token-11", aangevraagdAt: "2026-07-22", bevestigdAt: "2026-07-22T12:00:00Z" });
+    await suppression.applyOptoutCascade(adres2Id);
 
     // Nieuw rapport delen kan niet meer. Let op: de cascade beeindigt de
     // claim, dus zowel 409-redenen (claim beeindigd of adres gesupprimeerd)
@@ -200,7 +201,7 @@ describe("suppressie wint altijd", () => {
 
     // Bestaand rapport is door de cascade ingetrokken en de pagina is weg.
     const { eq } = await import("drizzle-orm");
-    const rij = db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, token2)).get();
+    const rij = (await db.select().from(schema.sharedReports).where(eq(schema.sharedReports.token, token2)).limit(1))[0];
     expect(rij!.revokedAt).not.toBeNull();
     await expect(rapportPagina.default({ params: Promise.resolve({ token: token2 }) })).rejects.toThrow();
   });
@@ -210,16 +211,16 @@ describe("buurtpagina", () => {
   it("rendert kerncijfers, verkopen en trend en filtert gesupprimeerde kadaster-verkopen", async () => {
     // Seed-verkoop (nooit adres_id) + kadaster-verkoop aan het gesupprimeerde
     // adres2: die laatste hoort tijdens de render weggefilterd te worden.
-    db.insert(schema.sales)
-      .values({ buurtCode: "BU1", straat: "Teststraat", datum: "2026-06-15", prijs: 400000, oppervlakteM2: 100, woningtype: "tussenwoning", bron: "seed" })
-      .run();
-    db.insert(schema.sales)
-      .values({ buurtCode: "BU1", straat: "Teststraat", adresId: adres2Id, datum: "2026-05-15", prijs: 410000, oppervlakteM2: 105, woningtype: "tussenwoning", bron: "kadaster" })
-      .run();
+    await db
+      .insert(schema.sales)
+      .values({ buurtCode: "BU1", straat: "Teststraat", datum: "2026-06-15", prijs: 400000, oppervlakteM2: 100, woningtype: "tussenwoning", bron: "seed" });
+    await db
+      .insert(schema.sales)
+      .values({ buurtCode: "BU1", straat: "Teststraat", adresId: adres2Id, datum: "2026-05-15", prijs: 410000, oppervlakteM2: 105, woningtype: "tussenwoning", bron: "kadaster" });
     for (const [i, maand] of ["2026-04", "2026-05", "2026-06"].entries()) {
-      db.insert(schema.marketStats)
-        .values({ buurtCode: "BU1", maand, mediaanPrijs: 390000 + i * 5000, doorlooptijdDagen: 30 - i, overbiedingPct: 1.5, volume: 4, bron: "seed" })
-        .run();
+      await db
+        .insert(schema.marketStats)
+        .values({ buurtCode: "BU1", maand, mediaanPrijs: 390000 + i * 5000, doorlooptijdDagen: 30 - i, overbiedingPct: 1.5, volume: 4, bron: "seed" });
     }
 
     const element = await buurtPagina.default({ params: Promise.resolve({ gemeente: "test", buurt: "testbuurt" }) });

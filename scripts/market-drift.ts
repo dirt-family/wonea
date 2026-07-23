@@ -18,7 +18,7 @@
  * Draaien: npx tsx scripts/market-drift.ts
  */
 import { and, desc, eq, gte, lte } from "drizzle-orm";
-import { db, sqlite } from "../lib/db";
+import { db, sql } from "../lib/db";
 import { marketStats, neighborhoods, sales } from "../db/schema";
 import { mulberry32 } from "../db/seed/generator";
 
@@ -41,14 +41,14 @@ function isoMaandenTerug(maanden: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function main() {
+async function main() {
   const nu = new Date();
   const jaar = nu.getFullYear();
   const maandNr = nu.getMonth() + 1;
   const maand = `${jaar}-${String(maandNr).padStart(2, "0")}`;
   const maandSeed = jaar * 100 + maandNr; // deterministisch per kalendermaand
 
-  const buurten = db.select().from(neighborhoods).all();
+  const buurten = await db.select().from(neighborhoods);
   console.log(`Market-drift voor ${maand}: ${buurten.length} buurten.`);
 
   let totaalNieuw = 0;
@@ -57,24 +57,22 @@ function main() {
 
     // Recent buurtniveau per m2: laatste 3 maanden verkopen, anders 24
     // maanden, anders het buurt-anker (afgeleide uit CBS-WOZ).
-    const recent = db
+    const recent = await db
       .select()
       .from(sales)
-      .where(and(eq(sales.buurtCode, buurt.buurtCode), gte(sales.datum, isoMaandenTerug(3))))
-      .all();
+      .where(and(eq(sales.buurtCode, buurt.buurtCode), gte(sales.datum, isoMaandenTerug(3))));
     const basisVerkopen =
       recent.length >= 3
         ? recent
-        : db
+        : await db
             .select()
             .from(sales)
-            .where(and(eq(sales.buurtCode, buurt.buurtCode), gte(sales.datum, isoMaandenTerug(24))))
-            .all();
+            .where(and(eq(sales.buurtCode, buurt.buurtCode), gte(sales.datum, isoMaandenTerug(24))));
     const m2Niveau = basisVerkopen.length > 0 ? mediaan(basisVerkopen.map((s) => s.prijs / s.oppervlakteM2)) : (buurt.ankerM2Prijs ?? null);
 
     // Straat, woningtype en oppervlakte komen uit bestaande verkopen van deze
     // buurt; nieuwe rijen hangen dus nooit aan een echt adres (adres_id null).
-    const voorbeelden = db.select().from(sales).where(eq(sales.buurtCode, buurt.buurtCode)).orderBy(desc(sales.datum)).limit(200).all();
+    const voorbeelden = await db.select().from(sales).where(eq(sales.buurtCode, buurt.buurtCode)).orderBy(desc(sales.datum)).limit(200);
     if (!m2Niveau || voorbeelden.length === 0) {
       console.log(`- ${buurt.naam}: overgeslagen (geen bestaande verkopen en geen buurt-anker).`);
       continue;
@@ -86,13 +84,14 @@ function main() {
     const doorlooptijdDagen = 18 + Math.floor(rand() * 30);
     const overbiedingPct = Math.round((rand() * 8 - 1.5) * 10) / 10;
 
-    const tx = sqlite.transaction(() => {
+    const uitkomst = await db.transaction(async (tx) => {
       for (let i = 0; i < volume; i++) {
         const voorbeeld = voorbeelden[Math.floor(rand() * voorbeelden.length)];
         const oppervlakteM2 = Math.max(30, Math.round(voorbeeld.oppervlakteM2 * (0.9 + rand() * 0.2)));
         const prijs = Math.round((m2Niveau * drift * oppervlakteM2 * (0.93 + rand() * 0.14)) / 1000) * 1000;
         const dag = Math.min(1 + Math.floor(rand() * 27), nu.getDate());
-        db.insert(sales)
+        await tx
+          .insert(sales)
           .values({
             buurtCode: buurt.buurtCode,
             straat: voorbeeld.straat,
@@ -102,19 +101,18 @@ function main() {
             oppervlakteM2,
             woningtype: voorbeeld.woningtype,
             bron: "seed",
-          })
-          .run();
+          });
       }
 
       // market_stats voor deze maand: mediaan en volume uit ALLE verkopen van
       // de maand (bestaande plus zojuist toegevoegde).
-      const maandVerkopen = db
+      const maandVerkopen = await tx
         .select()
         .from(sales)
-        .where(and(eq(sales.buurtCode, buurt.buurtCode), gte(sales.datum, `${maand}-01`), lte(sales.datum, `${maand}-31`)))
-        .all();
+        .where(and(eq(sales.buurtCode, buurt.buurtCode), gte(sales.datum, `${maand}-01`), lte(sales.datum, `${maand}-31`)));
       const mediaanPrijs = Math.round(mediaan(maandVerkopen.map((s) => s.prijs)));
-      db.insert(marketStats)
+      await tx
+        .insert(marketStats)
         .values({
           buurtCode: buurt.buurtCode,
           maand,
@@ -127,12 +125,10 @@ function main() {
         .onConflictDoUpdate({
           target: [marketStats.buurtCode, marketStats.maand],
           set: { mediaanPrijs, doorlooptijdDagen, overbiedingPct, volume: maandVerkopen.length },
-        })
-        .run();
+        });
 
       return { mediaanPrijs, volumeMaand: maandVerkopen.length };
     });
-    const uitkomst = tx();
 
     totaalNieuw += volume;
     const driftPct = ((drift - 1) * 100).toFixed(2).replace(".", ",");
@@ -145,4 +141,9 @@ function main() {
   console.log(`Klaar: ${totaalNieuw} synthetische verkopen toegevoegd voor ${maand}. Maandrun alerts: POST /api/alerts.`);
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => sql.end());

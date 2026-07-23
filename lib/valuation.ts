@@ -18,10 +18,11 @@ export type ValuationView = {
  * berekend en opgeslagen. De historie in valuations maakt waardeontwikkeling
  * uitlegbaar (anti "onverklaard schommelen") en voedt de waarde-alerts.
  */
-export function getOrCreateValuation(adres: Adres): ValuationView {
-  const buurt = db.select().from(neighborhoods).where(eq(neighborhoods.buurtCode, adres.buurtCode)).get() ?? null;
+export async function getOrCreateValuation(adres: Adres): Promise<ValuationView> {
+  const buurtRows = await db.select().from(neighborhoods).where(eq(neighborhoods.buurtCode, adres.buurtCode)).limit(1);
+  const buurt = buurtRows[0] ?? null;
 
-  const comparables = findComparables({
+  const comparables = await findComparables({
     buurtCode: adres.buurtCode,
     straat: adres.straat,
     woningtype: adres.woningtype,
@@ -29,12 +30,12 @@ export function getOrCreateValuation(adres: Adres): ValuationView {
   });
 
   const vandaag = todayIso();
-  const bestaand = db
+  const bestaandRows = await db
     .select()
     .from(valuations)
     .where(and(eq(valuations.adresId, adres.id), eq(valuations.datum, vandaag)))
-    .get();
-  if (bestaand) return { valuation: bestaand, comparables, buurt };
+    .limit(1);
+  if (bestaandRows[0]) return { valuation: bestaandRows[0], comparables, buurt };
 
   const result: AvmResult | null = berekenWaarde({
     oppervlakteM2: adres.oppervlakteM2,
@@ -46,7 +47,7 @@ export function getOrCreateValuation(adres: Adres): ValuationView {
   });
   if (!result) return { valuation: null, comparables, buurt };
 
-  const inserted = db
+  const inserted = await db
     .insert(valuations)
     .values({
       adresId: adres.id,
@@ -59,13 +60,12 @@ export function getOrCreateValuation(adres: Adres): ValuationView {
       modelVersie: result.modelVersie,
       inputsJson: JSON.stringify({ uitleg: result.uitleg, niveau: comparables.niveau, comparableIds: comparables.comparables.map((c) => c.id) }),
     })
-    .returning()
-    .get();
+    .returning();
 
-  return { valuation: inserted, comparables, buurt };
+  return { valuation: inserted[0], comparables, buurt };
 }
 
 /** Waardehistorie voor grafieken en alerts (oudste eerst). */
-export function valuationHistorie(adresId: number) {
-  return db.select().from(valuations).where(eq(valuations.adresId, adresId)).orderBy(valuations.datum).all();
+export async function valuationHistorie(adresId: number) {
+  return db.select().from(valuations).where(eq(valuations.adresId, adresId)).orderBy(valuations.datum);
 }

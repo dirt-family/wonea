@@ -19,16 +19,16 @@ function isoOverMaanden(maanden: number): string {
   return d.toISOString();
 }
 
-function haalLead(id: number) {
-  return db.select().from(schema.leads).where(eq(schema.leads.id, id)).get()!;
+async function haalLead(id: number) {
+  return (await db.select().from(schema.leads).where(eq(schema.leads.id, id)).limit(1))[0]!;
 }
 
-function eventsVan(id: number) {
-  return db.select().from(schema.leadEvents).where(eq(schema.leadEvents.leadId, id)).all();
+async function eventsVan(id: number) {
+  return await db.select().from(schema.leadEvents).where(eq(schema.leadEvents.leadId, id));
 }
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   ({ db } = await import("@/lib/db"));
   schema = await import("@/db/schema");
   logic = await import("@/app/admin/leads/logic");
@@ -37,7 +37,7 @@ beforeAll(async () => {
   ({ eq } = await import("drizzle-orm"));
 
   // Lead via het enige toegestane pad (lib/leads.createLead), zonder adres.
-  ({ leadId } = maakLead({
+  ({ leadId } = await maakLead({
     type: "hypotheek",
     subtype: "oversluiten",
     email: "adminlead@voorbeeld.nl",
@@ -49,30 +49,30 @@ beforeAll(async () => {
 });
 
 describe("wijzigLeadStatus", () => {
-  it("werkt status en geschatte waarde bij en logt een gebeurtenis met tijdstempel", () => {
+  it("werkt status en geschatte waarde bij en logt een gebeurtenis met tijdstempel", async () => {
     // Sentinel zodat we kunnen bewijzen dat de retentie NIET verschuift.
-    db.update(schema.leads).set({ retentieTot: OUDE_RETENTIE }).where(eq(schema.leads.id, leadId)).run();
+    await db.update(schema.leads).set({ retentieTot: OUDE_RETENTIE }).where(eq(schema.leads.id, leadId));
 
-    const resultaat = logic.wijzigLeadStatus(leadId, "gekwalificeerd");
+    const resultaat = await logic.wijzigLeadStatus(leadId, "gekwalificeerd");
     expect(resultaat.ok).toBe(true);
 
-    const lead = haalLead(leadId);
+    const lead = await haalLead(leadId);
     expect(lead.status).toBe("gekwalificeerd");
     expect(lead.estValueEur).toBe(leadwaarde("hypotheek", "oversluiten", "gekwalificeerd"));
     // Niet-eindstatus: bewaartermijn blijft staan.
     expect(lead.retentieTot).toBe(OUDE_RETENTIE);
 
-    const events = eventsVan(leadId);
+    const events = await eventsVan(leadId);
     const wijziging = events.find((e) => e.event === "status: nieuw -> gekwalificeerd");
     expect(wijziging).toBeDefined();
     expect(wijziging!.ts).toBeTruthy();
   });
 
-  it("registreert bij gesloten de succes-fee-waarde en ververst de bewaartermijn", () => {
-    const resultaat = logic.wijzigLeadStatus(leadId, "gesloten");
+  it("registreert bij gesloten de succes-fee-waarde en ververst de bewaartermijn", async () => {
+    const resultaat = await logic.wijzigLeadStatus(leadId, "gesloten");
     expect(resultaat.ok).toBe(true);
 
-    const lead = haalLead(leadId);
+    const lead = await haalLead(leadId);
     expect(lead.status).toBe("gesloten");
     expect(lead.estValueEur).toBe(leadwaarde("hypotheek", "oversluiten", "gesloten"));
     // Retentie opnieuw gestart: nu plus 12 maanden (ruime marges rond de klok).
@@ -80,8 +80,8 @@ describe("wijzigLeadStatus", () => {
     expect(lead.retentieTot < isoOverMaanden(13)).toBe(true);
   });
 
-  it("zet bij afgewezen de waarde op nul en ververst de bewaartermijn", () => {
-    const { leadId: tweedeId } = maakLead({
+  it("zet bij afgewezen de waarde op nul en ververst de bewaartermijn", async () => {
+    const { leadId: tweedeId } = await maakLead({
       type: "verduurzaming",
       subtype: "warmtepomp",
       email: "afgewezen@voorbeeld.nl",
@@ -90,26 +90,26 @@ describe("wijzigLeadStatus", () => {
       bron: "test:admin",
       partijType: "een lokale installateur",
     });
-    db.update(schema.leads).set({ retentieTot: OUDE_RETENTIE }).where(eq(schema.leads.id, tweedeId)).run();
+    await db.update(schema.leads).set({ retentieTot: OUDE_RETENTIE }).where(eq(schema.leads.id, tweedeId));
 
-    const resultaat = logic.wijzigLeadStatus(tweedeId, "afgewezen");
+    const resultaat = await logic.wijzigLeadStatus(tweedeId, "afgewezen");
     expect(resultaat.ok).toBe(true);
 
-    const lead = haalLead(tweedeId);
+    const lead = await haalLead(tweedeId);
     expect(lead.status).toBe("afgewezen");
     expect(lead.estValueEur).toBe(0);
     expect(lead.retentieTot > isoOverMaanden(11)).toBe(true);
   });
 
-  it("logt geen dubbele gebeurtenis als de status niet verandert", () => {
-    const voor = eventsVan(leadId).length;
-    const resultaat = logic.wijzigLeadStatus(leadId, "gesloten"); // is al gesloten
+  it("logt geen dubbele gebeurtenis als de status niet verandert", async () => {
+    const voor = (await eventsVan(leadId)).length;
+    const resultaat = await logic.wijzigLeadStatus(leadId, "gesloten"); // is al gesloten
     expect(resultaat.ok).toBe(true);
-    expect(eventsVan(leadId)).toHaveLength(voor);
+    expect(await eventsVan(leadId)).toHaveLength(voor);
   });
 
-  it("weigert een onbekende lead zonder iets te wijzigen", () => {
-    const resultaat = logic.wijzigLeadStatus(999999, "gesloten");
+  it("weigert een onbekende lead zonder iets te wijzigen", async () => {
+    const resultaat = await logic.wijzigLeadStatus(999999, "gesloten");
     expect(resultaat.ok).toBe(false);
   });
 });

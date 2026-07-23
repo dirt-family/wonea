@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const parsed = postSchema.safeParse(await parseJson(request));
   if (!parsed.success) return NextResponse.json({ fout: "Ongeldige invoer." }, { status: 400 });
 
-  const claim = db.select().from(claims).where(eq(claims.id, parsed.data.claimId)).get();
+  const claim = (await db.select().from(claims).where(eq(claims.id, parsed.data.claimId)).limit(1))[0];
   // Claim van iemand anders behandelen we hetzelfde als niet-bestaand: geen
   // informatielek over wat er wel of niet in de database staat.
   if (!claim || claim.userId !== user.id) {
@@ -51,13 +51,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ fout: "Deze claim is beeindigd; er valt niets meer te delen." }, { status: 409 });
   }
 
-  const adres = db.select().from(addresses).where(eq(addresses.id, claim.adresId)).get();
-  if (!adres || adres.status === "opted_out" || isAddressIdSuppressed(adres.id) || isSuppressed(adres.postcode, adres.nummerslug)) {
+  const adres = (await db.select().from(addresses).where(eq(addresses.id, claim.adresId)).limit(1))[0];
+  if (!adres || adres.status === "opted_out" || (await isAddressIdSuppressed(adres.id)) || (await isSuppressed(adres.postcode, adres.nummerslug))) {
     return NextResponse.json({ fout: "Dit adres is van Wonea verwijderd en kan niet gedeeld worden." }, { status: 409 });
   }
 
   const token = randomToken(24);
-  db.insert(sharedReports).values({ token, claimId: claim.id, adresId: adres.id, createdAt: nowIso() }).run();
+  await db.insert(sharedReports).values({ token, claimId: claim.id, adresId: adres.id, createdAt: nowIso() });
 
   return NextResponse.json({ token });
 }
@@ -73,18 +73,18 @@ export async function DELETE(request: Request) {
   const parsed = deleteSchema.safeParse(await parseJson(request));
   if (!parsed.success) return NextResponse.json({ fout: "Ongeldige invoer." }, { status: 400 });
 
-  const rij = db
+  const rij = (await db
     .select({ rapport: sharedReports, eigenaarId: claims.userId })
     .from(sharedReports)
     .innerJoin(claims, eq(claims.id, sharedReports.claimId))
     .where(eq(sharedReports.token, parsed.data.token))
-    .get();
+    .limit(1))[0];
   if (!rij || rij.eigenaarId !== user.id) {
     return NextResponse.json({ fout: "Rapport niet gevonden." }, { status: 404 });
   }
 
   if (!rij.rapport.revokedAt) {
-    db.update(sharedReports).set({ revokedAt: nowIso() }).where(eq(sharedReports.id, rij.rapport.id)).run();
+    await db.update(sharedReports).set({ revokedAt: nowIso() }).where(eq(sharedReports.id, rij.rapport.id));
   }
 
   return NextResponse.json({ ok: true });

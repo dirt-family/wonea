@@ -17,21 +17,21 @@ import { BronLabel, Kaart, SectieLabel, VoorbeelddataLabel } from "@/components/
 
 type Params = { token: string };
 
-function vindRapport(token: string) {
-  const rapport = db.select().from(sharedReports).where(eq(sharedReports.token, token)).get();
+async function vindRapport(token: string) {
+  const rapport = (await db.select().from(sharedReports).where(eq(sharedReports.token, token)).limit(1))[0];
   if (!rapport || rapport.revokedAt) return null;
-  const adres = db.select().from(addresses).where(eq(addresses.id, rapport.adresId)).get();
-  if (!adres || adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  const adres = (await db.select().from(addresses).where(eq(addresses.id, rapport.adresId)).limit(1))[0];
+  if (!adres || adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return { rapport, adres };
 }
 
-function adresNaam(adres: NonNullable<ReturnType<typeof vindRapport>>["adres"]): string {
+function adresNaam(adres: NonNullable<Awaited<ReturnType<typeof vindRapport>>>["adres"]): string {
   return `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { token } = await params;
-  const data = vindRapport(token);
+  const data = await vindRapport(token);
   if (!data) return { title: "Rapport niet gevonden", robots: { index: false, follow: false } };
   const naam = adresNaam(data.adres);
   const titel = `Woningwaarde-rapport: ${naam}, ${data.adres.plaats}`;
@@ -73,11 +73,11 @@ function Bandbreedte({ laag, waarde, hoog }: { laag: number; waarde: number; hoo
 
 export default async function RapportPagina({ params }: { params: Promise<Params> }) {
   const { token } = await params;
-  const data = vindRapport(token);
+  const data = await vindRapport(token);
   if (!data) notFound();
 
   const { adres } = data;
-  const { valuation, comparables, buurt } = getOrCreateValuation(adres);
+  const { valuation, comparables, buurt } = await getOrCreateValuation(adres);
   const naam = adresNaam(adres);
   const maandFmt = new Intl.DateTimeFormat("nl-NL", { month: "long", year: "numeric" });
 

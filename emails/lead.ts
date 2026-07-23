@@ -9,8 +9,8 @@ const TITELS: Record<LeadType, string> = {
   verduurzaming: "Je verduurzamings-aanvraag bij Wonea",
 };
 
-export function stuurLeadBevestiging(input: { to: string; type: LeadType; partijType: string; adresNaam: string | null }): void {
-  queueEmail({
+export async function stuurLeadBevestiging(input: { to: string; type: LeadType; partijType: string; adresNaam: string | null }): Promise<void> {
+  await queueEmail({
     to: input.to,
     subject: TITELS[input.type],
     type: "lead_bevestiging",

@@ -33,7 +33,7 @@ async function bevestigLogin(formData: FormData) {
   const van = veiligeVanUrl(parsed.data.van);
   const q = checkoutQuery(parsed.data.product, van);
 
-  const userId = consumeMagicToken(parsed.data.token);
+  const userId = await consumeMagicToken(parsed.data.token);
   if (userId === null) redirect(`/premium/verzilver?fout=verlopen&${q}`);
 
   await createSession(userId);

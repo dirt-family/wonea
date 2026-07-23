@@ -20,16 +20,18 @@ export function isMoment(v: string | undefined): v is Moment {
 }
 
 /** Zoekt een adres op en respecteert de suppressielijst (opt-out is leidend). */
-export function vindAdres(postcodeInput: string, nummerInput: string) {
+export async function vindAdres(postcodeInput: string, nummerInput: string) {
   const postcode = normalizePostcode(postcodeInput);
   if (!postcode) return null;
   const slug = nummerInput.toLowerCase().replace(/\s+/g, "");
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }

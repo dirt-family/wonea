@@ -16,14 +16,14 @@ export const metadata: Metadata = { title: "Verwijdering bevestigen", robots: { 
 async function bevestig(formData: FormData) {
   "use server";
   const token = String(formData.get("token") ?? "");
-  const optout = db.select().from(optouts).where(eq(optouts.token, token)).get();
+  const optout = (await db.select().from(optouts).where(eq(optouts.token, token)).limit(1))[0];
   if (!optout) redirect("/verwijderen?fout=onbekend");
   if (!optout.bevestigdAt) {
-    db.update(optouts).set({ bevestigdAt: nowIso() }).where(eq(optouts.id, optout.id)).run();
-    applyOptoutCascade(optout.adresId);
-    const adres = db.select().from(addresses).where(eq(addresses.id, optout.adresId)).get();
+    await db.update(optouts).set({ bevestigdAt: nowIso() }).where(eq(optouts.id, optout.id));
+    await applyOptoutCascade(optout.adresId);
+    const adres = (await db.select().from(addresses).where(eq(addresses.id, optout.adresId)).limit(1))[0];
     if (optout.email && adres) {
-      stuurOptoutAfgerond(optout.email, `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`);
+      await stuurOptoutAfgerond(optout.email, `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`);
     }
     revalidatePath(`/woning/${optout.postcode}/${optout.nummerslug}`);
   }
@@ -47,10 +47,10 @@ export default async function BevestigPagina({ params }: { params: Promise<{ tok
     );
   }
 
-  const optout = db.select().from(optouts).where(eq(optouts.token, token)).get();
+  const optout = (await db.select().from(optouts).where(eq(optouts.token, token)).limit(1))[0];
   if (!optout) notFound();
 
-  const adres = db.select().from(addresses).where(eq(addresses.id, optout.adresId)).get();
+  const adres = (await db.select().from(addresses).where(eq(addresses.id, optout.adresId)).limit(1))[0];
   const naam = adres ? `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}` : "dit adres";
 
   if (optout.bevestigdAt) redirect("/verwijderen/klaar");

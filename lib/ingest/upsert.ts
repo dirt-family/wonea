@@ -15,13 +15,13 @@ import type { CbsBuurt } from "@/lib/ingest/cbs";
  *    bestaande rijen (inclusief hun status) worden nooit aangeraakt.
  */
 
-export function upsertGemeente(g: { code: string; naam: string }): void {
-  db.insert(municipalities)
+export async function upsertGemeente(g: { code: string; naam: string }): Promise<void> {
+  await db
+    .insert(municipalities)
     .values({ code: g.code, naam: g.naam, slug: slugify(g.naam) })
     // Bestaat de gemeente al, dan alleen de naam verversen; de slug blijft
     // staan (URL-stabiliteit).
-    .onConflictDoUpdate({ target: municipalities.code, set: { naam: g.naam } })
-    .run();
+    .onConflictDoUpdate({ target: municipalities.code, set: { naam: g.naam } });
 }
 
 /**
@@ -30,12 +30,11 @@ export function upsertGemeente(g: { code: string; naam: string }): void {
  * CBS-buurten kunnen dezelfde naam hebben als seed-buurten, bv. Binnenstad),
  * dan krijgt de nieuwe een deterministisch suffix uit de buurtcode.
  */
-export function kiesBuurtSlug(gemeenteCode: string, buurtCode: string, naam: string): string {
-  const bestaande = db
+export async function kiesBuurtSlug(gemeenteCode: string, buurtCode: string, naam: string): Promise<string> {
+  const bestaande = await db
     .select({ buurtCode: neighborhoods.buurtCode, slug: neighborhoods.slug })
     .from(neighborhoods)
-    .where(eq(neighborhoods.gemeenteCode, gemeenteCode))
-    .all();
+    .where(eq(neighborhoods.gemeenteCode, gemeenteCode));
   const eigen = bestaande.find((b) => b.buurtCode === buurtCode);
   if (eigen) return eigen.slug;
 
@@ -51,33 +50,31 @@ export function kiesBuurtSlug(gemeenteCode: string, buurtCode: string, naam: str
 
 export type BuurtUpsertResultaat = "toegevoegd" | "bijgewerkt";
 
-export function upsertBuurt(gemeenteCode: string, b: CbsBuurt): BuurtUpsertResultaat {
-  const bestaand = db
+export async function upsertBuurt(gemeenteCode: string, b: CbsBuurt): Promise<BuurtUpsertResultaat> {
+  const bestaandRows = await db
     .select({ buurtCode: neighborhoods.buurtCode })
     .from(neighborhoods)
     .where(eq(neighborhoods.buurtCode, b.buurtCode))
-    .get();
+    .limit(1);
 
-  if (bestaand) {
+  if (bestaandRows[0]) {
     // Naam en cijfers verversen; een null uit CBS overschrijft nooit een
     // eerder bekende waarde (geheime buurten hebben geen WOZ/inwoners).
     const set: Partial<typeof neighborhoods.$inferInsert> = { naam: b.naam };
     if (b.gemWoz != null) set.gemWoz = b.gemWoz;
     if (b.inwoners != null) set.inwoners = b.inwoners;
-    db.update(neighborhoods).set(set).where(eq(neighborhoods.buurtCode, b.buurtCode)).run();
+    await db.update(neighborhoods).set(set).where(eq(neighborhoods.buurtCode, b.buurtCode));
     return "bijgewerkt";
   }
 
-  db.insert(neighborhoods)
-    .values({
-      buurtCode: b.buurtCode,
-      naam: b.naam,
-      slug: kiesBuurtSlug(gemeenteCode, b.buurtCode, b.naam),
-      gemeenteCode,
-      gemWoz: b.gemWoz,
-      inwoners: b.inwoners,
-    })
-    .run();
+  await db.insert(neighborhoods).values({
+    buurtCode: b.buurtCode,
+    naam: b.naam,
+    slug: await kiesBuurtSlug(gemeenteCode, b.buurtCode, b.naam),
+    gemeenteCode,
+    gemWoz: b.gemWoz,
+    inwoners: b.inwoners,
+  });
   return "toegevoegd";
 }
 
@@ -87,9 +84,9 @@ export type AdresUpsertResultaat = "toegevoegd" | "bestond_al" | "onderdrukt";
  * Voegt een BAG-adresrij toe. Suppressie wint altijd; conflict op
  * postcode+nummerslug laat de bestaande rij (en dus de status) met rust.
  */
-export function upsertAdres(rij: BagAdresRij, buurtCode: string): AdresUpsertResultaat {
-  if (isSuppressed(rij.postcode, rij.nummerslug)) return "onderdrukt";
-  const res = db
+export async function upsertAdres(rij: BagAdresRij, buurtCode: string): Promise<AdresUpsertResultaat> {
+  if (await isSuppressed(rij.postcode, rij.nummerslug)) return "onderdrukt";
+  const res = await db
     .insert(addresses)
     .values({
       bagId: rij.bagId,
@@ -112,8 +109,8 @@ export function upsertAdres(rij: BagAdresRij, buurtCode: string): AdresUpsertRes
       // bestaande rijen worden niet aangeraakt (nooit terug naar actief).
     })
     .onConflictDoNothing()
-    .run();
-  return res.changes > 0 ? "toegevoegd" : "bestond_al";
+    .returning({ id: addresses.id });
+  return res.length > 0 ? "toegevoegd" : "bestond_al";
 }
 
 /**
@@ -121,33 +118,29 @@ export function upsertAdres(rij: BagAdresRij, buurtCode: string): AdresUpsertRes
  * het anker-m2-prijs-afgeleide (gem_woz / gem_oppervlakte), zoals
  * scripts/seed.ts dat ook doet. Buurten zonder adressen houden null.
  */
-export function herberekenBuurtAnkers(buurtCodes: Iterable<string>): void {
+export async function herberekenBuurtAnkers(buurtCodes: Iterable<string>): Promise<void> {
   for (const code of new Set(buurtCodes)) {
-    const rij = db
+    const rij = await db
       .select({ avgOpp: sql<number | null>`avg(${addresses.oppervlakteM2})` })
       .from(addresses)
       .where(eq(addresses.buurtCode, code))
-      .get();
-    const gemOpp = rij?.avgOpp ?? null;
-    const buurt = db.select({ gemWoz: neighborhoods.gemWoz }).from(neighborhoods).where(eq(neighborhoods.buurtCode, code)).get();
+      .limit(1);
+    const gemOpp = rij[0]?.avgOpp ?? null;
+    const buurtRows = await db.select({ gemWoz: neighborhoods.gemWoz }).from(neighborhoods).where(eq(neighborhoods.buurtCode, code)).limit(1);
+    const buurt = buurtRows[0];
     if (!buurt) continue;
     const anker = gemOpp && buurt.gemWoz ? buurt.gemWoz / gemOpp : null;
-    db.update(neighborhoods).set({ gemOppervlakte: gemOpp, ankerM2Prijs: anker }).where(eq(neighborhoods.buurtCode, code)).run();
+    await db.update(neighborhoods).set({ gemOppervlakte: gemOpp, ankerM2Prijs: anker }).where(eq(neighborhoods.buurtCode, code));
   }
 }
 
 /** Alle bekende buurtcodes (voor FK-checks in de ingest). */
-export function bekendeBuurtCodes(): Set<string> {
-  return new Set(
-    db
-      .select({ buurtCode: neighborhoods.buurtCode })
-      .from(neighborhoods)
-      .all()
-      .map((b) => b.buurtCode),
-  );
+export async function bekendeBuurtCodes(): Promise<Set<string>> {
+  const rows = await db.select({ buurtCode: neighborhoods.buurtCode }).from(neighborhoods);
+  return new Set(rows.map((b) => b.buurtCode));
 }
 
 /** Bestaande adresrijen (postcode + buurt) voor de postcode4-fallback. */
-export function bestaandeAdresBuurten(): Array<{ postcode: string; buurtCode: string }> {
-  return db.select({ postcode: addresses.postcode, buurtCode: addresses.buurtCode }).from(addresses).all();
+export async function bestaandeAdresBuurten(): Promise<Array<{ postcode: string; buurtCode: string }>> {
+  return db.select({ postcode: addresses.postcode, buurtCode: addresses.buurtCode }).from(addresses);
 }

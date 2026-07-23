@@ -29,12 +29,14 @@ export default async function WozCheckPagina({
 
   let adres = null;
   if (postcode && nummerslug) {
-    const kandidaat = db
-      .select()
-      .from(addresses)
-      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-      .get();
-    if (kandidaat && kandidaat.status === "actief" && !isSuppressed(kandidaat.postcode, kandidaat.nummerslug)) {
+    const kandidaat = (
+      await db
+        .select()
+        .from(addresses)
+        .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
+        .limit(1)
+    )[0];
+    if (kandidaat && kandidaat.status === "actief" && !(await isSuppressed(kandidaat.postcode, kandidaat.nummerslug))) {
       adres = kandidaat;
     }
   }
@@ -71,11 +73,11 @@ export default async function WozCheckPagina({
   );
 }
 
-function WozResultaat({ adresId }: { adresId: number }) {
-  const adres = db.select().from(addresses).where(eq(addresses.id, adresId)).get();
+async function WozResultaat({ adresId }: { adresId: number }) {
+  const adres = (await db.select().from(addresses).where(eq(addresses.id, adresId)).limit(1))[0];
   if (!adres) return null;
-  const { valuation } = getOrCreateValuation(adres);
-  const woz = db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)).orderBy(wozValues.peiljaar).all().at(-1);
+  const { valuation } = await getOrCreateValuation(adres);
+  const woz = (await db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)).orderBy(wozValues.peiljaar)).at(-1);
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.postcode} ${adres.plaats}`;
 
   return (

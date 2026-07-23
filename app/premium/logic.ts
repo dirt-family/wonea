@@ -16,13 +16,13 @@ import { nowIso, randomToken } from "@/lib/util";
 
 export type KoopResultaat = { status: "gekocht"; mockPaymentRef: string } | { status: "al_gekocht" };
 
-export function koopPremium(userId: number, product: PremiumProduct): KoopResultaat {
-  if (hasEntitlement(userId, product)) return { status: "al_gekocht" };
+export async function koopPremium(userId: number, product: PremiumProduct): Promise<KoopResultaat> {
+  if (await hasEntitlement(userId, product)) return { status: "al_gekocht" };
 
   const mockPaymentRef = `mock-${randomToken(8)}`;
-  db.insert(premiumEntitlements)
-    .values({ userId, product, status: "actief", mockPaymentRef, createdAt: nowIso() })
-    .run();
+  await db
+    .insert(premiumEntitlements)
+    .values({ userId, product, status: "actief", mockPaymentRef, createdAt: nowIso() });
 
   return { status: "gekocht", mockPaymentRef };
 }

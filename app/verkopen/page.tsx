@@ -55,17 +55,19 @@ function isMakelaarKeuze(v: string | undefined): v is MakelaarKeuze {
   return v != null && v in MAKELAAR_OPTIES;
 }
 
-function vindAdres(postcodeInput: string, nummerInput: string) {
+async function vindAdres(postcodeInput: string, nummerInput: string) {
   const postcode = normalizePostcode(postcodeInput);
   if (!postcode) return null;
   const slug = nummerInput.toLowerCase().replace(/\s+/g, "");
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }
 
@@ -110,13 +112,13 @@ async function verstuurAanvraag(formData: FormData) {
 
   if (rateLimited(`verkopen:${ip}`)) redirect(`/verkopen?fout=te-vaak&${terug}`);
 
-  const adres = vindAdres(postcode, nummerslug);
+  const adres = await vindAdres(postcode, nummerslug);
   if (!adres) redirect(`/verkopen?fout=onbekend&${terug}`);
 
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`;
   let gelukt = false;
   try {
-    createLead({
+    await createLead({
       type: "makelaar",
       adresId: adres.id,
       email: parsed.data.email.toLowerCase().trim(),
@@ -170,7 +172,7 @@ export default async function VerkopenPagina({
 }) {
   const sp = await searchParams;
   const heeftAdresParams = Boolean(sp.postcode && sp.nummer);
-  const adres = heeftAdresParams ? vindAdres(sp.postcode!, sp.nummer!) : null;
+  const adres = heeftAdresParams ? await vindAdres(sp.postcode!, sp.nummer!) : null;
   const termijn = isTermijn(sp.termijn) ? sp.termijn : null;
   const reden = isReden(sp.reden) ? sp.reden : null;
   const makelaar = isMakelaarKeuze(sp.makelaar) ? sp.makelaar : null;
@@ -182,7 +184,7 @@ export default async function VerkopenPagina({
       ? FOUTEN.onbekend
       : null;
 
-  const view = adres ? getOrCreateValuation(adres) : null;
+  const view = adres ? await getOrCreateValuation(adres) : null;
   const naam = adres ? `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}` : null;
   const stapUrl = (extra: Record<string, string>) =>
     adres ? `/verkopen?${new URLSearchParams({ postcode: adres.postcode, nummer: adres.nummerslug, ...extra }).toString()}` : "/verkopen";

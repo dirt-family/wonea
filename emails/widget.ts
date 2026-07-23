@@ -7,10 +7,10 @@ import { WIDGET_CONSENT_CHECKBOX } from "@/app/widget/consent";
  * Double opt-in voor de widget-e-mailcapture: zonder klik op deze mail sturen
  * we nooit iets, en de aanmelding wordt na 30 dagen gepurged (scripts/purge.ts).
  */
-export function stuurWidgetDoubleOptin(to: string, adresNaam: string | null, token: string, bronDomein: string): void {
+export async function stuurWidgetDoubleOptin(to: string, adresNaam: string | null, token: string, bronDomein: string): Promise<void> {
   const link = `${baseUrl()}/widget/bevestig/${token}`;
   const waarover = adresNaam ? `de waardeontwikkeling van <strong>${adresNaam}</strong>` : "de waardeontwikkeling van het door jou ingevulde adres";
-  queueEmail({
+  await queueEmail({
     to,
     subject: "Bevestig je aanmelding voor waarde-updates",
     type: "widget_double_optin",

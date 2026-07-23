@@ -69,13 +69,13 @@ export async function GET(request: Request) {
   const token = searchParams.get("token");
   if (!token || token.length < 16 || token.length > 128) return generiekeAfbeelding();
 
-  const rapport = db.select().from(sharedReports).where(eq(sharedReports.token, token)).get();
+  const rapport = (await db.select().from(sharedReports).where(eq(sharedReports.token, token)).limit(1))[0];
   if (!rapport || rapport.revokedAt) return generiekeAfbeelding();
 
-  const adres = db.select().from(addresses).where(eq(addresses.id, rapport.adresId)).get();
-  if (!adres || adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return generiekeAfbeelding();
+  const adres = (await db.select().from(addresses).where(eq(addresses.id, rapport.adresId)).limit(1))[0];
+  if (!adres || adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return generiekeAfbeelding();
 
-  const { valuation } = getOrCreateValuation(adres);
+  const { valuation } = await getOrCreateValuation(adres);
   if (!valuation) return generiekeAfbeelding();
 
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;

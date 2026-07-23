@@ -25,7 +25,7 @@ let adresA: number;
 let subA: number;
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   process.env.WONEA_ADMIN_PASSWORD = WACHTWOORD;
   ({ db } = await import("@/lib/db"));
   schema = await import("@/db/schema");
@@ -33,14 +33,15 @@ beforeAll(async () => {
   ({ bouwWaardeAlert } = await import("@/emails/alert"));
   ({ formatEuro } = await import("@/lib/util"));
 
-  db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" }).run();
-  db.insert(schema.neighborhoods)
-    .values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000", gemWoz: 420000, ankerM2Prijs: 4200 })
-    .run();
+  await db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" });
+  await db
+    .insert(schema.neighborhoods)
+    .values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000", gemWoz: 420000, ankerM2Prijs: 4200 });
 
   // Genoeg recente verkopen zodat de AVM een waarde kan berekenen.
   for (let i = 0; i < 6; i++) {
-    db.insert(schema.sales)
+    await db
+      .insert(schema.sales)
       .values({
         buurtCode: "BU1",
         straat: "Teststraat",
@@ -50,59 +51,59 @@ beforeAll(async () => {
         oppervlakteM2: 95 + i * 3,
         woningtype: "tussenwoning",
         bron: "seed",
-      })
-      .run();
+      });
   }
 
-  const maakAdres = (nummer: number): number =>
-    db
-      .insert(schema.addresses)
-      .values({
-        straat: "Teststraat", huisnummer: nummer, toevoeging: null, nummerslug: String(nummer), postcode: "5611AB",
-        plaats: "Test", buurtCode: "BU1", bouwjaar: 1990, oppervlakteM2: 100, woningtype: "tussenwoning",
-        energielabel: "C", energielabelBron: "indicatie", bron: "seed", status: "actief",
-      })
-      .returning({ id: schema.addresses.id })
-      .get().id;
+  const maakAdres = async (nummer: number): Promise<number> =>
+    (
+      await db
+        .insert(schema.addresses)
+        .values({
+          straat: "Teststraat", huisnummer: nummer, toevoeging: null, nummerslug: String(nummer), postcode: "5611AB",
+          plaats: "Test", buurtCode: "BU1", bouwjaar: 1990, oppervlakteM2: 100, woningtype: "tussenwoning",
+          energielabel: "C", energielabelBron: "indicatie", bron: "seed", status: "actief",
+        })
+        .returning({ id: schema.addresses.id })
+    )[0].id;
 
-  const maakGebruiker = (email: string): number =>
-    db.insert(schema.users).values({ email, verifiedAt: "2026-01-01", createdAt: "2026-01-01" }).returning({ id: schema.users.id }).get().id;
+  const maakGebruiker = async (email: string): Promise<number> =>
+    (await db.insert(schema.users).values({ email, verifiedAt: "2026-01-01", createdAt: "2026-01-01" }).returning({ id: schema.users.id }))[0].id;
 
-  const maakClaim = (userId: number, adresId: number, endedAt: string | null = null): number =>
-    db.insert(schema.claims).values({ userId, adresId, rol: "eigenaar", createdAt: "2026-01-01", endedAt }).returning({ id: schema.claims.id }).get().id;
+  const maakClaim = async (userId: number, adresId: number, endedAt: string | null = null): Promise<number> =>
+    (await db.insert(schema.claims).values({ userId, adresId, rol: "eigenaar", createdAt: "2026-01-01", endedAt }).returning({ id: schema.claims.id }))[0].id;
 
-  const maakSub = (claimId: number): number =>
-    db.insert(schema.alertSubscriptions).values({ claimId, actief: true }).returning({ id: schema.alertSubscriptions.id }).get().id;
+  const maakSub = async (claimId: number): Promise<number> =>
+    (await db.insert(schema.alertSubscriptions).values({ claimId, actief: true }).returning({ id: schema.alertSubscriptions.id }))[0].id;
 
-  const maakConsent = (email: string, revokedAt: string | null = null): void => {
-    db.insert(schema.consents)
-      .values({ email, doel: "alerts", tekstversie: "Ja, mail mij maandelijks de waarde-update. (v1)", bron: "test", consentedAt: "2026-01-01", revokedAt })
-      .run();
+  const maakConsent = async (email: string, revokedAt: string | null = null): Promise<void> => {
+    await db
+      .insert(schema.consents)
+      .values({ email, doel: "alerts", tekstversie: "Ja, mail mij maandelijks de waarde-update. (v1)", bron: "test", consentedAt: "2026-01-01", revokedAt });
   };
 
   // A: geldig abonnement, actieve consent (de enige die een mail moet krijgen).
-  adresA = maakAdres(1);
-  maakConsent("a@voorbeeld.nl");
-  subA = maakSub(maakClaim(maakGebruiker("a@voorbeeld.nl"), adresA));
+  adresA = await maakAdres(1);
+  await maakConsent("a@voorbeeld.nl");
+  subA = await maakSub(await maakClaim(await maakGebruiker("a@voorbeeld.nl"), adresA));
 
   // B: claim beeindigd.
-  maakConsent("b@voorbeeld.nl");
-  maakSub(maakClaim(maakGebruiker("b@voorbeeld.nl"), maakAdres(2), "2026-06-01"));
+  await maakConsent("b@voorbeeld.nl");
+  await maakSub(await maakClaim(await maakGebruiker("b@voorbeeld.nl"), await maakAdres(2), "2026-06-01"));
 
   // C: consent ingetrokken.
-  maakConsent("c@voorbeeld.nl", "2026-06-15");
-  maakSub(maakClaim(maakGebruiker("c@voorbeeld.nl"), maakAdres(3)));
+  await maakConsent("c@voorbeeld.nl", "2026-06-15");
+  await maakSub(await maakClaim(await maakGebruiker("c@voorbeeld.nl"), await maakAdres(3)));
 
   // D: adres met bevestigde opt-out (suppressie is leidend).
-  const adresD = maakAdres(4);
-  maakConsent("d@voorbeeld.nl");
-  maakSub(maakClaim(maakGebruiker("d@voorbeeld.nl"), adresD));
-  db.insert(schema.optouts)
-    .values({ adresId: adresD, postcode: "5611AB", nummerslug: "4", token: "optout-d", aangevraagdAt: "2026-07-01", bevestigdAt: "2026-07-02" })
-    .run();
+  const adresD = await maakAdres(4);
+  await maakConsent("d@voorbeeld.nl");
+  await maakSub(await maakClaim(await maakGebruiker("d@voorbeeld.nl"), adresD));
+  await db
+    .insert(schema.optouts)
+    .values({ adresId: adresD, postcode: "5611AB", nummerslug: "4", token: "optout-d", aangevraagdAt: "2026-07-01", bevestigdAt: "2026-07-02" });
 
   // E: geen consent-rij (dan ook geen mail).
-  maakSub(maakClaim(maakGebruiker("e@voorbeeld.nl"), maakAdres(5)));
+  await maakSub(await maakClaim(await maakGebruiker("e@voorbeeld.nl"), await maakAdres(5)));
 });
 
 describe("waarde-alerts maandrun (POST /api/alerts)", () => {
@@ -125,7 +126,7 @@ describe("waarde-alerts maandrun (POST /api/alerts)", () => {
       consent_ontbreekt: 1,
     });
 
-    const alerts = db.select().from(schema.emailsOutbox).all().filter((m) => m.type === "alert");
+    const alerts = (await db.select().from(schema.emailsOutbox)).filter((m) => m.type === "alert");
     expect(alerts).toHaveLength(1);
     expect(alerts[0].to).toBe("a@voorbeeld.nl");
     expect(alerts[0].html).toContain("eerste waarde-alert");
@@ -133,7 +134,7 @@ describe("waarde-alerts maandrun (POST /api/alerts)", () => {
     expect(alerts[0].html).toContain("/dashboard"); // afmeld-/beheerlink
 
     const { eq } = await import("drizzle-orm");
-    const sub = db.select().from(schema.alertSubscriptions).where(eq(schema.alertSubscriptions.id, subA)).get();
+    const sub = (await db.select().from(schema.alertSubscriptions).where(eq(schema.alertSubscriptions.id, subA)).limit(1))[0];
     expect(sub!.laatstVerzonden).not.toBeNull();
   });
 
@@ -142,38 +143,38 @@ describe("waarde-alerts maandrun (POST /api/alerts)", () => {
     const json = await res.json();
     expect(json.verzonden).toBe(0);
     expect(json.geskipt.al_verzonden_deze_maand).toBe(1);
-    const alerts = db.select().from(schema.emailsOutbox).all().filter((m) => m.type === "alert");
+    const alerts = (await db.select().from(schema.emailsOutbox)).filter((m) => m.type === "alert");
     expect(alerts).toHaveLength(1);
   });
 
   it("vergelijkt met de waarde uit de vorige verzonden alert", async () => {
     const { eq, and } = await import("drizzle-orm");
-    const huidige = db
-      .select()
-      .from(schema.valuations)
-      .where(and(eq(schema.valuations.adresId, adresA)))
-      .all()
-      .at(-1)!;
+    const huidige = (
+      await db
+        .select()
+        .from(schema.valuations)
+        .where(and(eq(schema.valuations.adresId, adresA)))
+    ).at(-1)!;
 
     // Vorige alert: 35 dagen terug (vorige kalendermaand), met een lagere waarde.
     const vorigeWaarde = huidige.waarde - 15000;
-    db.insert(schema.valuations)
+    await db
+      .insert(schema.valuations)
       .values({
         adresId: adresA, datum: isoDagenTerug(40), waarde: vorigeWaarde,
         intervalLaag: vorigeWaarde - 20000, intervalHoog: vorigeWaarde + 20000,
         confidence: "middel", nComparables: 6, modelVersie: "wonea-avm-1.0", inputsJson: "{}",
-      })
-      .run();
-    db.update(schema.alertSubscriptions)
+      });
+    await db
+      .update(schema.alertSubscriptions)
       .set({ laatstVerzonden: new Date(Date.now() - 35 * 86_400_000).toISOString() })
-      .where(eq(schema.alertSubscriptions.id, subA))
-      .run();
+      .where(eq(schema.alertSubscriptions.id, subA));
 
     const res = await POST(verzoek(true));
     const json = await res.json();
     expect(json.verzonden).toBe(1);
 
-    const alerts = db.select().from(schema.emailsOutbox).all().filter((m) => m.type === "alert");
+    const alerts = (await db.select().from(schema.emailsOutbox)).filter((m) => m.type === "alert");
     const laatste = alerts.at(-1)!;
     expect(laatste.html).toContain("gestegen");
     expect(laatste.html).toContain(formatEuro(vorigeWaarde));

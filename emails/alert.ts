@@ -67,7 +67,7 @@ export function bouwWaardeAlert(input: WaardeAlertInput): { subject: string; htm
 }
 
 /** Zet de waarde-alert in de outbox (nooit echt versturen, zie lib/email/send.ts). */
-export function stuurWaardeAlert(input: WaardeAlertInput): void {
+export async function stuurWaardeAlert(input: WaardeAlertInput): Promise<void> {
   const { subject, html } = bouwWaardeAlert(input);
-  queueEmail({ to: input.to, subject, html, type: "alert" });
+  await queueEmail({ to: input.to, subject, html, type: "alert" });
 }

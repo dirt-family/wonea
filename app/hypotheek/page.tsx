@@ -21,19 +21,21 @@ export const metadata: Metadata = { title: "Hypotheekadvies aanvragen", robots: 
 
 type SearchParams = { subtype?: string; postcode?: string; nummer?: string; fout?: string };
 
-function vindAdres(postcodeInput?: string, nummerInput?: string) {
+async function vindAdres(postcodeInput?: string, nummerInput?: string) {
   if (!postcodeInput || !nummerInput) return null;
   const postcode = normalizePostcode(postcodeInput);
   if (!postcode) return null;
   const slug = nummerInput.toLowerCase().replace(/\s+/g, "");
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
   // Suppressie is leidend: een verwijderd adres tonen we nergens, ook hier niet.
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }
 
@@ -47,7 +49,7 @@ const FOUTEN: Record<string, string> = {
 
 export default async function HypotheekPagina({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
-  const adres = vindAdres(sp.postcode, sp.nummer);
+  const adres = await vindAdres(sp.postcode, sp.nummer);
   const adresQuery = adres ? `&postcode=${adres.postcode}&nummer=${adres.nummerslug}` : "";
   const foutmelding = sp.fout ? (FOUTEN[sp.fout] ?? "Er ging iets mis. Probeer het opnieuw.") : null;
 
@@ -108,7 +110,7 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
   // stepper er de overwaarde mee voor (met bandbreedte, gelabeld als indicatie).
   let waarde: StepperWaarde | null = null;
   if (adres) {
-    const { valuation } = getOrCreateValuation(adres);
+    const { valuation } = await getOrCreateValuation(adres);
     if (valuation) waarde = { waarde: valuation.waarde, laag: valuation.intervalLaag, hoog: valuation.intervalHoog };
   }
   const adresNaam = adres

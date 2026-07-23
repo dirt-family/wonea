@@ -29,8 +29,8 @@ export type WijzigStatusResultaat = { ok: true } | { ok: false; fout: string };
  * Bij gesloten of afgewezen start de bewaartermijn opnieuw: retentie_tot wordt
  * nu plus 12 maanden, daarna ruimt scripts/purge.ts de lead op.
  */
-export function wijzigLeadStatus(leadId: number, nieuweStatus: LeadStatus): WijzigStatusResultaat {
-  const lead = db.select().from(leads).where(eq(leads.id, leadId)).get();
+export async function wijzigLeadStatus(leadId: number, nieuweStatus: LeadStatus): Promise<WijzigStatusResultaat> {
+  const lead = (await db.select().from(leads).where(eq(leads.id, leadId)).limit(1))[0];
   if (!lead) return { ok: false, fout: "Lead niet gevonden." };
   if (lead.status === nieuweStatus) return { ok: true }; // niets te doen, geen ruis in de tijdlijn
 
@@ -42,7 +42,7 @@ export function wijzigLeadStatus(leadId: number, nieuweStatus: LeadStatus): Wijz
     nieuweWaarden.retentieTot = retentieVanafNu();
   }
 
-  db.update(leads).set(nieuweWaarden).where(eq(leads.id, leadId)).run();
-  db.insert(leadEvents).values({ leadId, event: `status: ${lead.status} -> ${nieuweStatus}`, ts: nowIso() }).run();
+  await db.update(leads).set(nieuweWaarden).where(eq(leads.id, leadId));
+  await db.insert(leadEvents).values({ leadId, event: `status: ${lead.status} -> ${nieuweStatus}`, ts: nowIso() });
   return { ok: true };
 }

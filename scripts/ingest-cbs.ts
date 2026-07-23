@@ -13,6 +13,7 @@
  * nette melding en exit 0. De seed-buurten blijven de offline-basis.
  * Idempotent: 2x draaien geeft dezelfde eindstand.
  */
+import { sql } from "../lib/db";
 import { KWB_DATASET_DEFAULT, haalKwbVoorGemeente, type CbsSnapshot } from "../lib/ingest/cbs";
 import { leesSnapshot, schrijfSnapshot } from "../lib/ingest/snapshot";
 import { herberekenBuurtAnkers, upsertBuurt, upsertGemeente } from "../lib/ingest/upsert";
@@ -44,17 +45,17 @@ async function main() {
     console.log(`Snapshot van ${snapshot.opgehaaldAt}: ${snapshot.buurten.length} buurten.`);
   }
 
-  upsertGemeente(snapshot.gemeente);
+  await upsertGemeente(snapshot.gemeente);
   let toegevoegd = 0;
   let bijgewerkt = 0;
   let metWoz = 0;
   for (const buurt of snapshot.buurten) {
-    const resultaat = upsertBuurt(snapshot.gemeente.code, buurt);
+    const resultaat = await upsertBuurt(snapshot.gemeente.code, buurt);
     if (resultaat === "toegevoegd") toegevoegd++;
     else bijgewerkt++;
     if (buurt.gemWoz != null) metWoz++;
   }
-  herberekenBuurtAnkers(snapshot.buurten.map((b) => b.buurtCode));
+  await herberekenBuurtAnkers(snapshot.buurten.map((b) => b.buurtCode));
 
   console.log(
     `CBS-ingest klaar (${snapshot.gemeente.naam}, ${snapshot.gemeente.code}): ` +
@@ -62,7 +63,9 @@ async function main() {
   );
 }
 
-main().catch((e) => {
-  console.error("CBS-ingest onverwacht mislukt:", e);
-  process.exitCode = 1;
-});
+main()
+  .catch((e) => {
+    console.error("CBS-ingest onverwacht mislukt:", e);
+    process.exitCode = 1;
+  })
+  .finally(() => sql.end());

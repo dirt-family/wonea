@@ -33,24 +33,28 @@ export function generateStaticParams(): Params[] {
   return [];
 }
 
-function vindBuurt(params: Params) {
-  const gemeente = db.select().from(municipalities).where(eq(municipalities.slug, params.gemeente.toLowerCase())).get();
+async function vindBuurt(params: Params) {
+  const gemeente = (
+    await db.select().from(municipalities).where(eq(municipalities.slug, params.gemeente.toLowerCase())).limit(1)
+  )[0];
   if (!gemeente) return null;
-  const buurt = db
-    .select()
-    .from(neighborhoods)
-    .where(and(eq(neighborhoods.gemeenteCode, gemeente.code), eq(neighborhoods.slug, params.buurt.toLowerCase())))
-    .get();
+  const buurt = (
+    await db
+      .select()
+      .from(neighborhoods)
+      .where(and(eq(neighborhoods.gemeenteCode, gemeente.code), eq(neighborhoods.slug, params.buurt.toLowerCase())))
+      .limit(1)
+  )[0];
   if (!buurt) return null;
   return { gemeente, buurt };
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const data = vindBuurt(await params);
+  const data = await vindBuurt(await params);
   if (!data) return { title: "Buurt niet gevonden", robots: { index: false, follow: false } };
   // Gebiedswhitelist (lib/seo/gating.ts): buurtpagina's mogen alleen de index
   // in als de buurt bewust is vrijgegeven. Default is noindex.
-  const indexeerbaar = isBuurtIndexeerbaar(data.buurt.buurtCode);
+  const indexeerbaar = await isBuurtIndexeerbaar(data.buurt.buurtCode);
   return {
     title: `Buurt ${data.buurt.naam} in ${data.gemeente.naam}: woningmarkt en prijzen`,
     description: `Kerncijfers, recente verkopen en prijsontwikkeling van buurt ${data.buurt.naam} in ${data.gemeente.naam}, met bronnen en uitleg.`,
@@ -96,29 +100,33 @@ function PrijsLijn({ punten }: { punten: { maand: string; mediaan: number }[] })
 }
 
 export default async function BuurtPagina({ params }: { params: Promise<Params> }) {
-  const data = vindBuurt(await params);
+  const data = await vindBuurt(await params);
   if (!data) notFound();
   const { gemeente, buurt } = data;
 
   // Recente verkopen: seed-verkopen hebben nooit een adres_id; kadaster-rijen
   // wel, en die vallen weg zodra het adres gesupprimeerd is.
-  const recenteVerkopen = db
+  const verkopenRuw = await db
     .select()
     .from(sales)
     .where(eq(sales.buurtCode, buurt.buurtCode))
     .orderBy(desc(sales.datum))
-    .limit(36)
-    .all()
-    .filter((s) => s.adresId == null || !isAddressIdSuppressed(s.adresId))
+    .limit(36);
+  const verkopenGefilterd = await Promise.all(
+    verkopenRuw.map(async (s) => ({ s, behouden: s.adresId == null || !(await isAddressIdSuppressed(s.adresId)) })),
+  );
+  const recenteVerkopen = verkopenGefilterd
+    .filter((x) => x.behouden)
+    .map((x) => x.s)
     .slice(0, 12);
 
-  const stats = db
-    .select()
-    .from(marketStats)
-    .where(eq(marketStats.buurtCode, buurt.buurtCode))
-    .orderBy(marketStats.maand)
-    .all()
-    .slice(-12);
+  const stats = (
+    await db
+      .select()
+      .from(marketStats)
+      .where(eq(marketStats.buurtCode, buurt.buurtCode))
+      .orderBy(marketStats.maand)
+  ).slice(-12);
   const laatsteMaand = stats.at(-1);
   const trendPunten = stats
     .filter((s): s is typeof s & { mediaanPrijs: number } => s.mediaanPrijs != null)

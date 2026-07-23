@@ -39,43 +39,45 @@ async function startVerwijdering(formData: FormData) {
   if (!postcode) redirect("/verwijderen?fout=postcode");
   const nummerslug = parsed.data.nummer.toLowerCase().replace(/\s+/g, "");
 
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
+      .limit(1)
+  )[0];
   if (!adres) redirect("/verwijderen?fout=onbekend");
 
-  const bestaand = db
-    .select()
-    .from(optouts)
-    .where(and(eq(optouts.postcode, postcode), eq(optouts.nummerslug, nummerslug)))
-    .get();
+  const bestaand = (
+    await db
+      .select()
+      .from(optouts)
+      .where(and(eq(optouts.postcode, postcode), eq(optouts.nummerslug, nummerslug)))
+      .limit(1)
+  )[0];
 
   const email = parsed.data.email || null;
   let token: string;
   if (bestaand) {
     if (bestaand.bevestigdAt) redirect("/verwijderen/klaar");
     token = bestaand.token;
-    if (email) db.update(optouts).set({ email }).where(eq(optouts.id, bestaand.id)).run();
+    if (email) await db.update(optouts).set({ email }).where(eq(optouts.id, bestaand.id));
   } else {
     token = randomToken(24);
-    db.insert(optouts)
-      .values({
-        adresId: adres.id,
-        postcode,
-        nummerslug,
-        email,
-        reden: parsed.data.reden || null,
-        token,
-        aangevraagdAt: nowIso(),
-      })
-      .run();
+    await db.insert(optouts).values({
+      adresId: adres.id,
+      postcode,
+      nummerslug,
+      email,
+      reden: parsed.data.reden || null,
+      token,
+      aangevraagdAt: nowIso(),
+    });
   }
 
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`;
   if (email) {
-    stuurOptoutBevestiging(email, naam, token);
+    await stuurOptoutBevestiging(email, naam, token);
     redirect("/verwijderen?stap=mail");
   }
   // Zonder e-mail: stap 2 is een expliciete bevestigingsklik op de tokenpagina.

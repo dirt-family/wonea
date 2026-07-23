@@ -7,8 +7,8 @@ import { formatEuro } from "@/lib/util";
  * emails/magic-link.ts is aan een woningclaim gebonden); zelfde regels:
  * via queueEmail + emailLayout, met afmeld-/beheerlink, eenmalige link.
  */
-export function stuurPremiumLoginMail(input: { to: string; productNaam: string; prijs: number; verzilverUrl: string }): void {
-  queueEmail({
+export async function stuurPremiumLoginMail(input: { to: string; productNaam: string; prijs: number; verzilverUrl: string }): Promise<void> {
+  await queueEmail({
     to: input.to,
     subject: "Je inloglink voor Wonea",
     type: "magic_link",

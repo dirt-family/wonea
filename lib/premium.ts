@@ -10,11 +10,11 @@ export const PREMIUM_PRIJZEN: Record<PremiumProduct, number> = {
   marktanalyse: 19,
 };
 
-export function hasEntitlement(userId: number, product: PremiumProduct): boolean {
-  const row = db
+export async function hasEntitlement(userId: number, product: PremiumProduct): Promise<boolean> {
+  const rows = await db
     .select({ id: premiumEntitlements.id })
     .from(premiumEntitlements)
     .where(and(eq(premiumEntitlements.userId, userId), eq(premiumEntitlements.product, product), eq(premiumEntitlements.status, "actief")))
-    .get();
-  return !!row;
+    .limit(1);
+  return rows.length > 0;
 }

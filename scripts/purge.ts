@@ -7,7 +7,7 @@
  * - optouts worden BEWUST NOOIT gepurged: de suppressielijst moet blijven.
  */
 import { and, isNull, lt } from "drizzle-orm";
-import { db } from "../lib/db";
+import { db, sql } from "../lib/db";
 import { emailsOutbox, leads, magicTokens, sessions, widgetCaptures } from "../db/schema";
 import { nowIso } from "../lib/util";
 
@@ -17,19 +17,24 @@ function isoDagenGeleden(dagen: number): string {
   return d.toISOString();
 }
 
-function main() {
-  const outbox = db.delete(emailsOutbox).where(lt(emailsOutbox.createdAt, isoDagenGeleden(90))).run();
-  const captures = db
+async function main() {
+  const outbox = await db.delete(emailsOutbox).where(lt(emailsOutbox.createdAt, isoDagenGeleden(90))).returning({ id: emailsOutbox.id });
+  const captures = await db
     .delete(widgetCaptures)
     .where(and(isNull(widgetCaptures.bevestigdAt), lt(widgetCaptures.createdAt, isoDagenGeleden(30))))
-    .run();
-  const oudeLeads = db.delete(leads).where(lt(leads.retentieTot, nowIso())).run();
-  const tokens = db.delete(magicTokens).where(lt(magicTokens.expiresAt, isoDagenGeleden(1))).run();
-  const sess = db.delete(sessions).where(lt(sessions.expiresAt, nowIso())).run();
+    .returning({ id: widgetCaptures.id });
+  const oudeLeads = await db.delete(leads).where(lt(leads.retentieTot, nowIso())).returning({ id: leads.id });
+  const tokens = await db.delete(magicTokens).where(lt(magicTokens.expiresAt, isoDagenGeleden(1))).returning({ id: magicTokens.id });
+  const sess = await db.delete(sessions).where(lt(sessions.expiresAt, nowIso())).returning({ id: sessions.id });
 
   console.log(
-    `Purge klaar: outbox ${outbox.changes}, onbevestigde captures ${captures.changes}, leads ${oudeLeads.changes}, tokens ${tokens.changes}, sessies ${sess.changes}. Optouts blijven altijd staan.`,
+    `Purge klaar: outbox ${outbox.length}, onbevestigde captures ${captures.length}, leads ${oudeLeads.length}, tokens ${tokens.length}, sessies ${sess.length}. Optouts blijven altijd staan.`,
   );
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => sql.end());

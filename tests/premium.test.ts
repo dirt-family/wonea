@@ -12,69 +12,72 @@ let and: typeof import("drizzle-orm").and;
 let userId: number;
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   ({ db } = await import("@/lib/db"));
   schema = await import("@/db/schema");
   logic = await import("@/app/premium/logic");
   premium = await import("@/lib/premium");
   ({ eq, and } = await import("drizzle-orm"));
 
-  userId = db
-    .insert(schema.users)
-    .values({ email: "koper@voorbeeld.nl", verifiedAt: "2026-07-22", createdAt: "2026-07-22" })
-    .returning({ id: schema.users.id })
-    .get().id;
+  userId = (
+    await db
+      .insert(schema.users)
+      .values({ email: "koper@voorbeeld.nl", verifiedAt: "2026-07-22", createdAt: "2026-07-22" })
+      .returning({ id: schema.users.id })
+  )[0].id;
 });
 
 describe("koopPremium", () => {
-  it("maakt een actieve entitlement aan met mock-betaalreferentie en zet hasEntitlement op true", () => {
-    expect(premium.hasEntitlement(userId, "biedadvies")).toBe(false);
+  it("maakt een actieve entitlement aan met mock-betaalreferentie en zet hasEntitlement op true", async () => {
+    expect(await premium.hasEntitlement(userId, "biedadvies")).toBe(false);
 
-    const resultaat = logic.koopPremium(userId, "biedadvies");
+    const resultaat = await logic.koopPremium(userId, "biedadvies");
     expect(resultaat.status).toBe("gekocht");
     if (resultaat.status !== "gekocht") throw new Error("onbereikbaar");
     // Gemockte checkout: referentie is herkenbaar nep ("mock-" + randomToken(8)).
     expect(resultaat.mockPaymentRef).toMatch(/^mock-[A-Za-z0-9_-]+$/);
 
-    const rij = db
-      .select()
-      .from(schema.premiumEntitlements)
-      .where(and(eq(schema.premiumEntitlements.userId, userId), eq(schema.premiumEntitlements.product, "biedadvies")))
-      .get();
+    const rij = (
+      await db
+        .select()
+        .from(schema.premiumEntitlements)
+        .where(and(eq(schema.premiumEntitlements.userId, userId), eq(schema.premiumEntitlements.product, "biedadvies")))
+        .limit(1)
+    )[0];
     expect(rij).toBeDefined();
     expect(rij!.status).toBe("actief");
     expect(rij!.mockPaymentRef).toBe(resultaat.mockPaymentRef);
 
-    expect(premium.hasEntitlement(userId, "biedadvies")).toBe(true);
+    expect(await premium.hasEntitlement(userId, "biedadvies")).toBe(true);
     // Het andere product blijft los: niet gekocht, dus geen toegang.
-    expect(premium.hasEntitlement(userId, "marktanalyse")).toBe(false);
+    expect(await premium.hasEntitlement(userId, "marktanalyse")).toBe(false);
   });
 
-  it("meldt al_gekocht bij een tweede aankoop en maakt geen duplicaat", () => {
-    const resultaat = logic.koopPremium(userId, "biedadvies");
+  it("meldt al_gekocht bij een tweede aankoop en maakt geen duplicaat", async () => {
+    const resultaat = await logic.koopPremium(userId, "biedadvies");
     expect(resultaat.status).toBe("al_gekocht");
 
-    const rijen = db
+    const rijen = await db
       .select()
       .from(schema.premiumEntitlements)
-      .where(and(eq(schema.premiumEntitlements.userId, userId), eq(schema.premiumEntitlements.product, "biedadvies")))
-      .all();
+      .where(and(eq(schema.premiumEntitlements.userId, userId), eq(schema.premiumEntitlements.product, "biedadvies")));
     expect(rijen).toHaveLength(1);
   });
 
-  it("houdt gebruikers gescheiden: aankoop van de een geeft de ander niets", () => {
-    const andereUserId = db
-      .insert(schema.users)
-      .values({ email: "ander@voorbeeld.nl", verifiedAt: "2026-07-22", createdAt: "2026-07-22" })
-      .returning({ id: schema.users.id })
-      .get().id;
+  it("houdt gebruikers gescheiden: aankoop van de een geeft de ander niets", async () => {
+    const andereUserId = (
+      await db
+        .insert(schema.users)
+        .values({ email: "ander@voorbeeld.nl", verifiedAt: "2026-07-22", createdAt: "2026-07-22" })
+        .returning({ id: schema.users.id })
+    )[0].id;
 
-    expect(premium.hasEntitlement(andereUserId, "biedadvies")).toBe(false);
+    expect(await premium.hasEntitlement(andereUserId, "biedadvies")).toBe(false);
 
-    const resultaat = logic.koopPremium(andereUserId, "marktanalyse");
+    const resultaat = await logic.koopPremium(andereUserId, "marktanalyse");
     expect(resultaat.status).toBe("gekocht");
-    expect(premium.hasEntitlement(andereUserId, "marktanalyse")).toBe(true);
-    expect(premium.hasEntitlement(userId, "marktanalyse")).toBe(false);
+    expect(await premium.hasEntitlement(andereUserId, "marktanalyse")).toBe(true);
+    expect(await premium.hasEntitlement(userId, "marktanalyse")).toBe(false);
   });
 });
 

@@ -27,8 +27,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ naam: s
   const match = naam.match(/^adressen-([1-9][0-9]*)\.xml$/);
   if (match) {
     const n = Number(match[1]);
-    const bestaande = shardIndexen(telIndexeerbareAdressen());
-    if (bestaande.includes(n)) return xml(bouwAdressenShardXml(n));
+    const bestaande = shardIndexen(await telIndexeerbareAdressen());
+    if (bestaande.includes(n)) return xml(await bouwAdressenShardXml(n));
   }
 
   return new Response("Niet gevonden", { status: 404 });

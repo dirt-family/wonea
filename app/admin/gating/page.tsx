@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 
 export default async function AdminGatingPagina() {
-  const rijen = db.select().from(indexGating).orderBy(indexGating.scope, indexGating.code).all();
+  const rijen = await db.select().from(indexGating).orderBy(indexGating.scope, indexGating.code);
 
   return (
     <div className="space-y-5">

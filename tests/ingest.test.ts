@@ -210,19 +210,19 @@ describe("upsert respecteert de suppressielijst (harde regel)", () => {
   });
 
   beforeAll(async () => {
-    maakTestDb();
+    await maakTestDb();
     ({ db } = await import("@/lib/db"));
     schema = await import("@/db/schema");
     upsert = await import("@/lib/ingest/upsert");
 
-    db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" }).run();
-    db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000", gemWoz: 400000 }).run();
+    await db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" });
+    await db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000", gemWoz: 400000 });
   });
 
-  it("voegt een nieuw adres toe en is daarna idempotent", () => {
-    expect(upsert.upsertAdres(rij(), "BU1")).toBe("toegevoegd");
-    expect(upsert.upsertAdres(rij(), "BU1")).toBe("bestond_al");
-    const alle = db.select().from(schema.addresses).all();
+  it("voegt een nieuw adres toe en is daarna idempotent", async () => {
+    expect(await upsert.upsertAdres(rij(), "BU1")).toBe("toegevoegd");
+    expect(await upsert.upsertAdres(rij(), "BU1")).toBe("bestond_al");
+    const alle = await db.select().from(schema.addresses);
     expect(alle.length).toBe(1);
     expect(alle[0].bron).toBe("bag");
     adresId = alle[0].id;
@@ -230,39 +230,39 @@ describe("upsert respecteert de suppressielijst (harde regel)", () => {
 
   it("slaat een adres met bevestigde opt-out over (suppressielijst wint altijd)", async () => {
     const { eq } = await import("drizzle-orm");
-    db.insert(schema.optouts)
-      .values({ adresId, postcode: "5611AB", nummerslug: "12", token: "t1", aangevraagdAt: "2026-07-22", bevestigdAt: "2026-07-22T12:00:00Z" })
-      .run();
-    db.update(schema.addresses).set({ status: "opted_out" }).where(eq(schema.addresses.id, adresId)).run();
+    await db
+      .insert(schema.optouts)
+      .values({ adresId, postcode: "5611AB", nummerslug: "12", token: "t1", aangevraagdAt: "2026-07-22", bevestigdAt: "2026-07-22T12:00:00Z" });
+    await db.update(schema.addresses).set({ status: "opted_out" }).where(eq(schema.addresses.id, adresId));
 
-    expect(upsert.upsertAdres(rij(), "BU1")).toBe("onderdrukt");
+    expect(await upsert.upsertAdres(rij(), "BU1")).toBe("onderdrukt");
 
     // Her-ingest zet het adres nooit terug op actief.
-    const adres = db.select().from(schema.addresses).where(eq(schema.addresses.id, adresId)).get();
+    const adres = (await db.select().from(schema.addresses).where(eq(schema.addresses.id, adresId)).limit(1))[0];
     expect(adres!.status).toBe("opted_out");
   });
 
-  it("een onbevestigde opt-out onderdrukt niet", () => {
+  it("een onbevestigde opt-out onderdrukt niet", async () => {
     const nieuweRij = { ...rij(), bagId: "x", huisnummer: 14, nummerslug: "14", postcode: "5611AB" };
-    db.insert(schema.optouts).values({ adresId, postcode: "5611AB", nummerslug: "14", token: "t2", aangevraagdAt: "2026-07-22" }).run();
-    expect(upsert.upsertAdres(nieuweRij, "BU1")).toBe("toegevoegd");
+    await db.insert(schema.optouts).values({ adresId, postcode: "5611AB", nummerslug: "14", token: "t2", aangevraagdAt: "2026-07-22" });
+    expect(await upsert.upsertAdres(nieuweRij, "BU1")).toBe("toegevoegd");
   });
 
-  it("kiest botsingsvrije buurt-slugs en werkt buurten idempotent bij", () => {
+  it("kiest botsingsvrije buurt-slugs en werkt buurten idempotent bij", async () => {
     // Zelfde naam als bestaande buurt in dezelfde gemeente: suffix uit de code.
-    expect(upsert.upsertBuurt("GM0000", { buurtCode: "BU07720099", naam: "Testbuurt", gemWoz: 300000, inwoners: 100 })).toBe("toegevoegd");
-    const nieuwe = db.select().from(schema.neighborhoods).all().find((b) => b.buurtCode === "BU07720099");
+    expect(await upsert.upsertBuurt("GM0000", { buurtCode: "BU07720099", naam: "Testbuurt", gemWoz: 300000, inwoners: 100 })).toBe("toegevoegd");
+    const nieuwe = (await db.select().from(schema.neighborhoods)).find((b) => b.buurtCode === "BU07720099");
     expect(nieuwe!.slug).toBe("testbuurt-0099");
     // Tweede run: bijgewerkt, slug blijft staan, null overschrijft niets.
-    expect(upsert.upsertBuurt("GM0000", { buurtCode: "BU07720099", naam: "Testbuurt", gemWoz: null, inwoners: null })).toBe("bijgewerkt");
-    const na = db.select().from(schema.neighborhoods).all().find((b) => b.buurtCode === "BU07720099");
+    expect(await upsert.upsertBuurt("GM0000", { buurtCode: "BU07720099", naam: "Testbuurt", gemWoz: null, inwoners: null })).toBe("bijgewerkt");
+    const na = (await db.select().from(schema.neighborhoods)).find((b) => b.buurtCode === "BU07720099");
     expect(na!.slug).toBe("testbuurt-0099");
     expect(na!.gemWoz).toBe(300000);
   });
 
-  it("herberekent buurt-ankers uit eigen adresrijen (afgeleide)", () => {
-    upsert.herberekenBuurtAnkers(["BU1"]);
-    const buurt = db.select().from(schema.neighborhoods).all().find((b) => b.buurtCode === "BU1");
+  it("herberekent buurt-ankers uit eigen adresrijen (afgeleide)", async () => {
+    await upsert.herberekenBuurtAnkers(["BU1"]);
+    const buurt = (await db.select().from(schema.neighborhoods)).find((b) => b.buurtCode === "BU1");
     expect(buurt!.gemOppervlakte).toBe(100); // 2 adressen van 100 m2
     expect(buurt!.ankerM2Prijs).toBeCloseTo(400000 / 100);
   });

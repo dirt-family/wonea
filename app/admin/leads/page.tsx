@@ -37,7 +37,7 @@ async function wijzigStatusAction(formData: FormData) {
   });
   if (!parsed.success) redirect("/admin/leads?fout=ongeldig");
 
-  const resultaat = wijzigLeadStatus(parsed.data.leadId, parsed.data.status);
+  const resultaat = await wijzigLeadStatus(parsed.data.leadId, parsed.data.status);
 
   // Redirect-URL alleen uit gevalideerde, bekende waarden opbouwen.
   const qs = new URLSearchParams();
@@ -94,19 +94,18 @@ export default async function AdminLeadsPagina({ searchParams }: { searchParams:
     ...(typeFilter ? [eq(leads.type, typeFilter)] : []),
     ...(statusFilter ? [eq(leads.status, statusFilter)] : []),
   ];
-  const rijen = db
+  const rijen = await db
     .select()
     .from(leads)
     .where(condities.length > 0 ? and(...condities) : undefined)
     .orderBy(desc(leads.createdAt), desc(leads.id))
-    .limit(500)
-    .all();
+    .limit(500);
 
   // Detail kan buiten het filter vallen; los ophalen op id.
   const detailId = sp.lead ? Number.parseInt(sp.lead, 10) : Number.NaN;
-  const detail = Number.isInteger(detailId) && detailId > 0 ? (db.select().from(leads).where(eq(leads.id, detailId)).get() ?? null) : null;
+  const detail = Number.isInteger(detailId) && detailId > 0 ? ((await db.select().from(leads).where(eq(leads.id, detailId)).limit(1))[0] ?? null) : null;
   const detailEvents = detail
-    ? db.select().from(leadEvents).where(eq(leadEvents.leadId, detail.id)).orderBy(leadEvents.ts, leadEvents.id).all()
+    ? await db.select().from(leadEvents).where(eq(leadEvents.leadId, detail.id)).orderBy(leadEvents.ts, leadEvents.id)
     : [];
 
   // Adressen in 1 query erbij; gesupprimeerde adressen tonen we niet (opt-out
@@ -114,9 +113,12 @@ export default async function AdminLeadsPagina({ searchParams }: { searchParams:
   const adresIds = [
     ...new Set([...rijen.map((l) => l.adresId), detail?.adresId ?? null].filter((id): id is number => id != null)),
   ];
-  const adresRijen = adresIds.length > 0 ? db.select().from(addresses).where(inArray(addresses.id, adresIds)).all() : [];
+  const adresRijen = adresIds.length > 0 ? await db.select().from(addresses).where(inArray(addresses.id, adresIds)) : [];
   const adresMap = new Map(adresRijen.map((a) => [a.id, a]));
-  const gesupprimeerd = new Set(adresIds.filter((id) => isAddressIdSuppressed(id)));
+  const gesupprimeerd = new Set<number>();
+  for (const id of adresIds) {
+    if (await isAddressIdSuppressed(id)) gesupprimeerd.add(id);
+  }
 
   function adresWeergave(adresId: number | null): string {
     if (adresId == null) return "geen adres";

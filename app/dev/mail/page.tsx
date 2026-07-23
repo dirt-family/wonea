@@ -34,7 +34,7 @@ export default async function DevMailPagina({ searchParams }: { searchParams: Pr
   if (!devMailboxAan()) notFound();
 
   const sp = await searchParams;
-  const mails = db.select().from(emailsOutbox).orderBy(desc(emailsOutbox.createdAt), desc(emailsOutbox.id)).limit(200).all();
+  const mails = await db.select().from(emailsOutbox).orderBy(desc(emailsOutbox.createdAt), desc(emailsOutbox.id)).limit(200);
 
   const gekozenId = sp.id ? Number.parseInt(sp.id, 10) : null;
   const gekozen = gekozenId ? (mails.find((m) => m.id === gekozenId) ?? null) : null;

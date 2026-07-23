@@ -23,11 +23,13 @@ export const metadata: Metadata = { title: "Mijn woningen", robots: { index: fal
 async function eigenActieveClaim(claimId: number) {
   const user = await currentUser();
   if (!user) redirect("/claim");
-  const claim = db
-    .select()
-    .from(claims)
-    .where(and(eq(claims.id, claimId), eq(claims.userId, user.id), isNull(claims.endedAt)))
-    .get();
+  const claim = (
+    await db
+      .select()
+      .from(claims)
+      .where(and(eq(claims.id, claimId), eq(claims.userId, user.id), isNull(claims.endedAt)))
+      .limit(1)
+  )[0];
   if (!claim) redirect("/dashboard?fout=claim");
   return { user, claim };
 }
@@ -48,38 +50,40 @@ async function zetAlerts(formData: FormData) {
   if (!parsed.success) redirect("/dashboard?fout=ongeldig");
   const { user, claim } = await eigenActieveClaim(parsed.data.claimId);
 
-  const abonnement = db.select().from(alertSubscriptions).where(eq(alertSubscriptions.claimId, claim.id)).get();
+  const abonnement = (
+    await db.select().from(alertSubscriptions).where(eq(alertSubscriptions.claimId, claim.id)).limit(1)
+  )[0];
 
   if (parsed.data.actie === "uit") {
-    if (abonnement) db.update(alertSubscriptions).set({ actief: false }).where(eq(alertSubscriptions.id, abonnement.id)).run();
+    if (abonnement) await db.update(alertSubscriptions).set({ actief: false }).where(eq(alertSubscriptions.id, abonnement.id));
     redirect("/dashboard?ok=alerts-uit");
   }
 
   // Aanzetten mag alleen met een niet-ingetrokken alerts-consent; anders is
   // het vinkje (nooit vooraangevinkt) verplicht en loggen we de consent nu.
-  const actieveConsent = db
-    .select({ id: consents.id })
-    .from(consents)
-    .where(and(eq(consents.email, user.email), eq(consents.doel, "alerts"), isNull(consents.revokedAt)))
-    .get();
+  const actieveConsent = (
+    await db
+      .select({ id: consents.id })
+      .from(consents)
+      .where(and(eq(consents.email, user.email), eq(consents.doel, "alerts"), isNull(consents.revokedAt)))
+      .limit(1)
+  )[0];
   if (!actieveConsent) {
     if (!parsed.data.consent) redirect("/dashboard?fout=alerts-consent");
-    db.insert(consents)
-      .values({
-        userId: user.id,
-        email: user.email,
-        doel: "alerts",
-        tekstversie: consentTekstversie("alerts"),
-        bron: "dashboard",
-        consentedAt: nowIso(),
-      })
-      .run();
+    await db.insert(consents).values({
+      userId: user.id,
+      email: user.email,
+      doel: "alerts",
+      tekstversie: consentTekstversie("alerts"),
+      bron: "dashboard",
+      consentedAt: nowIso(),
+    });
   }
 
   if (abonnement) {
-    db.update(alertSubscriptions).set({ actief: true }).where(eq(alertSubscriptions.id, abonnement.id)).run();
+    await db.update(alertSubscriptions).set({ actief: true }).where(eq(alertSubscriptions.id, abonnement.id));
   } else {
-    db.insert(alertSubscriptions).values({ claimId: claim.id, frequentie: "maandelijks", actief: true }).run();
+    await db.insert(alertSubscriptions).values({ claimId: claim.id, frequentie: "maandelijks", actief: true });
   }
   redirect("/dashboard?ok=alerts-aan");
 }
@@ -119,11 +123,11 @@ async function bewaarHypotheek(formData: FormData) {
     rentevastTot = parsed.data.rentevastTot.trim();
   }
 
-  const bestaand = db.select().from(mortgageInfo).where(eq(mortgageInfo.claimId, claim.id)).get();
+  const bestaand = (await db.select().from(mortgageInfo).where(eq(mortgageInfo.claimId, claim.id)).limit(1))[0];
   if (bestaand) {
-    db.update(mortgageInfo).set({ restantEur, rentePct, rentevastTot, updatedAt: nowIso() }).where(eq(mortgageInfo.id, bestaand.id)).run();
+    await db.update(mortgageInfo).set({ restantEur, rentePct, rentevastTot, updatedAt: nowIso() }).where(eq(mortgageInfo.id, bestaand.id));
   } else {
-    db.insert(mortgageInfo).values({ claimId: claim.id, restantEur, rentePct, rentevastTot, updatedAt: nowIso() }).run();
+    await db.insert(mortgageInfo).values({ claimId: claim.id, restantEur, rentePct, rentevastTot, updatedAt: nowIso() });
   }
   redirect("/dashboard?ok=hypotheek");
 }
@@ -137,12 +141,12 @@ async function zegClaimOp(formData: FormData) {
   const { claim } = await eigenActieveClaim(parsed.data.claimId);
 
   const now = nowIso();
-  db.update(claims).set({ endedAt: now }).where(eq(claims.id, claim.id)).run();
-  db.update(alertSubscriptions).set({ actief: false }).where(eq(alertSubscriptions.claimId, claim.id)).run();
-  db.update(sharedReports)
+  await db.update(claims).set({ endedAt: now }).where(eq(claims.id, claim.id));
+  await db.update(alertSubscriptions).set({ actief: false }).where(eq(alertSubscriptions.claimId, claim.id));
+  await db
+    .update(sharedReports)
     .set({ revokedAt: now })
-    .where(and(eq(sharedReports.claimId, claim.id), isNull(sharedReports.revokedAt)))
-    .run();
+    .where(and(eq(sharedReports.claimId, claim.id), isNull(sharedReports.revokedAt)));
   redirect("/dashboard?ok=opgezegd");
 }
 
@@ -217,36 +221,40 @@ export default async function DashboardPagina({ searchParams }: { searchParams: 
   if (!user) redirect("/claim");
   const sp = await searchParams;
 
-  const actieveClaims = db
+  const actieveClaims = await db
     .select()
     .from(claims)
     .where(and(eq(claims.userId, user.id), isNull(claims.endedAt)))
-    .orderBy(desc(claims.createdAt))
-    .all();
+    .orderBy(desc(claims.createdAt));
 
-  const heeftAlertsConsent = !!db
-    .select({ id: consents.id })
-    .from(consents)
-    .where(and(eq(consents.email, user.email), eq(consents.doel, "alerts"), isNull(consents.revokedAt)))
-    .get();
+  const heeftAlertsConsent = !!(
+    await db
+      .select({ id: consents.id })
+      .from(consents)
+      .where(and(eq(consents.email, user.email), eq(consents.doel, "alerts"), isNull(consents.revokedAt)))
+      .limit(1)
+  )[0];
 
-  const kaarten = actieveClaims
-    .map((claim) => {
-      const adres = db.select().from(addresses).where(eq(addresses.id, claim.adresId)).get();
-      if (!adres || adres.status === "opted_out" || isAddressIdSuppressed(adres.id)) return null;
-      const { valuation } = getOrCreateValuation(adres);
-      const historie = valuationHistorie(adres.id).map((v) => ({ datum: v.datum, waarde: v.waarde }));
-      const abonnement = db.select().from(alertSubscriptions).where(eq(alertSubscriptions.claimId, claim.id)).get();
-      const hypotheek = db.select().from(mortgageInfo).where(eq(mortgageInfo.claimId, claim.id)).get();
-      const deelLinks = db
-        .select({ token: sharedReports.token, createdAt: sharedReports.createdAt })
-        .from(sharedReports)
-        .where(and(eq(sharedReports.claimId, claim.id), isNull(sharedReports.revokedAt)))
-        .orderBy(desc(sharedReports.createdAt))
-        .all();
-      return { claim, adres, valuation, historie, abonnement, hypotheek, deelLinks };
-    })
-    .filter((k): k is NonNullable<typeof k> => k !== null);
+  const kaarten = (
+    await Promise.all(
+      actieveClaims.map(async (claim) => {
+        const adres = (await db.select().from(addresses).where(eq(addresses.id, claim.adresId)).limit(1))[0];
+        if (!adres || adres.status === "opted_out" || (await isAddressIdSuppressed(adres.id))) return null;
+        const { valuation } = await getOrCreateValuation(adres);
+        const historie = (await valuationHistorie(adres.id)).map((v) => ({ datum: v.datum, waarde: v.waarde }));
+        const abonnement = (
+          await db.select().from(alertSubscriptions).where(eq(alertSubscriptions.claimId, claim.id)).limit(1)
+        )[0];
+        const hypotheek = (await db.select().from(mortgageInfo).where(eq(mortgageInfo.claimId, claim.id)).limit(1))[0];
+        const deelLinks = await db
+          .select({ token: sharedReports.token, createdAt: sharedReports.createdAt })
+          .from(sharedReports)
+          .where(and(eq(sharedReports.claimId, claim.id), isNull(sharedReports.revokedAt)))
+          .orderBy(desc(sharedReports.createdAt));
+        return { claim, adres, valuation, historie, abonnement, hypotheek, deelLinks };
+      }),
+    )
+  ).filter((k): k is NonNullable<typeof k> => k !== null);
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">

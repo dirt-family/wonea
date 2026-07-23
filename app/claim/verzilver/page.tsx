@@ -45,10 +45,10 @@ async function bevestigVerzilver(formData: FormData) {
   const nummerslug = parsed.data.nummer.toLowerCase().replace(/\s+/g, "");
   const terug = `postcode=${postcode}&nummer=${encodeURIComponent(nummerslug)}`;
 
-  const userId = consumeMagicToken(parsed.data.token);
+  const userId = await consumeMagicToken(parsed.data.token);
   if (userId === null) redirect(`/claim/verzilver?fout=verlopen&${terug}`);
 
-  const resultaat = verzilverClaim({
+  const resultaat = await verzilverClaim({
     userId,
     postcode,
     nummerslug,
@@ -121,13 +121,15 @@ export default async function VerzilverPagina({ searchParams }: { searchParams: 
   const postcode = normalizePostcode(parsed.data.postcode);
   const nummerslug = parsed.data.nummer.toLowerCase().replace(/\s+/g, "");
   const adres = postcode
-    ? db
-        .select()
-        .from(addresses)
-        .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-        .get()
+    ? (
+        await db
+          .select()
+          .from(addresses)
+          .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
+          .limit(1)
+      )[0]
     : null;
-  const claimbaar = adres && adres.status !== "opted_out" && !isSuppressed(adres.postcode, adres.nummerslug);
+  const claimbaar = adres && adres.status !== "opted_out" && !(await isSuppressed(adres.postcode, adres.nummerslug));
   if (!claimbaar) {
     return (
       <Foutpagina

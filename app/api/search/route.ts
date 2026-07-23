@@ -22,30 +22,28 @@ export async function GET(request: Request) {
 
   let rows;
   if (alsPostcode) {
-    rows = db
+    rows = await db
       .select()
       .from(addresses)
       .where(and(like(addresses.postcode, `${alsPostcode}%`), eq(addresses.status, "actief")))
-      .limit(24)
-      .all();
+      .limit(24);
   } else if (straatNummer) {
-    rows = db
+    rows = await db
       .select()
       .from(addresses)
       .where(and(like(addresses.straat, `${straatNummer[1]}%`), like(addresses.nummerslug, `${straatNummer[2].toLowerCase()}%`), eq(addresses.status, "actief")))
-      .limit(24)
-      .all();
+      .limit(24);
   } else {
-    rows = db
+    rows = await db
       .select()
       .from(addresses)
       .where(and(or(like(addresses.straat, `${q}%`), like(addresses.plaats, `${q}%`)), eq(addresses.status, "actief")))
-      .limit(24)
-      .all();
+      .limit(24);
   }
 
+  const gesupprimeerd = await Promise.all(rows.map((a) => isSuppressed(a.postcode, a.nummerslug)));
   const resultaten = rows
-    .filter((a) => !isSuppressed(a.postcode, a.nummerslug))
+    .filter((_, i) => !gesupprimeerd[i])
     .slice(0, 8)
     .map((a) => ({
       label: `${a.straat} ${a.huisnummer}${a.toevoeging ? ` ${a.toevoeging}` : ""}, ${a.postcode} ${a.plaats}`,

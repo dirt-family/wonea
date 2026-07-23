@@ -49,13 +49,13 @@ async function vraagRapportAan(formData: FormData) {
 
   if (rateLimited(`taxatie:${ip}`)) redirect(`/taxatierapport?fout=te-vaak&${terug}`);
 
-  const adres = vindAdres(postcode, nummerslug);
+  const adres = await vindAdres(postcode, nummerslug);
   if (!adres) redirect(`/taxatierapport?fout=onbekend&${terug}`);
 
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`;
   let gelukt = false;
   try {
-    createLead({
+    await createLead({
       type: "taxatie",
       adresId: adres.id,
       email: parsed.data.email.toLowerCase().trim(),

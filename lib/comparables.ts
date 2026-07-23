@@ -39,21 +39,21 @@ function inOppervlakteklasse(doel: number, comp: number): boolean {
  * de buurt. Zelfde woningtype en oppervlakteklasse, laatste 24 maanden.
  * Methode-pagina beschrijft exact deze volgorde.
  */
-export function findComparables(input: {
+export async function findComparables(input: {
   buurtCode: string;
   straat: string;
   woningtype: Woningtype;
   oppervlakteM2: number;
-}): ComparablesResult {
+}): Promise<ComparablesResult> {
   const cutoff = cutoffDatum();
 
-  const buurtSales = db
-    .select()
-    .from(sales)
-    .where(and(eq(sales.buurtCode, input.buurtCode), gte(sales.datum, cutoff), eq(sales.woningtype, input.woningtype)))
-    .orderBy(desc(sales.datum))
-    .all()
-    .filter((s) => inOppervlakteklasse(input.oppervlakteM2, s.oppervlakteM2));
+  const buurtSales = (
+    await db
+      .select()
+      .from(sales)
+      .where(and(eq(sales.buurtCode, input.buurtCode), gte(sales.datum, cutoff), eq(sales.woningtype, input.woningtype)))
+      .orderBy(desc(sales.datum))
+  ).filter((s) => inOppervlakteklasse(input.oppervlakteM2, s.oppervlakteM2));
 
   const straatSales = buurtSales.filter((s) => s.straat === input.straat);
 

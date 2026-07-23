@@ -2,9 +2,9 @@ import { emailLayout } from "@/emails/layout";
 import { queueEmail } from "@/lib/email/send";
 import { baseUrl } from "@/lib/util";
 
-export function stuurOptoutBevestiging(to: string, adresNaam: string, token: string): void {
+export async function stuurOptoutBevestiging(to: string, adresNaam: string, token: string): Promise<void> {
   const link = `${baseUrl()}/verwijderen/${token}`;
-  queueEmail({
+  await queueEmail({
     to,
     subject: `Bevestig het verwijderen van ${adresNaam}`,
     type: "optout_bevestiging",
@@ -18,8 +18,8 @@ export function stuurOptoutBevestiging(to: string, adresNaam: string, token: str
   });
 }
 
-export function stuurOptoutAfgerond(to: string, adresNaam: string): void {
-  queueEmail({
+export async function stuurOptoutAfgerond(to: string, adresNaam: string): Promise<void> {
+  await queueEmail({
     to,
     subject: `${adresNaam} is verwijderd van Wonea`,
     type: "optout_afgerond",

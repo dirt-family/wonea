@@ -32,16 +32,18 @@ const ZEKERHEID: Record<string, string> = {
   laag: "weinig verkopen, dus een bewust brede marge",
 };
 
-function vindAdres(postcodeInput: string, nummerInput: string) {
+async function vindAdres(postcodeInput: string, nummerInput: string) {
   const postcode = normalizePostcode(postcodeInput);
   if (!postcode) return { status: "postcode-ongeldig" as const };
   const nummerslug = nummerInput.toLowerCase().replace(/\s+/g, "");
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-    .get();
-  if (!adres || adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) {
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
+      .limit(1)
+  )[0];
+  if (!adres || adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) {
     return { status: "geen-gegevens" as const };
   }
   return { status: "gevonden" as const, adres };
@@ -51,9 +53,9 @@ export default async function WidgetPagina({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const bron = (sp.bron ?? "").toLowerCase().replace(/[^a-z0-9.-]/g, "").slice(0, 253);
   const heeftZoekopdracht = !!(sp.postcode && sp.nummer);
-  const resultaat = heeftZoekopdracht ? vindAdres(sp.postcode!, sp.nummer!) : null;
+  const resultaat = heeftZoekopdracht ? await vindAdres(sp.postcode!, sp.nummer!) : null;
   const adres = resultaat?.status === "gevonden" ? resultaat.adres : null;
-  const view = adres ? getOrCreateValuation(adres) : null;
+  const view = adres ? await getOrCreateValuation(adres) : null;
   const naam = adres ? `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}` : null;
 
   return (

@@ -12,13 +12,13 @@ function maandenGeleden(n: number): string {
 }
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   ({ db } = await import("@/lib/db"));
   schema = await import("@/db/schema");
   comparables = await import("@/lib/comparables");
 
-  db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" }).run();
-  db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" }).run();
+  await db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" });
+  await db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" });
 
   const rows: Array<{ straat: string; maanden: number; opp: number; type: "tussenwoning" | "appartement"; prijs: number }> = [
     // 6 passende verkopen in de doelstraat, recent
@@ -33,31 +33,31 @@ beforeAll(async () => {
     { straat: "Doelstraat", maanden: 3, opp: 250, type: "tussenwoning", prijs: 900000 },
   ];
   for (const r of rows) {
-    db.insert(schema.sales)
-      .values({ buurtCode: "BU1", straat: r.straat, adresId: null, datum: maandenGeleden(r.maanden), prijs: r.prijs, oppervlakteM2: r.opp, woningtype: r.type, bron: "seed" })
-      .run();
+    await db
+      .insert(schema.sales)
+      .values({ buurtCode: "BU1", straat: r.straat, adresId: null, datum: maandenGeleden(r.maanden), prijs: r.prijs, oppervlakteM2: r.opp, woningtype: r.type, bron: "seed" });
   }
 });
 
 describe("comparables-selectie", () => {
   const doel = { buurtCode: "BU1", straat: "Doelstraat", woningtype: "tussenwoning" as const, oppervlakteM2: 100 };
 
-  it("kiest straatniveau bij 5 of meer passende verkopen in de straat", () => {
-    const r = comparables.findComparables(doel);
+  it("kiest straatniveau bij 5 of meer passende verkopen in de straat", async () => {
+    const r = await comparables.findComparables(doel);
     expect(r.niveau).toBe("straat");
     expect(r.comparables).toHaveLength(6);
     expect(r.comparables.every((c) => c.straat === "Doelstraat")).toBe(true);
   });
 
-  it("filtert venster, type en oppervlakteklasse", () => {
-    const r = comparables.findComparables(doel);
+  it("filtert venster, type en oppervlakteklasse", async () => {
+    const r = await comparables.findComparables(doel);
     expect(r.comparables.every((c) => c.woningtype === "tussenwoning")).toBe(true);
     expect(r.comparables.every((c) => c.oppervlakteM2 >= 70 && c.oppervlakteM2 <= 140)).toBe(true);
     expect(r.comparables.every((c) => c.prijs !== 350000)).toBe(true); // de oude verkoop
   });
 
-  it("valt terug op buurtniveau bij te weinig straat-verkopen", () => {
-    const r = comparables.findComparables({ ...doel, straat: "Legestraat" });
+  it("valt terug op buurtniveau bij te weinig straat-verkopen", async () => {
+    const r = await comparables.findComparables({ ...doel, straat: "Legestraat" });
     expect(r.niveau).toBe("buurt");
     expect(r.comparables.length).toBeGreaterThanOrEqual(10);
   });

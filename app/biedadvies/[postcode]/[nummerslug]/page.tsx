@@ -22,22 +22,24 @@ import { Kaart, KnopPrimair, SectieLabel, VoorbeelddataLabel } from "@/component
 
 type Params = { postcode: string; nummerslug: string };
 
-function vindAdres(params: Params) {
+async function vindAdres(params: Params) {
   const postcode = normalizePostcode(params.postcode);
   if (!postcode) return null;
   const nummerslug = params.nummerslug.toLowerCase();
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const adres = vindAdres(await params);
+  const adres = await vindAdres(await params);
   if (!adres) return { title: "Woning niet gevonden", robots: { index: false, follow: false } };
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
   return {
@@ -134,12 +136,12 @@ function OverbiedingTrend({ punten }: { punten: { maand: string; pct: number }[]
 }
 
 export default async function BiedadviesPagina({ params }: { params: Promise<Params> }) {
-  const adres = vindAdres(await params);
+  const adres = await vindAdres(await params);
   if (!adres) notFound();
 
-  const { valuation } = getOrCreateValuation(adres);
+  const { valuation } = await getOrCreateValuation(adres);
 
-  const statsAlle = db.select().from(marketStats).where(eq(marketStats.buurtCode, adres.buurtCode)).orderBy(marketStats.maand).all();
+  const statsAlle = await db.select().from(marketStats).where(eq(marketStats.buurtCode, adres.buurtCode)).orderBy(marketStats.maand);
   const stats12 = statsAlle.slice(-12);
   const stats6 = stats12.slice(-6);
   const marktMaanden: MarktMaand[] = stats6.map((s) => ({
@@ -161,7 +163,7 @@ export default async function BiedadviesPagina({ params }: { params: Promise<Par
     .map((s) => ({ maand: s.maand, pct: s.overbiedingPct }));
 
   const user = await currentUser();
-  const heeftVerdieping = user ? hasEntitlement(user.id, "biedadvies") : false;
+  const heeftVerdieping = user ? await hasEntitlement(user.id, "biedadvies") : false;
   const premiumUrl = `/premium?product=biedadvies&van=${encodeURIComponent(`/biedadvies/${adres.postcode}/${adres.nummerslug}`)}`;
 
   return (

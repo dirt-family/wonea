@@ -35,7 +35,7 @@ function maakAanvraag(input: {
 }
 
 beforeAll(async () => {
-  maakTestDb();
+  await maakTestDb();
   ({ db } = await import("@/lib/db"));
   schema = await import("@/db/schema");
   leadsLib = await import("@/lib/leads");
@@ -44,23 +44,24 @@ beforeAll(async () => {
   leadwaardeConfig = await import("@/lib/config/leadwaarde");
   ({ eq } = await import("drizzle-orm"));
 
-  db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" }).run();
-  db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" }).run();
-  adresId = db
-    .insert(schema.addresses)
-    .values({
-      straat: "Hypotheekstraat", huisnummer: 12, toevoeging: null, nummerslug: "12", postcode: "5611AB", plaats: "Test",
-      buurtCode: "BU1", bouwjaar: 1998, oppervlakteM2: 120, woningtype: "tussenwoning", energielabel: "C",
-      energielabelBron: "indicatie", bron: "seed", status: "actief",
-    })
-    .returning({ id: schema.addresses.id })
-    .get().id;
+  await db.insert(schema.municipalities).values({ code: "GM0000", naam: "Test", slug: "test" });
+  await db.insert(schema.neighborhoods).values({ buurtCode: "BU1", naam: "Testbuurt", slug: "testbuurt", gemeenteCode: "GM0000" });
+  adresId = (
+    await db
+      .insert(schema.addresses)
+      .values({
+        straat: "Hypotheekstraat", huisnummer: 12, toevoeging: null, nummerslug: "12", postcode: "5611AB", plaats: "Test",
+        buurtCode: "BU1", bouwjaar: 1998, oppervlakteM2: 120, woningtype: "tussenwoning", energielabel: "C",
+        energielabelBron: "indicatie", bron: "seed", status: "actief",
+      })
+      .returning({ id: schema.addresses.id })
+  )[0].id;
 });
 
 describe("hypotheekfunnel via createLead", () => {
-  it("maakt lead, consent, event en bevestigingsmail aan met juiste subtype en leadwaarde", () => {
+  it("maakt lead, consent, event en bevestigingsmail aan met juiste subtype en leadwaarde", async () => {
     const email = "oversluiter@voorbeeld.nl";
-    const { leadId } = maakAanvraag({
+    const { leadId } = await maakAanvraag({
       subtype: "oversluiten",
       email,
       adresId,
@@ -68,7 +69,7 @@ describe("hypotheekfunnel via createLead", () => {
       antwoorden: { rentevastTot: "2027-03", huidigeRentePct: 3.9, restschuld: 285000 },
     });
 
-    const lead = db.select().from(schema.leads).where(eq(schema.leads.id, leadId)).get();
+    const lead = (await db.select().from(schema.leads).where(eq(schema.leads.id, leadId)).limit(1))[0];
     expect(lead).toBeDefined();
     expect(lead!.type).toBe("hypotheek");
     expect(lead!.subtype).toBe("oversluiten");
@@ -81,7 +82,7 @@ describe("hypotheekfunnel via createLead", () => {
     expect(JSON.parse(lead!.antwoordenJson)).toEqual({ rentevastTot: "2027-03", huidigeRentePct: 3.9, restschuld: 285000 });
 
     // Consent: doel lead_doorgifte, letterlijke tekst met versie-id, juiste bron.
-    const consent = db.select().from(schema.consents).where(eq(schema.consents.id, lead!.consentId!)).get();
+    const consent = (await db.select().from(schema.consents).where(eq(schema.consents.id, lead!.consentId!)).limit(1))[0];
     expect(consent).toBeDefined();
     expect(consent!.doel).toBe("lead_doorgifte");
     expect(consent!.bron).toBe("funnel:hypotheek");
@@ -93,25 +94,25 @@ describe("hypotheekfunnel via createLead", () => {
     expect(consent!.tekstversie).toContain("een onafhankelijke hypotheekadviseur");
 
     // Lead-event "aangemaakt".
-    const events = db.select().from(schema.leadEvents).where(eq(schema.leadEvents.leadId, leadId)).all();
+    const events = await db.select().from(schema.leadEvents).where(eq(schema.leadEvents.leadId, leadId));
     expect(events).toHaveLength(1);
     expect(events[0].event).toBe("aangemaakt");
 
     // Bevestigingsmail in de outbox: type partij en adres benoemd, met afmeldlink.
-    const mail = db.select().from(schema.emailsOutbox).all().find((m) => m.type === "lead_bevestiging" && m.to === email);
+    const mail = (await db.select().from(schema.emailsOutbox)).find((m) => m.type === "lead_bevestiging" && m.to === email);
     expect(mail).toBeDefined();
     expect(mail!.html).toContain("een onafhankelijke hypotheekadviseur");
     expect(mail!.html).toContain("Hypotheekstraat 12, Test");
     expect(mail!.html.toLowerCase()).toContain("afmelden");
   });
 
-  it("registreert elk trigger-subtype met de hypotheek-leadwaarde, ook zonder adres", () => {
-    const overwaarde = maakAanvraag({
+  it("registreert elk trigger-subtype met de hypotheek-leadwaarde, ook zonder adres", async () => {
+    const overwaarde = await maakAanvraag({
       subtype: "overwaarde",
       email: "overwaarde@voorbeeld.nl",
       antwoorden: { waardeBron: "eigen", woningWaarde: 450000, restantHypotheek: 250000, overwaardeIndicatie: 200000, doel: "verduurzamen" },
     });
-    const aankoop = maakAanvraag({
+    const aankoop = await maakAanvraag({
       subtype: "aankoop",
       email: "koper@voorbeeld.nl",
       antwoorden: { fase: "bod_gedaan", budget: "300k_tot_450k", eigenInbreng: "ja" },
@@ -121,31 +122,32 @@ describe("hypotheekfunnel via createLead", () => {
       [overwaarde.leadId, "overwaarde"],
       [aankoop.leadId, "aankoop"],
     ] as const) {
-      const lead = db.select().from(schema.leads).where(eq(schema.leads.id, leadId)).get();
+      const lead = (await db.select().from(schema.leads).where(eq(schema.leads.id, leadId)).limit(1))[0];
       expect(lead!.subtype).toBe(subtype);
       expect(lead!.adresId).toBeNull();
       expect(lead!.estValueEur).toBe(leadwaardeConfig.leadwaarde("hypotheek", subtype, "nieuw"));
     }
   });
 
-  it("weigert een gesupprimeerd adres netjes en schrijft dan niets weg", () => {
-    const suppressedId = db
-      .insert(schema.addresses)
-      .values({
-        straat: "Wegstraat", huisnummer: 3, toevoeging: null, nummerslug: "3", postcode: "5611ZZ", plaats: "Test",
-        buurtCode: "BU1", bouwjaar: 1975, oppervlakteM2: 95, woningtype: "hoekwoning", energielabel: "D",
-        energielabelBron: "indicatie", bron: "seed", status: "actief",
-      })
-      .returning({ id: schema.addresses.id })
-      .get().id;
-    db.insert(schema.optouts)
+  it("weigert een gesupprimeerd adres netjes en schrijft dan niets weg", async () => {
+    const suppressedId = (
+      await db
+        .insert(schema.addresses)
+        .values({
+          straat: "Wegstraat", huisnummer: 3, toevoeging: null, nummerslug: "3", postcode: "5611ZZ", plaats: "Test",
+          buurtCode: "BU1", bouwjaar: 1975, oppervlakteM2: 95, woningtype: "hoekwoning", energielabel: "D",
+          energielabelBron: "indicatie", bron: "seed", status: "actief",
+        })
+        .returning({ id: schema.addresses.id })
+    )[0].id;
+    await db
+      .insert(schema.optouts)
       .values({
         adresId: suppressedId, postcode: "5611ZZ", nummerslug: "3", token: "optout-hypotheek-test",
         aangevraagdAt: "2026-07-22", bevestigdAt: "2026-07-22T10:00:00Z",
-      })
-      .run();
+      });
 
-    expect(() =>
+    await expect(
       maakAanvraag({
         subtype: "overwaarde",
         email: "geweigerd@voorbeeld.nl",
@@ -153,14 +155,14 @@ describe("hypotheekfunnel via createLead", () => {
         adresNaam: "Wegstraat 3, Test",
         antwoorden: { waardeBron: "eigen", woningWaarde: 300000, restantHypotheek: 200000, overwaardeIndicatie: 100000, doel: "verbouwen" },
       }),
-    ).toThrow(/verwijderd/);
+    ).rejects.toThrow(/verwijderd/);
 
     // Nette weigering betekent: geen lead, geen consent, geen mail voor dit adres.
-    const leadsVoorAdres = db.select().from(schema.leads).where(eq(schema.leads.adresId, suppressedId)).all();
+    const leadsVoorAdres = await db.select().from(schema.leads).where(eq(schema.leads.adresId, suppressedId));
     expect(leadsVoorAdres).toHaveLength(0);
-    const consents = db.select().from(schema.consents).where(eq(schema.consents.email, "geweigerd@voorbeeld.nl")).all();
+    const consents = await db.select().from(schema.consents).where(eq(schema.consents.email, "geweigerd@voorbeeld.nl"));
     expect(consents).toHaveLength(0);
-    const mail = db.select().from(schema.emailsOutbox).all().find((m) => m.to === "geweigerd@voorbeeld.nl");
+    const mail = (await db.select().from(schema.emailsOutbox)).find((m) => m.to === "geweigerd@voorbeeld.nl");
     expect(mail).toBeUndefined();
   });
 });

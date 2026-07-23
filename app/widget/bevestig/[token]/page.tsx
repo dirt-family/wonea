@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "Aanmelding bevestigen", robots: { in
 export default async function WidgetBevestigPagina({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
-  const capture = db.select().from(widgetCaptures).where(eq(widgetCaptures.bevestigToken, token)).get();
+  const capture = (await db.select().from(widgetCaptures).where(eq(widgetCaptures.bevestigToken, token)).limit(1))[0];
 
   if (!capture) {
     return (
@@ -38,14 +38,14 @@ export default async function WidgetBevestigPagina({ params }: { params: Promise
 
   const alBevestigd = !!capture.bevestigdAt;
   if (!alBevestigd) {
-    db.update(widgetCaptures).set({ bevestigdAt: nowIso() }).where(eq(widgetCaptures.id, capture.id)).run();
+    await db.update(widgetCaptures).set({ bevestigdAt: nowIso() }).where(eq(widgetCaptures.id, capture.id));
   }
 
   // Link naar de woningpagina alleen als het adres bekend en nog toonbaar is.
   let woning: { href: string; naam: string } | null = null;
   if (capture.adresId) {
-    const adres = db.select().from(addresses).where(eq(addresses.id, capture.adresId)).get();
-    if (adres && adres.status === "actief" && !isAddressIdSuppressed(adres.id)) {
+    const adres = (await db.select().from(addresses).where(eq(addresses.id, capture.adresId)).limit(1))[0];
+    if (adres && adres.status === "actief" && !(await isAddressIdSuppressed(adres.id))) {
       woning = {
         href: `/woning/${adres.postcode}/${adres.nummerslug}`,
         naam: `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}`,

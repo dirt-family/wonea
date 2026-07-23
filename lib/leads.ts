@@ -36,12 +36,12 @@ function retentieTot(): string {
  * Doorsturen naar echte partijen gebeurt NIET automatisch: dat is een
  * bewuste admin-actie (status "doorgestuurd") en pas echt bij livegang.
  */
-export function createLead(input: NieuweLead): { leadId: number } {
-  if (input.adresId && isAddressIdSuppressed(input.adresId)) {
+export async function createLead(input: NieuweLead): Promise<{ leadId: number }> {
+  if (input.adresId && (await isAddressIdSuppressed(input.adresId))) {
     throw new Error("Adres is verwijderd van Wonea; hiervoor maken we geen leads aan.");
   }
   const now = nowIso();
-  const consent = db
+  const consentRows = await db
     .insert(consents)
     .values({
       userId: input.userId ?? null,
@@ -51,10 +51,10 @@ export function createLead(input: NieuweLead): { leadId: number } {
       bron: input.bron,
       consentedAt: now,
     })
-    .returning({ id: consents.id })
-    .get();
+    .returning({ id: consents.id });
+  const consent = consentRows[0];
 
-  const lead = db
+  const leadRows = await db
     .insert(leads)
     .values({
       type: input.type,
@@ -69,12 +69,12 @@ export function createLead(input: NieuweLead): { leadId: number } {
       createdAt: now,
       retentieTot: retentieTot(),
     })
-    .returning({ id: leads.id })
-    .get();
+    .returning({ id: leads.id });
+  const lead = leadRows[0];
 
-  db.insert(leadEvents).values({ leadId: lead.id, event: "aangemaakt", ts: now }).run();
+  await db.insert(leadEvents).values({ leadId: lead.id, event: "aangemaakt", ts: now });
 
-  stuurLeadBevestiging({
+  await stuurLeadBevestiging({
     to: input.email,
     type: input.type,
     partijType: input.partijType,

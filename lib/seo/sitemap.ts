@@ -1,4 +1,4 @@
-import { sqlite } from "@/lib/db";
+import { sql } from "@/lib/db";
 import { baseUrl, todayIso } from "@/lib/util";
 import { MIN_COMPARABLES_VOOR_INDEX } from "@/lib/seo/gating";
 
@@ -34,62 +34,57 @@ function comparablesCutoff(): string {
 }
 
 // Gedeelde WHERE voor tellen en pagineren: actief, niet gesupprimeerd,
-// gebied op de whitelist, en voldoende datadiepte.
-const INDEXEERBAAR_WHERE = `
-  a.status = 'actief'
-  AND NOT EXISTS (
-    SELECT 1 FROM optouts o
-    WHERE o.postcode = a.postcode AND o.nummerslug = a.nummerslug AND o.bevestigd_at IS NOT NULL
-  )
-  AND EXISTS (
-    SELECT 1 FROM index_gating g
-    WHERE g.indexeerbaar = 1
-      AND (
-        (g.scope = 'buurt' AND g.code = a.buurt_code)
-        OR (g.scope = 'postcode4' AND g.code = substr(a.postcode, 1, 4))
-      )
-  )
-  AND (
-    (
-      SELECT count(*) FROM sales s
-      WHERE s.buurt_code = a.buurt_code
-        AND s.datum >= @cutoff
-        AND s.woningtype = a.woningtype
-        AND s.oppervlakte_m2 >= a.oppervlakte_m2 * 0.7
-        AND s.oppervlakte_m2 <= a.oppervlakte_m2 * 1.4
-    ) >= @minComps
-    OR EXISTS (SELECT 1 FROM woz_values w WHERE w.adres_id = a.id AND w.bron = 'eigenaar')
-    OR (a.energielabel IS NOT NULL AND a.energielabel_bron = 'echt')
-  )
-`;
+// gebied op de whitelist, en voldoende datadiepte. Postgres-boolean:
+// index_gating.indexeerbaar = true (was = 1 in SQLite).
+function indexeerbaarWhere(cutoff: string, minComps: number) {
+  return sql`
+    a.status = 'actief'
+    AND NOT EXISTS (
+      SELECT 1 FROM optouts o
+      WHERE o.postcode = a.postcode AND o.nummerslug = a.nummerslug AND o.bevestigd_at IS NOT NULL
+    )
+    AND EXISTS (
+      SELECT 1 FROM index_gating g
+      WHERE g.indexeerbaar = true
+        AND (
+          (g.scope = 'buurt' AND g.code = a.buurt_code)
+          OR (g.scope = 'postcode4' AND g.code = substr(a.postcode, 1, 4))
+        )
+    )
+    AND (
+      (
+        SELECT count(*) FROM sales s
+        WHERE s.buurt_code = a.buurt_code
+          AND s.datum >= ${cutoff}
+          AND s.woningtype = a.woningtype
+          AND s.oppervlakte_m2 >= a.oppervlakte_m2 * 0.7
+          AND s.oppervlakte_m2 <= a.oppervlakte_m2 * 1.4
+      ) >= ${minComps}
+      OR EXISTS (SELECT 1 FROM woz_values w WHERE w.adres_id = a.id AND w.bron = 'eigenaar')
+      OR (a.energielabel IS NOT NULL AND a.energielabel_bron = 'echt')
+    )
+  `;
+}
 
 /** Aantal adressen dat door de volledige gating komt (voedt het aantal shards). */
-export function telIndexeerbareAdressen(): number {
-  const rij = sqlite
-    .prepare(`SELECT count(*) AS n FROM addresses a WHERE ${INDEXEERBAAR_WHERE}`)
-    .get({ cutoff: comparablesCutoff(), minComps: MIN_COMPARABLES_VOOR_INDEX }) as { n: number };
-  return rij.n;
+export async function telIndexeerbareAdressen(): Promise<number> {
+  const rijen = await sql<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM addresses a WHERE ${indexeerbaarWhere(comparablesCutoff(), MIN_COMPARABLES_VOOR_INDEX)}`;
+  return rijen[0].n;
 }
 
 type ShardRij = { postcode: string; nummerslug: string; laatste_valuation: string | null };
 
 /** Adressen voor shard n (1-based), stabiel gesorteerd op id. */
-function indexeerbareAdressenShard(n: number, perShard: number): ShardRij[] {
-  return sqlite
-    .prepare(
-      `SELECT a.postcode, a.nummerslug,
-        (SELECT max(v.datum) FROM valuations v WHERE v.adres_id = a.id) AS laatste_valuation
-      FROM addresses a
-      WHERE ${INDEXEERBAAR_WHERE}
-      ORDER BY a.id
-      LIMIT @limit OFFSET @offset`,
-    )
-    .all({
-      cutoff: comparablesCutoff(),
-      minComps: MIN_COMPARABLES_VOOR_INDEX,
-      limit: perShard,
-      offset: (n - 1) * perShard,
-    }) as ShardRij[];
+async function indexeerbareAdressenShard(n: number, perShard: number): Promise<ShardRij[]> {
+  const rijen = await sql<ShardRij[]>`
+    SELECT a.postcode, a.nummerslug,
+      (SELECT max(v.datum) FROM valuations v WHERE v.adres_id = a.id) AS laatste_valuation
+    FROM addresses a
+    WHERE ${indexeerbaarWhere(comparablesCutoff(), MIN_COMPARABLES_VOOR_INDEX)}
+    ORDER BY a.id
+    LIMIT ${perShard} OFFSET ${(n - 1) * perShard}`;
+  return rijen;
 }
 
 /** Shardnummers (1-based) voor een totaal: 0 -> [], 45001 -> [1, 2]. */
@@ -107,9 +102,9 @@ function urlEntry(loc: string, lastmod: string): string {
 }
 
 /** De sitemap-index op /sitemap.xml: somt de shards op. */
-export function bouwSitemapIndexXml(): string {
+export async function bouwSitemapIndexXml(): Promise<string> {
   const base = baseUrl();
-  const shards = ["statisch.xml", ...shardIndexen(telIndexeerbareAdressen()).map((n) => `adressen-${n}.xml`)];
+  const shards = ["statisch.xml", ...shardIndexen(await telIndexeerbareAdressen()).map((n) => `adressen-${n}.xml`)];
   const regels = shards.map((naam) => `  <sitemap><loc>${escapeXml(`${base}/sitemaps/${naam}`)}</loc></sitemap>`);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${regels.join("\n")}\n</sitemapindex>\n`;
 }
@@ -126,11 +121,10 @@ export function bouwStatischeShardXml(): string {
  * Adres-shard n. lastmod = datum van de laatste valuation van het adres,
  * of vandaag als er nog geen valuation is.
  */
-export function bouwAdressenShardXml(n: number, perShard = MAX_ADRESSEN_PER_SHARD): string {
+export async function bouwAdressenShardXml(n: number, perShard = MAX_ADRESSEN_PER_SHARD): Promise<string> {
   const base = baseUrl();
   const vandaag = todayIso();
-  const regels = indexeerbareAdressenShard(n, perShard).map((a) =>
-    urlEntry(`${base}/woning/${a.postcode}/${a.nummerslug}`, a.laatste_valuation ?? vandaag),
-  );
+  const rijen = await indexeerbareAdressenShard(n, perShard);
+  const regels = rijen.map((a) => urlEntry(`${base}/woning/${a.postcode}/${a.nummerslug}`, a.laatste_valuation ?? vandaag));
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${regels.join("\n")}\n</urlset>\n`;
 }

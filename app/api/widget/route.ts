@@ -91,15 +91,15 @@ export async function POST(request: Request) {
 
   // Adres koppelen mag alleen als het echt toonbaar is; bij suppressie of
   // opt-out slaan we de capture zonder adres-koppeling op.
-  const adres = db
+  const adres = (await db
     .select()
     .from(addresses)
     .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-    .get();
-  const bruikbaar = adres && adres.status === "actief" && !isSuppressed(postcode, nummerslug) ? adres : null;
+    .limit(1))[0];
+  const bruikbaar = adres && adres.status === "actief" && !(await isSuppressed(postcode, nummerslug)) ? adres : null;
 
   const now = nowIso();
-  const consent = db
+  const consent = (await db
     .insert(consents)
     .values({
       email: parsed.data.email,
@@ -108,11 +108,10 @@ export async function POST(request: Request) {
       bron: `widget:${echo.bron}`,
       consentedAt: now,
     })
-    .returning({ id: consents.id })
-    .get();
+    .returning({ id: consents.id }))[0];
 
   const token = randomToken(24);
-  db.insert(widgetCaptures)
+  await db.insert(widgetCaptures)
     .values({
       email: parsed.data.email,
       adresId: bruikbaar?.id ?? null,
@@ -120,11 +119,10 @@ export async function POST(request: Request) {
       consentId: consent.id,
       bevestigToken: token,
       createdAt: now,
-    })
-    .run();
+    });
 
   const adresNaam = bruikbaar ? `${bruikbaar.straat} ${bruikbaar.huisnummer}${bruikbaar.toevoeging ? ` ${bruikbaar.toevoeging}` : ""}, ${bruikbaar.plaats}` : null;
-  stuurWidgetDoubleOptin(parsed.data.email, adresNaam, token, echo.bron);
+  await stuurWidgetDoubleOptin(parsed.data.email, adresNaam, token, echo.bron);
 
   return antwoord(isJson, request, echo, { ok: true });
 }

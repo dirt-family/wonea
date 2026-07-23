@@ -11,7 +11,7 @@ import { bouwSitemapIndexXml } from "@/lib/seo/sitemap";
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
-  return new Response(bouwSitemapIndexXml(), {
+  return new Response(await bouwSitemapIndexXml(), {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
       "Cache-Control": "public, max-age=3600",

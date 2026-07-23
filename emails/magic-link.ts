@@ -8,20 +8,20 @@ import { CONSENT_TEKST_ALERTS, CONSENT_TEKST_MARKETING } from "@/app/claim/conse
  * vastgelegd; deze mail herhaalt ze zodat de ontvanger precies weet wat er
  * gebeurt bij het klikken.
  */
-export function stuurMagicLink(input: {
+export async function stuurMagicLink(input: {
   to: string;
   adresNaam: string;
   rol: "eigenaar" | "bewoner";
   alerts: boolean;
   marketing: boolean;
   verzilverUrl: string;
-}): void {
+}): Promise<void> {
   const keuzes: string[] = [`Je claimt dit adres als ${input.rol} (zelfverklaring, we controleren geen eigendom).`];
   if (input.alerts) keuzes.push(`Je vinkte aan: "${CONSENT_TEKST_ALERTS}".`);
   if (input.marketing) keuzes.push(`Je vinkte aan: "${CONSENT_TEKST_MARKETING}".`);
   if (!input.alerts && !input.marketing) keuzes.push("Je vinkte geen extra mails aan; je krijgt dus alleen deze bevestiging.");
 
-  queueEmail({
+  await queueEmail({
     to: input.to,
     subject: `Bevestig je e-mailadres voor ${input.adresNaam}`,
     type: "magic_link",

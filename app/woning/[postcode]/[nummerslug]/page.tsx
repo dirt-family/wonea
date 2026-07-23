@@ -32,35 +32,37 @@ export function generateStaticParams(): Params[] {
   return [];
 }
 
-function vindAdres(params: Params) {
+async function vindAdres(params: Params) {
   const postcode = normalizePostcode(params.postcode);
   if (!postcode) return null;
   const nummerslug = params.nummerslug.toLowerCase();
-  const adres = db
-    .select()
-    .from(addresses)
-    .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
-    .get();
+  const adres = (
+    await db
+      .select()
+      .from(addresses)
+      .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, nummerslug)))
+      .limit(1)
+  )[0];
   if (!adres) return null;
-  if (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug)) return null;
+  if (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug))) return null;
   return adres;
 }
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const adres = vindAdres(await params);
+  const adres = await vindAdres(await params);
   if (!adres) return { title: "Woning niet gevonden", robots: { index: false, follow: false } };
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
 
   // Indexatie-gating op twee niveaus (lib/seo/gating.ts): gebiedswhitelist
   // EN datadiepte. Default is noindex; alleen een pagina met echte inhoud in
   // een vrijgegeven gebied mag de index in.
-  const comparables = findComparables({
+  const comparables = await findComparables({
     buurtCode: adres.buurtCode,
     straat: adres.straat,
     woningtype: adres.woningtype,
     oppervlakteM2: adres.oppervlakteM2,
   });
-  const indexeerbaar = isAdresIndexeerbaar(adres, { nComparables: comparables.comparables.length });
+  const indexeerbaar = await isAdresIndexeerbaar(adres, { nComparables: comparables.comparables.length });
 
   return {
     title: `${naam}, ${adres.postcode} ${adres.plaats}: woningwaarde en bandbreedte`,
@@ -93,12 +95,14 @@ function Bandbreedte({ laag, waarde, hoog }: { laag: number; waarde: number; hoo
 }
 
 export default async function WoningPagina({ params }: { params: Promise<Params> }) {
-  const adres = vindAdres(await params);
+  const adres = await vindAdres(await params);
   if (!adres) notFound();
 
-  const { valuation, comparables, buurt } = getOrCreateValuation(adres);
-  const gemeente = buurt ? db.select().from(municipalities).where(eq(municipalities.code, buurt.gemeenteCode)).get() : undefined;
-  const woz = db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)).orderBy(wozValues.peiljaar).all().at(-1);
+  const { valuation, comparables, buurt } = await getOrCreateValuation(adres);
+  const gemeente = buurt
+    ? (await db.select().from(municipalities).where(eq(municipalities.code, buurt.gemeenteCode)).limit(1))[0]
+    : undefined;
+  const woz = (await db.select().from(wozValues).where(eq(wozValues.adresId, adres.id)).orderBy(wozValues.peiljaar)).at(-1);
   const naam = `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}`;
   const adresQuery = `postcode=${adres.postcode}&nummer=${adres.nummerslug}`;
   const labelSlecht = ["D", "E", "F", "G"].includes((adres.energielabel ?? "").toUpperCase());

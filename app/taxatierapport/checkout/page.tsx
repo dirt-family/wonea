@@ -15,7 +15,7 @@ export default async function TaxatieCheckoutPagina({
   searchParams: Promise<{ postcode?: string; nummer?: string; moment?: string }>;
 }) {
   const sp = await searchParams;
-  const adres = sp.postcode && sp.nummer ? vindAdres(sp.postcode, sp.nummer) : null;
+  const adres = sp.postcode && sp.nummer ? await vindAdres(sp.postcode, sp.nummer) : null;
   const moment = isMoment(sp.moment) ? MOMENTEN[sp.moment] : null;
   const naam = adres ? `${adres.straat} ${adres.huisnummer}${adres.toevoeging ? ` ${adres.toevoeging}` : ""}, ${adres.plaats}` : null;
 

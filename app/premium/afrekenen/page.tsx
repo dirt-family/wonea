@@ -51,11 +51,11 @@ async function stuurLoginLink(formData: FormData) {
   const email = parsed.data.email.toLowerCase().trim();
   if (magicLinkRateLimited(email)) redirect(`/premium/afrekenen?${q}&fout=te-vaak`);
 
-  const token = createMagicToken(email);
+  const token = await createMagicToken(email);
   const verzilverParams = new URLSearchParams({ token, product });
   if (van) verzilverParams.set("van", van);
   const info = PRODUCTEN[product];
-  stuurPremiumLoginMail({
+  await stuurPremiumLoginMail({
     to: email,
     productNaam: info.naam,
     prijs: info.prijs,
@@ -79,7 +79,7 @@ async function rekenAf(formData: FormData) {
   const ip = hdrs.get("x-forwarded-for") ?? "lokaal";
   if (rateLimited(`premium-koop:${ip}`, 10)) redirect(`/premium/afrekenen?${q}&fout=te-vaak`);
 
-  const resultaat = koopPremium(user.id, product);
+  const resultaat = await koopPremium(user.id, product);
   // Al gekocht (bv. dubbelklik of tweede tabblad): melden, niet dubbel aanmaken.
   if (resultaat.status === "al_gekocht") redirect(`/premium/klaar?${q}&al=1`);
   redirect(van ?? `/premium/klaar?${q}`);
@@ -151,7 +151,7 @@ export default async function AfrekenenPagina({
     );
   }
 
-  if (hasEntitlement(user.id, product)) {
+  if (await hasEntitlement(user.id, product)) {
     return (
       <div className="mx-auto max-w-2xl px-5 py-16">
         <h1 className="text-3xl font-semibold">Je hebt dit al</h1>

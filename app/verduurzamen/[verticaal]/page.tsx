@@ -33,7 +33,7 @@ export default async function VerticaalPagina({
   const config = VERTICALEN[verticaal];
 
   const sp = await searchParams;
-  const adres = sp.postcode && sp.nummer ? vindVerduurzaamAdres(sp.postcode, sp.nummer) : null;
+  const adres = sp.postcode && sp.nummer ? await vindVerduurzaamAdres(sp.postcode, sp.nummer) : null;
   if (!adres) {
     const qs = new URLSearchParams();
     if (sp.postcode) qs.set("postcode", sp.postcode);

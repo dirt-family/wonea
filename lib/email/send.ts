@@ -8,8 +8,6 @@ import { nowIso } from "@/lib/util";
  * (alleen in development). Echte verzending is een livegang-TODO.
  * Templates staan in emails/ en bevatten ALTIJD een afmeld-/beheerlink.
  */
-export function queueEmail(input: { to: string; subject: string; html: string; type: EmailType }): void {
-  db.insert(emailsOutbox)
-    .values({ to: input.to, subject: input.subject, html: input.html, type: input.type, status: "queued", createdAt: nowIso() })
-    .run();
+export async function queueEmail(input: { to: string; subject: string; html: string; type: EmailType }): Promise<void> {
+  await db.insert(emailsOutbox).values({ to: input.to, subject: input.subject, html: input.html, type: input.type, status: "queued", createdAt: nowIso() });
 }

@@ -12,22 +12,22 @@ import { nowIso } from "@/lib/util";
  * Her-ingest (scripts/ingest-*) checkt isSuppressed voor elke upsert.
  */
 
-export function isSuppressed(postcode: string, nummerslug: string): boolean {
-  const row = db
+export async function isSuppressed(postcode: string, nummerslug: string): Promise<boolean> {
+  const rows = await db
     .select({ id: optouts.id })
     .from(optouts)
     .where(and(eq(optouts.postcode, postcode), eq(optouts.nummerslug, nummerslug), isNotNull(optouts.bevestigdAt)))
-    .get();
-  return !!row;
+    .limit(1);
+  return rows.length > 0;
 }
 
-export function isAddressIdSuppressed(adresId: number): boolean {
-  const row = db
+export async function isAddressIdSuppressed(adresId: number): Promise<boolean> {
+  const rows = await db
     .select({ id: optouts.id })
     .from(optouts)
     .where(and(eq(optouts.adresId, adresId), isNotNull(optouts.bevestigdAt)))
-    .get();
-  return !!row;
+    .limit(1);
+  return rows.length > 0;
 }
 
 /**
@@ -36,32 +36,31 @@ export function isAddressIdSuppressed(adresId: number): boolean {
  * nette afmeldmail naar claimers. Sitemap/noindex volgen automatisch omdat
  * die paden isSuppressed checken.
  */
-export function applyOptoutCascade(adresId: number): void {
+export async function applyOptoutCascade(adresId: number): Promise<void> {
   const now = nowIso();
 
-  db.update(addresses).set({ status: "opted_out" }).where(eq(addresses.id, adresId)).run();
+  await db.update(addresses).set({ status: "opted_out" }).where(eq(addresses.id, adresId));
 
-  db.update(sharedReports).set({ revokedAt: now }).where(and(eq(sharedReports.adresId, adresId))).run();
+  await db.update(sharedReports).set({ revokedAt: now }).where(eq(sharedReports.adresId, adresId));
 
-  const adresClaims = db.select().from(claims).where(eq(claims.adresId, adresId)).all();
+  const adresClaims = await db.select().from(claims).where(eq(claims.adresId, adresId));
   for (const claim of adresClaims) {
     if (!claim.endedAt) {
-      db.update(claims).set({ endedAt: now }).where(eq(claims.id, claim.id)).run();
+      await db.update(claims).set({ endedAt: now }).where(eq(claims.id, claim.id));
     }
-    db.update(alertSubscriptions).set({ actief: false }).where(eq(alertSubscriptions.claimId, claim.id)).run();
+    await db.update(alertSubscriptions).set({ actief: false }).where(eq(alertSubscriptions.claimId, claim.id));
 
-    const user = db.select().from(usersTable).where(eq(usersTable.id, claim.userId)).get();
+    const userRows = await db.select().from(usersTable).where(eq(usersTable.id, claim.userId)).limit(1);
+    const user = userRows[0];
     if (user) {
-      db.insert(emailsOutbox)
-        .values({
-          to: user.email,
-          subject: "Je woning is verwijderd van Wonea",
-          html: `<p>De woningpagina die je had geclaimd is op verzoek verwijderd van Wonea. Je claim en waarde-alerts voor dit adres zijn stopgezet.</p><p>Vragen? Antwoord op deze mail.</p>`,
-          type: "claim_beeindigd",
-          status: "queued",
-          createdAt: now,
-        })
-        .run();
+      await db.insert(emailsOutbox).values({
+        to: user.email,
+        subject: "Je woning is verwijderd van Wonea",
+        html: `<p>De woningpagina die je had geclaimd is op verzoek verwijderd van Wonea. Je claim en waarde-alerts voor dit adres zijn stopgezet.</p><p>Vragen? Antwoord op deze mail.</p>`,
+        type: "claim_beeindigd",
+        status: "queued",
+        createdAt: now,
+      });
     }
   }
 }

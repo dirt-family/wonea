@@ -6,20 +6,21 @@
  * teruggezet op actief, ook niet bij her-seed/her-ingest.
  */
 import { eq, sql } from "drizzle-orm";
-import { db, sqlite } from "../lib/db";
+import { db, sql as pool } from "../lib/db";
 import { addresses, marketStats, municipalities, neighborhoods, sales, wozValues } from "../db/schema";
 import { BUURTEN, GEMEENTE, buurtSlug, genereerAdressen, genereerVerkopen, mulberry32 } from "../db/seed/generator";
 import { isSuppressed } from "../lib/suppression";
 
-function main() {
+async function main() {
   console.log("Seed: gemeente + buurten");
-  db.insert(municipalities)
+  await db
+    .insert(municipalities)
     .values({ code: GEMEENTE.code, naam: GEMEENTE.naam, slug: GEMEENTE.slug })
-    .onConflictDoNothing()
-    .run();
+    .onConflictDoNothing();
 
   for (const b of BUURTEN) {
-    db.insert(neighborhoods)
+    await db
+      .insert(neighborhoods)
       .values({
         buurtCode: b.buurtCode,
         naam: b.naam,
@@ -31,17 +32,17 @@ function main() {
       .onConflictDoUpdate({
         target: neighborhoods.buurtCode,
         set: { naam: b.naam, slug: buurtSlug(b.naam), gemWoz: b.gemWoz, inwoners: b.inwoners },
-      })
-      .run();
+      });
   }
 
   console.log("Seed: adressen");
   const adressen = genereerAdressen();
-  const seedAlles = sqlite.transaction(() => {
+  await db.transaction(async (tx) => {
     for (const a of adressen) {
       // Suppressielijst is leidend: opted-out adressen niet terugzetten.
-      if (isSuppressed(a.postcode, a.nummerslug)) continue;
-      db.insert(addresses)
+      if (await isSuppressed(a.postcode, a.nummerslug)) continue;
+      await tx
+        .insert(addresses)
         .values({
           straat: a.straat,
           huisnummer: a.huisnummer,
@@ -57,71 +58,74 @@ function main() {
           energielabelBron: "indicatie",
           bron: "seed",
         })
-        .onConflictDoNothing()
-        .run();
+        .onConflictDoNothing();
     }
   });
-  seedAlles();
 
   console.log("Seed: buurt-ankers (gem. oppervlakte + anker-m2-prijs, afgeleide)");
   for (const b of BUURTEN) {
-    const row = db
-      .select({ avgOpp: sql<number>`avg(${addresses.oppervlakteM2})` })
-      .from(addresses)
-      .where(eq(addresses.buurtCode, b.buurtCode))
-      .get();
+    const row = (
+      await db
+        .select({ avgOpp: sql<number>`avg(${addresses.oppervlakteM2})` })
+        .from(addresses)
+        .where(eq(addresses.buurtCode, b.buurtCode))
+        .limit(1)
+    )[0];
     const gemOpp = row?.avgOpp ?? null;
     const anker = gemOpp ? b.gemWoz / gemOpp : null;
-    db.update(neighborhoods)
+    await db
+      .update(neighborhoods)
       .set({ gemOppervlakte: gemOpp, ankerM2Prijs: anker })
-      .where(eq(neighborhoods.buurtCode, b.buurtCode))
-      .run();
+      .where(eq(neighborhoods.buurtCode, b.buurtCode));
   }
 
   console.log("Seed: verkopen + marktstatistieken (synthetisch, buurtniveau, NOOIT aan een echt adres)");
   const { verkopen, stats } = genereerVerkopen();
   // Verkopen hebben geen natuurlijke sleutel: bij her-seed eerst seed-rijen weg.
-  db.delete(sales).where(eq(sales.bron, "seed")).run();
-  const verkoopTx = sqlite.transaction(() => {
+  await db.delete(sales).where(eq(sales.bron, "seed"));
+  await db.transaction(async (tx) => {
     for (const v of verkopen) {
-      db.insert(sales)
-        .values({ buurtCode: v.buurtCode, straat: v.straat, adresId: null, datum: v.datum, prijs: v.prijs, oppervlakteM2: v.oppervlakteM2, woningtype: v.woningtype, bron: "seed" })
-        .run();
+      await tx
+        .insert(sales)
+        .values({ buurtCode: v.buurtCode, straat: v.straat, adresId: null, datum: v.datum, prijs: v.prijs, oppervlakteM2: v.oppervlakteM2, woningtype: v.woningtype, bron: "seed" });
     }
     for (const s of stats) {
-      db.insert(marketStats)
+      await tx
+        .insert(marketStats)
         .values({ buurtCode: s.buurtCode, maand: s.maand, mediaanPrijs: s.mediaanPrijs, doorlooptijdDagen: s.doorlooptijdDagen, overbiedingPct: s.overbiedingPct, volume: s.volume, bron: "seed" })
         .onConflictDoUpdate({
           target: [marketStats.buurtCode, marketStats.maand],
           set: { mediaanPrijs: s.mediaanPrijs, doorlooptijdDagen: s.doorlooptijdDagen, overbiedingPct: s.overbiedingPct, volume: s.volume },
-        })
-        .run();
+        });
     }
   });
-  verkoopTx();
 
   console.log("Seed: WOZ-waarden (seed, gelabeld; echte WOZ = eigenaar-invoer)");
   const rand = mulberry32(555777);
-  const alleAdressen = db.select().from(addresses).all();
-  const wozTx = sqlite.transaction(() => {
+  const alleAdressen = await db.select().from(addresses);
+  await db.transaction(async (tx) => {
     for (const a of alleAdressen) {
       if (rand() > 0.35) continue; // deel van de adressen heeft een seed-WOZ
-      const bestaand = db.select({ id: wozValues.id }).from(wozValues).where(eq(wozValues.adresId, a.id)).get();
+      const bestaand = (await tx.select({ id: wozValues.id }).from(wozValues).where(eq(wozValues.adresId, a.id)).limit(1))[0];
       if (bestaand) continue;
       const buurt = BUURTEN.find((b) => b.buurtCode === a.buurtCode);
       if (!buurt) continue;
       const waarde = Math.round((buurt.gemWoz * (a.oppervlakteM2 / 110) * (0.85 + rand() * 0.3)) / 1000) * 1000;
-      db.insert(wozValues).values({ adresId: a.id, peiljaar: 2025, waarde, bron: "seed" }).run();
+      await tx.insert(wozValues).values({ adresId: a.id, peiljaar: 2025, waarde, bron: "seed" });
     }
   });
-  wozTx();
 
   const counts = {
-    adressen: db.select({ n: sql<number>`count(*)` }).from(addresses).get()?.n,
-    verkopen: db.select({ n: sql<number>`count(*)` }).from(sales).get()?.n,
-    stats: db.select({ n: sql<number>`count(*)` }).from(marketStats).get()?.n,
+    adressen: (await db.select({ n: sql<number>`count(*)` }).from(addresses).limit(1))[0]?.n,
+    verkopen: (await db.select({ n: sql<number>`count(*)` }).from(sales).limit(1))[0]?.n,
+    stats: (await db.select({ n: sql<number>`count(*)` }).from(marketStats).limit(1))[0]?.n,
   };
   console.log(`Seed klaar: ${counts.adressen} adressen, ${counts.verkopen} verkopen, ${counts.stats} marktstat-rijen.`);
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => pool.end());

@@ -89,8 +89,10 @@ function MediaanLijn({ punten }: { punten: { maand: string; mediaan: number }[] 
   );
 }
 
-export function MarktSignalenKaart({ variant, buurtCode, buurtNaam, buurtHref, className = "" }: Props) {
-  const rijen = db.select().from(marketStats).where(eq(marketStats.buurtCode, buurtCode)).orderBy(marketStats.maand).all().slice(-12);
+export async function MarktSignalenKaart({ variant, buurtCode, buurtNaam, buurtHref, className = "" }: Props) {
+  const rijen = (
+    await db.select().from(marketStats).where(eq(marketStats.buurtCode, buurtCode)).orderBy(marketStats.maand)
+  ).slice(-12);
   const signalen = berekenMarktsignalen(rijen);
   const heeftSeed = rijen.some((r) => r.bron === "seed");
 

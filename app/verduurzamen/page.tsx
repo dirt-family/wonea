@@ -20,7 +20,7 @@ export default async function VerduurzamenPagina({
 }) {
   const sp = await searchParams;
   const heeftParams = Boolean(sp.postcode && sp.nummer);
-  const adres = heeftParams ? vindVerduurzaamAdres(sp.postcode!, sp.nummer!) : null;
+  const adres = heeftParams ? await vindVerduurzaamAdres(sp.postcode!, sp.nummer!) : null;
   const adresQuery = adres ? `postcode=${adres.postcode}&nummer=${encodeURIComponent(adres.nummerslug)}` : "";
   const label = adres?.energielabel?.toUpperCase() ?? null;
   const labelGoed = label !== null && ["A", "B"].includes(label);

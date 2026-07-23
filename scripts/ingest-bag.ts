@@ -24,7 +24,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { sqlite } from "../lib/db";
+import { sql } from "../lib/db";
 import {
   BAG_WFS_DEFAULT,
   haalVerblijfsobjecten,
@@ -131,8 +131,8 @@ async function main() {
       : await laadKoppeltabel({ postcode4: pc4InSet, gebied, url: process.env.WONEA_KOPPELTABEL_URL, zipPad: process.env.WONEA_KOPPELTABEL_ZIP });
   if (koppeltabel) console.log(`Koppeltabel geladen: ${koppeltabel.size} postcode+huisnummer-regels voor dit gebied.`);
 
-  const buurten = bekendeBuurtCodes();
-  const fallbackPerPc4 = modaleBuurtPerPostcode4(bestaandeAdresBuurten());
+  const buurten = await bekendeBuurtCodes();
+  const fallbackPerPc4 = modaleBuurtPerPostcode4(await bestaandeAdresBuurten());
 
   // 4. Mappen + upserten in batch-transacties.
   const telling = {
@@ -148,44 +148,45 @@ async function main() {
   };
   const geraakteBuurten = new Set<string>();
 
+  // upsertAdres schrijft via de gedeelde connectie-pool (niet via een tx-object),
+  // dus de vroegere per-chunk sqlite-transactie kan geen rol meer spelen; we
+  // verwerken de features sequentieel en awaiten elke upsert. De BATCH-chunking
+  // blijft staan als structuur, het gedrag (welke rijen, welke tellingen) is gelijk.
   for (let i = 0; i < features.length; i += BATCH) {
     const chunk = features.slice(i, i + BATCH);
-    const verwerkChunk = sqlite.transaction(() => {
-      for (const feature of chunk) {
-        const rij = mapVerblijfsobject(feature, vbosPerPand.get(feature.properties.pandidentificatie) ?? 1);
-        if (!rij) {
-          telling.geenWoning++;
-          continue;
-        }
-        if (postcode4.length > 0 && !postcode4.includes(rij.postcode.slice(0, 4))) {
-          telling.buitenPostcode4++;
-          continue;
-        }
-        const uitKoppeltabel = koppeltabel?.get(koppeltabelKey(rij.postcode, rij.huisnummer));
-        let buurtCode: string | undefined;
-        if (uitKoppeltabel && buurten.has(uitKoppeltabel)) {
-          buurtCode = uitKoppeltabel;
-          telling.viaKoppeltabel++;
-        } else {
-          buurtCode = fallbackPerPc4.get(rij.postcode.slice(0, 4));
-          if (buurtCode) telling.viaFallback++;
-        }
-        if (!buurtCode) {
-          telling.geenBuurt++;
-          continue;
-        }
-        const resultaat = upsertAdres(rij, buurtCode);
-        if (resultaat === "toegevoegd") telling.toegevoegd++;
-        else if (resultaat === "bestond_al") telling.bestondAl++;
-        else telling.onderdrukt++;
-        geraakteBuurten.add(buurtCode);
+    for (const feature of chunk) {
+      const rij = mapVerblijfsobject(feature, vbosPerPand.get(feature.properties.pandidentificatie) ?? 1);
+      if (!rij) {
+        telling.geenWoning++;
+        continue;
       }
-    });
-    verwerkChunk();
+      if (postcode4.length > 0 && !postcode4.includes(rij.postcode.slice(0, 4))) {
+        telling.buitenPostcode4++;
+        continue;
+      }
+      const uitKoppeltabel = koppeltabel?.get(koppeltabelKey(rij.postcode, rij.huisnummer));
+      let buurtCode: string | undefined;
+      if (uitKoppeltabel && buurten.has(uitKoppeltabel)) {
+        buurtCode = uitKoppeltabel;
+        telling.viaKoppeltabel++;
+      } else {
+        buurtCode = fallbackPerPc4.get(rij.postcode.slice(0, 4));
+        if (buurtCode) telling.viaFallback++;
+      }
+      if (!buurtCode) {
+        telling.geenBuurt++;
+        continue;
+      }
+      const resultaat = await upsertAdres(rij, buurtCode);
+      if (resultaat === "toegevoegd") telling.toegevoegd++;
+      else if (resultaat === "bestond_al") telling.bestondAl++;
+      else telling.onderdrukt++;
+      geraakteBuurten.add(buurtCode);
+    }
   }
 
   // 5. Buurt-afgeleiden bijwerken en state afronden.
-  herberekenBuurtAnkers(geraakteBuurten);
+  await herberekenBuurtAnkers(geraakteBuurten);
 
   if (bronLabel === "live") {
     if (fetchCompleet) {
@@ -206,7 +207,9 @@ async function main() {
   );
 }
 
-main().catch((e) => {
-  console.error("BAG-ingest onverwacht mislukt:", e);
-  process.exitCode = 1;
-});
+main()
+  .catch((e) => {
+    console.error("BAG-ingest onverwacht mislukt:", e);
+    process.exitCode = 1;
+  })
+  .finally(() => sql.end());

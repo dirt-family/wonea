@@ -18,7 +18,7 @@ const datumTijd = new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeSt
 
 export default async function AdminOutboxPagina({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const sp = await searchParams;
-  const mails = db.select().from(emailsOutbox).orderBy(desc(emailsOutbox.createdAt), desc(emailsOutbox.id)).limit(200).all();
+  const mails = await db.select().from(emailsOutbox).orderBy(desc(emailsOutbox.createdAt), desc(emailsOutbox.id)).limit(200);
 
   const gekozenId = sp.id ? Number.parseInt(sp.id, 10) : null;
   const gekozen = gekozenId ? (mails.find((m) => m.id === gekozenId) ?? null) : null;

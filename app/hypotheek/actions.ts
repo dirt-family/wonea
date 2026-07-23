@@ -73,13 +73,15 @@ export async function verstuurHypotheekLead(formData: FormData): Promise<void> {
     const slug = nummerRuw.toLowerCase().replace(/\s+/g, "");
     if (postcode) {
       adres =
-        db
-          .select()
-          .from(addresses)
-          .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
-          .get() ?? null;
+        (
+          await db
+            .select()
+            .from(addresses)
+            .where(and(eq(addresses.postcode, postcode), eq(addresses.nummerslug, slug)))
+            .limit(1)
+        )[0] ?? null;
     }
-    if (adres && (adres.status === "opted_out" || isSuppressed(adres.postcode, adres.nummerslug))) {
+    if (adres && (adres.status === "opted_out" || (await isSuppressed(adres.postcode, adres.nummerslug)))) {
       redirect(terug("adres-verwijderd"));
     }
   }
@@ -100,7 +102,7 @@ export async function verstuurHypotheekLead(formData: FormData): Promise<void> {
     let intervalLaag: number | null = null;
     let intervalHoog: number | null = null;
     if (adres) {
-      const { valuation } = getOrCreateValuation(adres);
+      const { valuation } = await getOrCreateValuation(adres);
       if (valuation) {
         waardeBron = "wonea";
         woningWaarde = valuation.waarde;
@@ -166,7 +168,7 @@ export async function verstuurHypotheekLead(formData: FormData): Promise<void> {
   // leadwaarde, lead-event en bevestigingsmail in 1 transactiepad.
   let geweigerd = false;
   try {
-    createLead({
+    await createLead({
       type: "hypotheek",
       subtype,
       adresId: adres?.id ?? null,

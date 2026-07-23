@@ -74,7 +74,7 @@ export async function verstuurAanvraag(_vorige: FunnelFormState, formData: FormD
     return { fout: "Zonder jouw toestemming sturen we niets door. Vink de toestemming aan als je de aanvraag wilt versturen." };
   }
 
-  const resultaat = verstuurVerduurzamingsLead({
+  const resultaat = await verstuurVerduurzamingsLead({
     verticaal: verticaalRaw,
     postcode: String(formData.get("postcode") ?? ""),
     nummer: String(formData.get("nummer") ?? ""),
