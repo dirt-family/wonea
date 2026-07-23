@@ -1,0 +1,124 @@
+{
+  "opgehaaldOp": "2026-07-23",
+  "bronnen": {
+    "warmtepompen": "https://www.rvo.nl/subsidies-financiering/isde/meldcodelijsten/warmtepompen",
+    "zonneboilers": "https://www.rvo.nl/subsidies-financiering/isde/meldcodelijsten/zonneboilers",
+    "isolatie": "https://www.rvo.nl/subsidies-financiering/isde/woningeigenaren/isolatiemaatregelen"
+  },
+  "warmtepompenPerCategorie": {
+    "Grond-Water": {
+      "n": 227,
+      "minEur": 4200,
+      "maxEur": 13275,
+      "gemiddeldEur": 5351,
+      "mediaanEur": 4650
+    },
+    "Lucht-Water": {
+      "n": 2566,
+      "minEur": 1250,
+      "maxEur": 16325,
+      "gemiddeldEur": 3722,
+      "mediaanEur": 3250
+    },
+    "Warmtepompboiler": {
+      "n": 371,
+      "minEur": 500,
+      "maxEur": 950,
+      "gemiddeldEur": 737,
+      "mediaanEur": 725
+    },
+    "Water-Water": {
+      "n": 82,
+      "minEur": 4200,
+      "maxEur": 13125,
+      "gemiddeldEur": 6191,
+      "mediaanEur": 4425
+    }
+  },
+  "zonneboilersPerCategorie": {
+    "5 tot en met 10m2": {
+      "n": 278,
+      "minEur": 1004,
+      "maxEur": 2177,
+      "gemiddeldEur": 1816,
+      "mediaanEur": 1846
+    },
+    "Tot en met 5m2": {
+      "n": 247,
+      "minEur": 591,
+      "maxEur": 3182,
+      "gemiddeldEur": 1701,
+      "mediaanEur": 1789
+    }
+  },
+  "isolatie": {
+    "paginaGecontroleerdOp": "26 juni 2026",
+    "maatregelenVanaf2025": {
+      "spouwmuurisolatie": {
+        "eurPerM2": 5.25,
+        "minM2": 10,
+        "maxM2": 170,
+        "biobasedBonusEurPerM2": 1.5
+      },
+      "gevelisolatie": {
+        "eurPerM2": 20.25,
+        "minM2": 10,
+        "maxM2": 170,
+        "biobasedBonusEurPerM2": 6.0
+      },
+      "bodemisolatie": {
+        "eurPerM2": 3.0,
+        "minM2": 20,
+        "maxM2": 130,
+        "biobasedBonusEurPerM2": 1.0
+      },
+      "vloerisolatie": {
+        "eurPerM2": 5.5,
+        "minM2": 20,
+        "maxM2": 130,
+        "biobasedBonusEurPerM2": 2.0
+      },
+      "dakisolatie": {
+        "eurPerM2": 16.25,
+        "minM2": 20,
+        "maxM2": 200,
+        "biobasedBonusEurPerM2": 5.0
+      },
+      "zolder- of vlieringvloerisolatie": {
+        "eurPerM2": 4.0,
+        "minM2": 20,
+        "maxM2": 200,
+        "biobasedBonusEurPerM2": 1.5
+      }
+    },
+    "glasVanaf2025": [
+      {
+        "omschrijving": "HR++ glas, Triple glas of vacuümglas zonder kozijnen",
+        "eurPerM2": 25.0
+      },
+      {
+        "omschrijving": "Triple glas of vacuümglas in nieuwe kozijnen",
+        "eurPerM2": 111.0
+      },
+      {
+        "omschrijving": "nieuwe isolerende panelen in kozijnen met een isolatiewaarde minder of gelijk aan 1,2, maar hoger dan 0,7",
+        "eurPerM2": 10.0
+      },
+      {
+        "omschrijving": "nieuwe isolerende panelen in nieuwe kozijnen met een isolatiewaarde minder of gelijk aan 0,7",
+        "eurPerM2": 45.0
+      },
+      {
+        "omschrijving": "nieuwe isolerende deuren met een isolatiewaarde minder of gelijk aan 1,5, maar hoger dan 1,0,",
+        "eurPerM2": 25.0
+      },
+      {
+        "omschrijving": "nieuwe isolerende deuren met een isolatiewaarde minder of gelijk aan 1,0",
+        "eurPerM2": 111.0
+      }
+    ],
+    "glasMinM2": 3,
+    "glasMaxM2": 45,
+    "verdubbeling": "subsidiebedrag verdubbelt bij meer dan 1 maatregel (biobased-bonus niet)"
+  }
+}

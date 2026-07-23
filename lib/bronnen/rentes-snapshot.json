@@ -1,0 +1,35 @@
+{
+  "peildatum": "2026-05",
+  "opgehaaldOp": "2026-07-23",
+  "bron": "DNB Tabel 5.2.7.1: Deposito's en leningen van MFI's aan huishoudens, rentepercentages, gecorrigeerd voor breuken (maand)",
+  "bronUrl": "https://www.dnb.nl/statistieken/data-zoeken/#/details/deposito-s-en-leningen-van-mfi-s-aan-huishoudens-rentepercentages-gecorrigeerd-voor-breuken-maand/dataset/efba2d4e-fb53-49a8-a1fe-d5ee3263e14c/resource/8d3ccc86-8396-43b8-a18b-5ba293f01c1d",
+  "dashboardUrl": "https://www.dnb.nl/statistieken/dashboards/woninghypotheken/hypotheekrentes-banken/",
+  "toelichting": "Gemiddelde bancaire rente op zuiver nieuw afgesloten woninghypotheken aan huishoudens, per rentevaste periode. Maandgemiddelde over banken; geen tarieven per geldverstrekker en geen NHG-splitsing.",
+  "totaalRentePct": 3.75,
+  "buckets": [
+    {
+      "bucket": "variabel_tot_1",
+      "label": "Variabel en tot en met 1 jaar rentevast",
+      "reeksDnb": "Variabel en <= 1 jaar",
+      "rentePct": 4.1
+    },
+    {
+      "bucket": "1_tot_5",
+      "label": "1 tot en met 5 jaar rentevast",
+      "reeksDnb": "> 1 jaar en <= 5 jaar",
+      "rentePct": 3.79
+    },
+    {
+      "bucket": "5_tot_10",
+      "label": "5 tot en met 10 jaar rentevast",
+      "reeksDnb": "> 5 jaar en <= 10 jaar",
+      "rentePct": 3.74
+    },
+    {
+      "bucket": "vanaf_10",
+      "label": "Langer dan 10 jaar rentevast",
+      "reeksDnb": "> 10 jaar",
+      "rentePct": 3.49
+    }
+  ]
+}

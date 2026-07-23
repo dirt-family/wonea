@@ -24,7 +24,7 @@ import { MIN_COMPARABLES_VOOR_INDEX } from "@/lib/seo/gating";
 export const MAX_ADRESSEN_PER_SHARD = 45000;
 
 /** Vaste pagina's in /sitemaps/statisch.xml. Alleen indexeerbare pagina's. */
-const STATISCHE_PADEN = ["/", "/methode", "/over-ons", "/woz-check", "/privacy"];
+const STATISCHE_PADEN = ["/", "/methode", "/over-ons", "/woz-check", "/privacy", "/tools"];
 
 // Spiegel van lib/comparables.ts (MAANDEN_TERUG = 24).
 function comparablesCutoff(): string {

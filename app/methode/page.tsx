@@ -96,6 +96,64 @@ export default function MethodePagina() {
             <li>Energielabel: in deze testfase een indicatie op basis van bouwjaar, altijd zo gelabeld. Echte labels volgen via EP-Online.</li>
             <li>Verkoopprijzen: in deze testfase gelabelde voorbeelddata op buurtniveau, nooit gekoppeld aan een echt adres. Echte koopsommen (Kadaster) volgen voor livegang.</li>
           </ul>
+        </section>
+
+        <section>
+          <SectieLabel>Databronnen</SectieLabel>
+          <h2 className="mt-2 text-xl font-semibold">Onze databronnen, per tool</h2>
+          <p className="mt-3 leading-relaxed text-inkt-zacht">
+            Elke tool op Wonea draait op openbare bronnen, en bij elk cijfer in de tools staat de bron en de peildatum.
+            Dit is het overzicht:
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
+                  <th className="py-2 pr-4 font-medium">Tool</th>
+                  <th className="py-2 pr-4 font-medium">Bron</th>
+                  <th className="py-2 font-medium">Peildatum</th>
+                </tr>
+              </thead>
+              <tbody className="align-top text-inkt-zacht">
+                <tr className="border-b border-lijn">
+                  <td className="py-2.5 pr-4 font-medium text-inkt">Budgetberekenaar</td>
+                  <td className="py-2.5 pr-4">De wettelijke leennormen 2026 (Tijdelijke regeling hypothecair krediet) en de NHG-kostengrens 2026 (470.000 euro).</td>
+                  <td className="py-2.5">Geldend vanaf 1 januari 2026, door ons nagelezen op 23 juli 2026.</td>
+                </tr>
+                <tr className="border-b border-lijn">
+                  <td className="py-2.5 pr-4 font-medium text-inkt">Hypotheekrentes</td>
+                  <td className="py-2.5 pr-4">DNB: de gemiddelde bankrente op nieuw afgesloten hypotheken, per rentevaste periode.</td>
+                  <td className="py-2.5">Maandcijfer; DNB publiceert met ongeveer twee maanden vertraging. De peilmaand staat bij elk cijfer.</td>
+                </tr>
+                <tr className="border-b border-lijn">
+                  <td className="py-2.5 pr-4 font-medium text-inkt">Woningwaarde</td>
+                  <td className="py-2.5 pr-4">BAG (kenmerken) en CBS (buurtcijfers). Verkoopprijzen zijn in deze testfase gelabelde voorbeelddata op buurtniveau.</td>
+                  <td className="py-2.5">BAG en CBS lopen doorlopend mee; voorbeelddata is altijd als zodanig gelabeld.</td>
+                </tr>
+                <tr className="border-b border-lijn">
+                  <td className="py-2.5 pr-4 font-medium text-inkt">WOZ-check</td>
+                  <td className="py-2.5 pr-4">Je eigen WOZ-beschikking. Zonder bron tonen we geen WOZ-waarde.</td>
+                  <td className="py-2.5">Het peiljaar van jouw beschikking.</td>
+                </tr>
+                <tr className="border-b border-lijn">
+                  <td className="py-2.5 pr-4 font-medium text-inkt">Verduurzamen</td>
+                  <td className="py-2.5 pr-4">Energielabels via EP-Online (RVO) waar geregistreerd, anders een indicatie op bouwjaar. Subsidiebedragen uit de ISDE-regeling (RVO), besparingen op basis van kentallen van Milieu Centraal.</td>
+                  <td className="py-2.5">ISDE-bedragen en kentallen opgehaald op 23 juli 2026.</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 pr-4 font-medium text-inkt">Biedadvies</td>
+                  <td className="py-2.5 pr-4">De waardebandbreedte hierboven plus buurtcijfers over overbieding en doorlooptijd, in deze testfase voorbeelddata.</td>
+                  <td className="py-2.5">Staat bij de cijfers op de pagina.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 leading-relaxed text-inkt-zacht">
+            Twee dingen zijn niet openbaar, dus die beloven we ook niet. Rentetarieven per geldverstrekker: DNB publiceert
+            alleen gemiddelden, dus een eerlijke vergelijker per bank kan niet op open data en vind je hier niet. En echte
+            verkoopprijzen per woning: NVM-transactiecijfers zijn niet vrij beschikbaar en Kadaster-koopsommen kosten geld
+            per opvraging. Daarom rekenen we in deze testfase met gelabelde voorbeelddata, tot we die bron aansluiten.
+          </p>
           <p className="mt-4 text-sm text-inkt-zacht">
             Vragen over de methode? <Link href="/over-ons" className="font-semibold text-merk underline underline-offset-4">Lees waarom we Wonea bouwen</Link>.
           </p>

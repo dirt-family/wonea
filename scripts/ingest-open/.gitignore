@@ -1,0 +1,3 @@
+# Lokale Python-omgeving voor de ingest-scripts; zie requirements.txt.
+.venv/
+__pycache__/

@@ -1,0 +1,9 @@
+# Python-afhankelijkheden voor de open-cijferbronnen-ingest (scripts/ingest-open/).
+# Installatie:
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
+#   .venv/bin/python -m playwright install chromium   # browser voor crawl4ai (of: crawl4ai-setup)
+#
+# crawl4ai brengt zelf playwright, beautifulsoup4, lxml en httpx mee; die staan hier
+# bewust niet los gepind.
+crawl4ai==0.9.2

@@ -54,6 +54,13 @@ export function WozVergelijker({ marktwaarde, intervalLaag, intervalHoog }: { ma
         <div className="mt-4 rounded-lg bg-achtergrond p-4">
           <p className={`text-sm font-semibold ${oordeel.kleur}`}>{oordeel.titel}</p>
           <p className="mt-1 text-sm leading-relaxed text-inkt-zacht">{oordeel.tekst}</p>
+          {geldig && woz > intervalHoog ? (
+            <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
+              Rekenvoorbeeld: komt je WOZ na bezwaar uit op onze schatting, dan gaat hij {euro(woz - marktwaarde)} omlaag.
+              Bij een voorbeeldtarief van 0,1% OZB scheelt dat ongeveer {euro(Math.round((woz - marktwaarde) * 0.001))} per
+              jaar. Het echte tarief staat op de aanslag van je gemeente; meer uitleg staat onder deze check.
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

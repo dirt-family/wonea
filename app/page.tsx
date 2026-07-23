@@ -75,6 +75,39 @@ export default function HomePage() {
           </Kaart>
         </div>
       </section>
+
+      <section className="mx-auto max-w-5xl px-5 pb-16">
+        <SectieLabel>Tools</SectieLabel>
+        <h2 className="mt-3 text-2xl font-semibold">Gratis inzicht, zonder account</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
+          Zeven tools rond wonen, kopen en verduurzamen. Elke tool noemt de bron waar hij op draait, en cijfers komen
+          altijd met bron en peildatum.
+        </p>
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { titel: "Woningwaarde-check", zin: "De waarde van een adres, altijd als bandbreedte.", href: "/" },
+            { titel: "WOZ-check", zin: "Klopt de WOZ-waarde van je beschikking met de markt?", href: "/woz-check" },
+            { titel: "Budgetberekenaar", zin: "Wat je kunt lenen volgens de leennormen van 2026.", href: "/budget" },
+            { titel: "Actuele hypotheekrentes", zin: "Gemiddelde rentes per rentevaste periode, van DNB.", href: "/hypotheek-rentes" },
+            { titel: "Verduurzamingscheck", zin: "Wat isolatie, zonnepanelen of een warmtepomp opleveren.", href: "/verduurzamen" },
+            { titel: "Biedadvies", zin: "Een realistische biedrange per woning, met buurtcontext.", href: "/tools#biedadvies" },
+            { titel: "Vind een makelaar", zin: "Makelaars in de buurt, zonder betaalde posities.", href: "/makelaars" },
+          ].map((tool) => (
+            <Link
+              key={tool.titel}
+              href={tool.href}
+              className="block rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
+            >
+              <p className="font-semibold text-inkt">{tool.titel}</p>
+              <p className="mt-1 text-sm leading-relaxed text-inkt-zacht">{tool.zin}</p>
+            </Link>
+          ))}
+          <Link href="/tools" className="block rounded-[14px] border border-lijn bg-merk-wash p-5 transition-colors hover:border-merk">
+            <p className="font-semibold text-merk">Alle tools</p>
+            <p className="mt-1 text-sm leading-relaxed text-inkt-zacht">Bekijk alle tools met uitleg en de bron per tool.</p>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

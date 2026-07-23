@@ -1,0 +1,294 @@
+{
+  "opgehaaldOp": "2026-07-23",
+  "bron": "Milieu Centraal",
+  "gasprijsBasis": "€ 1,37 per m3 (verwachte gemiddelde gasprijs 2026-2040, Milieu Centraal)",
+  "paginas": {
+    "spouwmuurisolatie": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/isoleren-en-besparen/spouwmuurisolatie/",
+      "laatstGewijzigd": "8 juli 2026",
+      "besparingPerWoningtype": [
+        {
+          "woningtype": "Tussenwoning",
+          "gasM3PerJaar": 180,
+          "eurPerJaar": 240
+        },
+        {
+          "woningtype": "Hoekwoning",
+          "gasM3PerJaar": 400,
+          "eurPerJaar": 575
+        },
+        {
+          "woningtype": "2 onder 1 kap",
+          "gasM3PerJaar": 400,
+          "eurPerJaar": 575
+        },
+        {
+          "woningtype": "Vrijstaande woning",
+          "gasM3PerJaar": 600,
+          "eurPerJaar": 800
+        }
+      ]
+    },
+    "dakisolatie": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/isoleren-en-besparen/dakisolatie/",
+      "laatstGewijzigd": "8 juli 2026",
+      "besparingPerWoningtype": [
+        {
+          "woningtype": "Tussenwoning",
+          "gasM3PerJaar": 320,
+          "eurPerJaar": 460
+        },
+        {
+          "woningtype": "Hoekwoning",
+          "gasM3PerJaar": 340,
+          "eurPerJaar": 480
+        },
+        {
+          "woningtype": "2-onder-1-kap",
+          "gasM3PerJaar": 360,
+          "eurPerJaar": 510
+        },
+        {
+          "woningtype": "Vrijstaande woning",
+          "gasM3PerJaar": 550,
+          "eurPerJaar": 750
+        }
+      ]
+    },
+    "vloerisolatie": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/isoleren-en-besparen/vloerisolatie/",
+      "laatstGewijzigd": "8 juli 2026",
+      "besparingPerWoningtype": [
+        {
+          "woningtype": "Tussenwoning",
+          "gasM3PerJaar": 80,
+          "eurPerJaar": 110
+        },
+        {
+          "woningtype": "Hoekwoning",
+          "gasM3PerJaar": 130,
+          "eurPerJaar": 180
+        },
+        {
+          "woningtype": "2-onder-1-kap",
+          "gasM3PerJaar": 170,
+          "eurPerJaar": 230
+        },
+        {
+          "woningtype": "Vrijstaande woning",
+          "gasM3PerJaar": 250,
+          "eurPerJaar": 340
+        }
+      ]
+    },
+    "glasisolatie": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/isoleren-en-besparen/dubbel-glas-hr-glas-en-triple-glas/",
+      "laatstGewijzigd": "8 juli 2026",
+      "varianten": [
+        {
+          "duiding": "heel huis van dubbelglas naar hr++-glas",
+          "titelIndicatie": "Besparing dubbelglas vervangen door hr++-glas",
+          "besparingPerWoningtype": [
+            {
+              "woningtype": "Tussenwoning",
+              "gasM3PerJaar": 65,
+              "eurPerJaar": 90
+            },
+            {
+              "woningtype": "Hoekwoning",
+              "gasM3PerJaar": 70,
+              "eurPerJaar": 90
+            },
+            {
+              "woningtype": "2-onder-1-kap",
+              "gasM3PerJaar": 75,
+              "eurPerJaar": 100
+            },
+            {
+              "woningtype": "Vrijstaand huis",
+              "gasM3PerJaar": 100,
+              "eurPerJaar": 130
+            }
+          ]
+        },
+        {
+          "duiding": "heel huis van enkelglas naar hr++-glas",
+          "titelIndicatie": "Besparingen hr++-glas in bestaande kozijnen ten opzichte van dubbelglas",
+          "besparingPerWoningtype": [
+            {
+              "woningtype": "Tussenwoning",
+              "gasM3PerJaar": 250,
+              "eurPerJaar": 350
+            },
+            {
+              "woningtype": "Hoekwoning",
+              "gasM3PerJaar": 260,
+              "eurPerJaar": 350
+            },
+            {
+              "woningtype": "2-onder-1-kap",
+              "gasM3PerJaar": 290,
+              "eurPerJaar": 400
+            },
+            {
+              "woningtype": "Vrijstaand huis",
+              "gasM3PerJaar": 370,
+              "eurPerJaar": 500
+            }
+          ]
+        },
+        {
+          "duiding": "heel huis van dubbelglas naar tripleglas in nieuwe kozijnen",
+          "titelIndicatie": "Wat bespaar je als je dubbelglas vervangt door tripleglas?",
+          "besparingPerWoningtype": [
+            {
+              "woningtype": "Tussenwoning",
+              "gasM3PerJaar": 100,
+              "eurPerJaar": 145
+            },
+            {
+              "woningtype": "Hoekwoning",
+              "gasM3PerJaar": 110,
+              "eurPerJaar": 155
+            },
+            {
+              "woningtype": "2-onder-1-kap",
+              "gasM3PerJaar": 120,
+              "eurPerJaar": 170
+            },
+            {
+              "woningtype": "Vrijstaand huis",
+              "gasM3PerJaar": 160,
+              "eurPerJaar": 210
+            }
+          ]
+        },
+        {
+          "duiding": "heel huis van enkelglas naar tripleglas in nieuwe kozijnen",
+          "titelIndicatie": "Wat bespaar je als je enkelglas vervangt door tripleglas?",
+          "besparingPerWoningtype": [
+            {
+              "woningtype": "Tussenwoning",
+              "gasM3PerJaar": 280,
+              "eurPerJaar": 390
+            },
+            {
+              "woningtype": "Hoekwoning",
+              "gasM3PerJaar": 300,
+              "eurPerJaar": 400
+            },
+            {
+              "woningtype": "2-onder-1-kap",
+              "gasM3PerJaar": 340,
+              "eurPerJaar": 450
+            },
+            {
+              "woningtype": "Vrijstaand huis",
+              "gasM3PerJaar": 450,
+              "eurPerJaar": 600
+            }
+          ]
+        }
+      ],
+      "besparingPerM2RaamTovEnkelglas": [
+        {
+          "glassoort": "Vacuümglas",
+          "gasM3PerM2PerJaar": 14
+        },
+        {
+          "glassoort": "Tripleglas",
+          "gasM3PerM2PerJaar": 14
+        },
+        {
+          "glassoort": "Hr++-glas",
+          "gasM3PerM2PerJaar": 12
+        },
+        {
+          "glassoort": "Dubbelglas",
+          "gasM3PerM2PerJaar": 9
+        }
+      ]
+    },
+    "hybride_warmtepomp": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/duurzaam-verwarmen-en-koelen/hybride-warmtepomp/",
+      "laatstGewijzigd": "2 juli 2026",
+      "besparingEurPerJaar": 600,
+      "vergelijking": [
+        "Apparaat",
+        "Energieverbruik per jaar voor verwarming en warm water",
+        "Energiekosten per jaar\\u0026nbsp;",
+        "Hr-ketel",
+        "1.360 m3 gas + 310 kWh stroom",
+        "€ 1.950",
+        "Warmtepomp 4 kW met hr-ketel",
+        "680 m3 gas + 1.925 kWh stroom",
+        "€ 1.350",
+        "Besparing per jaar met hybride warmtepomp",
+        "\\u0026nbsp;",
+        "€ 600"
+      ]
+    },
+    "volledige_warmtepomp": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/duurzaam-verwarmen-en-koelen/volledig-elektrische-warmtepomp/",
+      "laatstGewijzigd": "22 juli 2026",
+      "besparingEurPerJaar": 1000,
+      "vergelijking": [
+        "Apparaat",
+        "Energieverbruik per jaar voor verwarming en warm water (m3 en kWh)",
+        "Energiekosten per jaar (langetermijnprijs)",
+        "Hr-ketel",
+        "950 m3 gas + 250 kWh stroom",
+        "€ 1.360",
+        "Vastrecht gasaansluiting",
+        "\\u0026nbsp;",
+        "€ 360",
+        "All-electric warmtepomp met buitenunit",
+        "3.400 kWh",
+        "€ 720",
+        "Besparing per jaar met all-electric warmtepomp",
+        "\\u0026nbsp;",
+        "€ 1.000"
+      ]
+    },
+    "zonneboiler": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/duurzaam-warm-water/zonneboiler/",
+      "laatstGewijzigd": "30 juni 2026",
+      "besparingPerHuishouden": [
+        {
+          "personen": 3,
+          "gasM3PerJaar": 150,
+          "eurPerJaar": 180
+        },
+        {
+          "personen": 5,
+          "gasM3PerJaar": 240,
+          "eurPerJaar": 310
+        }
+      ]
+    },
+    "zonnepanelen": {
+      "url": "https://www.milieucentraal.nl/energie-besparen/zonnepanelen/kosten-en-opbrengst-zonnepanelen/",
+      "laatstGewijzigd": "29 juni 2026",
+      "besparingPerAantalPanelen": [
+        {
+          "panelen": 6,
+          "aanschafEur": 2500,
+          "eurPerJaar2026": 440,
+          "eurPerJaarVanaf2027": 160
+        },
+        {
+          "panelen": 8,
+          "aanschafEur": 3200,
+          "eurPerJaar2026": 540,
+          "eurPerJaarVanaf2027": 170
+        },
+        {
+          "panelen": 10,
+          "aanschafEur": 3800,
+          "eurPerJaar2026": 720,
+          "eurPerJaarVanaf2027": 240
+        }
+      ]
+    }
+  }
+}

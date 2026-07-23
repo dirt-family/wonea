@@ -39,6 +39,9 @@ function Header() {
           Wonea
         </Link>
         <nav className="flex items-center gap-5 text-sm text-inkt-zacht">
+          <Link href="/tools" className="transition-colors hover:text-merk">
+            Tools
+          </Link>
           <Link href="/woz-check" className="transition-colors hover:text-merk">
             WOZ-check
           </Link>
@@ -63,7 +66,7 @@ function Header() {
 function Footer() {
   return (
     <footer className="mt-16 border-t border-lijn bg-paneel">
-      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 text-sm text-inkt-zacht sm:grid-cols-3">
+      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 text-sm text-inkt-zacht sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="flex items-center gap-2 font-display text-lg font-bold text-merk">
             <WoneaLogo className="h-6 w-6" />
@@ -72,6 +75,14 @@ function Footer() {
           <p className="mt-2 max-w-xs leading-relaxed">
             Eerlijk inzicht in woningwaarde: altijd met bandbreedte, bronnen en uitleg. Jouw huis, jouw data.
           </p>
+        </div>
+        <div className="space-y-2">
+          <p className="font-semibold text-inkt">Tools</p>
+          <p><Link href="/tools" className="hover:text-merk">Alle tools</Link></p>
+          <p><Link href="/budget" className="hover:text-merk">Budgetberekenaar</Link></p>
+          <p><Link href="/hypotheek-rentes" className="hover:text-merk">Actuele hypotheekrentes</Link></p>
+          <p><Link href="/verduurzamen" className="hover:text-merk">Verduurzamingscheck</Link></p>
+          <p><Link href="/makelaars" className="hover:text-merk">Vind een makelaar</Link></p>
         </div>
         <div className="space-y-2">
           <p className="font-semibold text-inkt">Wonea</p>

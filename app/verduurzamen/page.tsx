@@ -2,15 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { adresNaam, vindVerduurzaamAdres } from "@/app/verduurzamen/logic";
 import { VERTICAAL_SLUGS, VERTICALEN } from "@/app/verduurzamen/verticalen";
+import { getEnergielabel } from "@/lib/bronnen/energielabel";
+import { formatDatumNl } from "@/lib/util";
 import { BronLabel, inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Verduurzamen: wat levert het jouw huis op?", robots: { index: false, follow: false } };
 
 /**
  * Ingang van de verduurzamingsfunnel. Met adres (searchParams postcode +
- * nummer, zoals de link op de woningpagina): energielabel met bronlabel,
- * eerlijke uitleg en de keuze uit drie verticalen. Zonder adres: eerst
- * adres zoeken. Suppressie loopt via vindVerduurzaamAdres.
+ * nummer, zoals de link op de woningpagina): energielabel met bronlabel
+ * (echt via EP-Online als er een key of cache is, anders de
+ * bouwjaar-indicatie), de adviesweergave per maatregel en de keuze uit drie
+ * verticalen. Zonder adres: eerst adres zoeken. Suppressie loopt via
+ * vindVerduurzaamAdres.
  */
 
 export default async function VerduurzamenPagina({
@@ -22,8 +26,12 @@ export default async function VerduurzamenPagina({
   const heeftParams = Boolean(sp.postcode && sp.nummer);
   const adres = heeftParams ? await vindVerduurzaamAdres(sp.postcode!, sp.nummer!) : null;
   const adresQuery = adres ? `postcode=${adres.postcode}&nummer=${encodeURIComponent(adres.nummerslug)}` : "";
-  const label = adres?.energielabel?.toUpperCase() ?? null;
-  const labelGoed = label !== null && ["A", "B"].includes(label);
+  // Echt label via EP-Online waar dat kan (key of eerdere cache); anders de
+  // bouwjaar-indicatie uit de adresdata, eerlijk gelabeld.
+  const ep = adres ? await getEnergielabel(adres.postcode, adres.huisnummer, adres.toevoeging) : null;
+  const label = (ep?.label ?? adres?.energielabel)?.toUpperCase() ?? null;
+  const labelEcht = Boolean(ep) || adres?.energielabelBron === "echt";
+  const labelGoed = label !== null && (label.startsWith("A") || label === "B");
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">
@@ -69,15 +77,18 @@ export default async function VerduurzamenPagina({
               <div>
                 <SectieLabel>Energielabel van {adresNaam(adres)}</SectieLabel>
                 <div className="mt-3 flex items-center gap-4">
-                  <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-merk font-display text-3xl font-semibold text-white">
+                  <span className="flex h-14 min-w-14 items-center justify-center rounded-lg bg-merk px-2 font-display text-3xl font-semibold text-white">
                     {label ?? "?"}
                   </span>
                   <div>
                     {label ? (
-                      adres.energielabelBron === "indicatie" ? (
-                        <BronLabel>indicatie op basis van bouwjaar {adres.bouwjaar}, geen gemeten label</BronLabel>
+                      labelEcht ? (
+                        <BronLabel>
+                          geregistreerd label (EP-Online/RVO
+                          {ep?.registratiedatum ? `, geregistreerd op ${formatDatumNl(ep.registratiedatum)}` : ""})
+                        </BronLabel>
                       ) : (
-                        <BronLabel>geregistreerd label</BronLabel>
+                        <BronLabel>indicatie op basis van bouwjaar {adres.bouwjaar}, geen gemeten label</BronLabel>
                       )
                     ) : (
                       <BronLabel>geen label bekend</BronLabel>
@@ -101,6 +112,18 @@ export default async function VerduurzamenPagina({
                   Ander adres kiezen
                 </Link>
               </div>
+            </div>
+          </Kaart>
+
+          <Kaart className="mt-5 bg-merk-wash">
+            <SectieLabel>Advies per maatregel</SectieLabel>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
+              Bekijk per maatregel (isolatie, warmtepomp, zonneboiler en zonnepanelen) de indicatieve kosten, het
+              ISDE-subsidiebedrag 2026, de jaarbesparing en de terugverdientijd, plus de extra hypotheek-leenruimte bij
+              jouw energielabel. Met bron en peildatum bij elk cijfer.
+            </p>
+            <div className="mt-4">
+              <KnopPrimair href={`/verduurzamen/advies?${adresQuery}`}>Bekijk het advies per maatregel</KnopPrimair>
             </div>
           </Kaart>
 

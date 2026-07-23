@@ -296,6 +296,31 @@ export default async function BiedadviesPagina({ params }: { params: Promise<Par
           <Link href="/methode" className="underline underline-offset-2 hover:text-merk">onze methode</Link>.
         </p>
       </div>
+
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <Kaart>
+          <SectieLabel>Je budget</SectieLabel>
+          <h2 className="mt-2 text-lg font-semibold">Weet wat je maximaal kunt bieden</h2>
+          <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
+            Een bod begint bij wat je kunt lenen. Reken het na met de budgetberekenaar, op basis van de wettelijke
+            leennormen 2026.
+          </p>
+          <Link href="/budget" className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
+            Naar de budgetberekenaar
+          </Link>
+        </Kaart>
+        <Kaart>
+          <SectieLabel>Hypotheekrentes</SectieLabel>
+          <h2 className="mt-2 text-lg font-semibold">Wat betekent de rente voor je maandlasten?</h2>
+          <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
+            Bekijk de actuele gemiddelde hypotheekrentes per rentevaste periode (bron: DNB) en wat een bod in deze range
+            per maand kost.
+          </p>
+          <Link href="/hypotheek-rentes" className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
+            Naar de rentestanden
+          </Link>
+        </Kaart>
+      </div>
     </div>
   );
 }

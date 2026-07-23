@@ -306,6 +306,28 @@ export default async function WoningPagina({ params }: { params: Promise<Params>
         </Kaart>
       </div>
 
+      <Kaart className="mt-5">
+        <SectieLabel>Meer inzicht voor dit adres</SectieLabel>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/budget" className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
+            <p className="text-sm font-semibold text-merk">Budgetberekenaar</p>
+            <p className="mt-1 text-xs leading-relaxed text-gedempt">Wat je maximaal kunt lenen, volgens de wettelijke leennormen 2026.</p>
+          </Link>
+          <Link href={`/verduurzamen?${adresQuery}`} className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
+            <p className="text-sm font-semibold text-merk">Verduurzamen</p>
+            <p className="mt-1 text-xs leading-relaxed text-gedempt">Wat isolatie, zonnepanelen of een warmtepomp dit huis opleveren.</p>
+          </Link>
+          <Link href={`/woz-check?${adresQuery}`} className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
+            <p className="text-sm font-semibold text-merk">WOZ-check</p>
+            <p className="mt-1 text-xs leading-relaxed text-gedempt">Vergelijk je WOZ-beschikking met de geschatte marktwaarde.</p>
+          </Link>
+          <Link href={`/biedadvies/${adres.postcode}/${adres.nummerslug}`} className="block rounded-lg border border-lijn p-4 transition-colors hover:border-merk">
+            <p className="text-sm font-semibold text-merk">Biedadvies</p>
+            <p className="mt-1 text-xs leading-relaxed text-gedempt">Wat een realistisch bod is, gezien de overbieding in deze buurt.</p>
+          </Link>
+        </div>
+      </Kaart>
+
       <div className="mt-10 rounded-[14px] border border-lijn bg-paneel p-6">
         <h2 className="text-base font-semibold">Liever niet op Wonea?</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
