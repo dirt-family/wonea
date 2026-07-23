@@ -92,12 +92,12 @@ export function StatTegel({ label, waarde, delta, deltaRichting }: { label: stri
 }
 
 /** Grote uitkomstkaart voor rekentools: een resultaat met context eronder. */
-export function UitkomstKaart({ label, bedrag, kinderen }: { label: string; bedrag: string; kinderen?: ReactNode }) {
+export function UitkomstKaart({ label, bedrag, children }: { label: string; bedrag: string; children?: ReactNode }) {
   return (
     <Kaart className="bg-merk-wash">
       <SectieLabel>{label}</SectieLabel>
       <p className="mt-3 font-display text-5xl font-semibold text-merk">{bedrag}</p>
-      {kinderen}
+      {children}
     </Kaart>
   );
 }
