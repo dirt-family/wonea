@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { categorieenMetArtikelen, categorieenZonderArtikelen } from "@/lib/gids";
+import { GIDS_CATEGORIEEN, artikelenInCategorie } from "@/lib/gids";
 import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/jsonld";
 import { baseUrl } from "@/lib/util";
 import { ArtikelKaart } from "@/app/gids/artikel-kaart";
@@ -18,14 +18,15 @@ export const metadata: Metadata = {
 };
 
 /**
- * Gids-hub: intro, daarna per categorie (alleen die met artikelen) een blok
- * met artikelkaarten. Lege categorieen worden eerlijk als "volgt" genoemd,
- * zonder link. De categoriestructuur is data (lib/gids/model.ts) en kan door
- * de research-uitkomst worden herzien zonder dat deze pagina wijzigt.
+ * Gids-hub: intro, daarna ALLE zes categorieen in klantreis-volgorde
+ * (lib/gids/model.ts). Categorieen met artikelen tonen artikelkaarten;
+ * categorieen zonder artikelen tonen hun doel, de geplande onderwerpen
+ * (tekst, bewust zonder links: klikbaar wordt pas wat af is) en de vaste
+ * rekenhulpen. Zo staat de volledige structuur van de gids er vanaf dag een,
+ * eerlijk over wat er al is en wat er komt.
  */
 export default function GidsPagina() {
-  const blokken = categorieenMetArtikelen();
-  const komtNog = categorieenZonderArtikelen();
+  const blokken = GIDS_CATEGORIEEN.map((categorie) => ({ categorie, artikelen: artikelenInCategorie(categorie.slug) }));
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-14">
@@ -37,9 +38,9 @@ export default function GidsPagina() {
       <div className="mt-6 max-w-2xl">
         <h1 className="text-3xl font-semibold sm:text-4xl">Woongids</h1>
         <p className="mt-4 leading-relaxed text-inkt-zacht">
-          Uitleg in gewone taal over de regels achter kopen, lenen en verduurzamen. Elk artikel is gebaseerd op
-          officiële bronnen, met de peildatum erbij, en eindigt bij de rekenhulp waarmee je het voor jouw situatie
-          doorrekent.
+          Uitleg in gewone taal over kopen, bieden, lenen, waarde, verkopen en verduurzamen. Elk artikel is gebaseerd
+          op officiële bronnen, met de peildatum erbij, en eindigt bij de rekenhulp waarmee je het voor jouw situatie
+          doorrekent. De gids is in opbouw; per onderwerp zie je wat er al staat en wat eraan komt.
         </p>
       </div>
 
@@ -52,26 +53,45 @@ export default function GidsPagina() {
                   {categorie.naam}
                 </Link>
               </h2>
-              <Link href={`/gids/${categorie.slug}`} className="text-sm font-medium text-merk hover:underline">
-                Alles over {categorie.naam.toLowerCase()}
-              </Link>
+              {artikelen.length > 0 ? (
+                <Link href={`/gids/${categorie.slug}`} className="text-sm font-medium text-merk hover:underline">
+                  Alles over {categorie.naam.toLowerCase()}
+                </Link>
+              ) : null}
             </div>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-inkt-zacht">{categorie.beschrijving}</p>
-            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {artikelen.map((artikel) => (
-                <ArtikelKaart key={artikel.slug} artikel={artikel} />
+
+            {artikelen.length > 0 ? (
+              <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {artikelen.map((artikel) => (
+                  <ArtikelKaart key={artikel.slug} artikel={artikel} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-[14px] border border-dashed border-lijn bg-paneel p-5">
+                <p className="text-sm font-medium text-inkt">In voorbereiding</p>
+                <ul className="mt-2 space-y-1 text-sm leading-relaxed text-inkt-zacht">
+                  {categorie.geplandeOnderwerpen.map((onderwerp) => (
+                    <li key={onderwerp}>{onderwerp}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+              {categorie.rekenhulpen.map((rekenhulp) => (
+                <Link
+                  key={rekenhulp.href}
+                  href={rekenhulp.href}
+                  className="font-semibold text-merk underline underline-offset-4 transition-colors hover:text-merk-licht"
+                >
+                  {rekenhulp.label}
+                </Link>
               ))}
-            </div>
+            </p>
           </section>
         ))}
       </div>
-
-      {komtNog.length > 0 ? (
-        <p className="mt-12 text-sm text-gedempt">
-          In voorbereiding: {komtNog.map((c) => c.naam.toLowerCase()).join(" en ")}. Die artikelen verschijnen hier
-          zodra ze af zijn.
-        </p>
-      ) : null}
 
       <div className="mt-12 rounded-[14px] border border-lijn bg-merk-wash p-6">
         <h2 className="text-xl font-semibold">Liever meteen rekenen?</h2>

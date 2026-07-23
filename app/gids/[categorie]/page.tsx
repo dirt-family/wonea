@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GIDS_CATEGORIEEN, artikelenInCategorie, vindCategorie } from "@/lib/gids";
 import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/jsonld";
@@ -59,13 +60,33 @@ export default async function GidsCategoriePagina({ params }: { params: Promise<
           ))}
         </div>
       ) : (
-        <div className="mt-10">
+        <div className="mt-10 space-y-6">
           <LegeStaat
             titel="Nog geen artikelen in deze categorie"
-            tekst="We schrijven elk artikel op basis van geverifieerde bronnen, en dat kost even. Kijk in de gids wat er al wel staat."
+            tekst="We schrijven elk artikel op basis van geverifieerde bronnen, en dat kost even. Dit zijn de onderwerpen die eraan komen."
           />
+          <div className="rounded-[14px] border border-lijn bg-paneel p-5">
+            <p className="text-sm font-medium text-inkt">In voorbereiding</p>
+            <ul className="mt-2 space-y-1 text-sm leading-relaxed text-inkt-zacht">
+              {categorie.geplandeOnderwerpen.map((onderwerp) => (
+                <li key={onderwerp}>{onderwerp}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
+
+      <p className="mt-10 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+        {categorie.rekenhulpen.map((rekenhulp) => (
+          <Link
+            key={rekenhulp.href}
+            href={rekenhulp.href}
+            className="font-semibold text-merk underline underline-offset-4 transition-colors hover:text-merk-licht"
+          >
+            {rekenhulp.label}
+          </Link>
+        ))}
+      </p>
     </div>
   );
 }
