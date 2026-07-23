@@ -20,10 +20,33 @@
   --color-positief: #2f6f4f;
   --color-negatief: #9b3535;
 
+  /* Merk-tintenschaal (voor grafieken, hovers, nuance; merk zelf = 800) */
+  --color-merk-50: #f4f7fa;
+  --color-merk-100: #e4ebf2;
+  --color-merk-200: #c3d3e2;
+  --color-merk-300: #97b3cc;
+  --color-merk-400: #6690b2;
+  --color-merk-500: #427298;
+  --color-merk-600: #2f597d;
+  --color-merk-700: #234563;
+  --color-merk-800: #16324f;
+  --color-merk-900: #0f2439;
+
+  /* Statuswashes (zachte achtergronden bij positief/negatief) */
+  --color-positief-wash: #ecf4ef;
+  --color-negatief-wash: #f9eded;
+
   --font-display: "Source Serif 4", Georgia, serif;
   --font-sans: "Inter Variable", -apple-system, "Segoe UI", sans-serif;
 
   --radius-kaart: 14px;
+
+  /* Motion: rustig en doelgericht. Enters ease-out, exits ease-in. */
+  --duur-micro: 120ms;
+  --duur-kort: 200ms;
+  --duur-normaal: 300ms;
+  --ease-uit: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
 }
 
 html {
