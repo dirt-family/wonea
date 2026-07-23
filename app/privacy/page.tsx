@@ -12,7 +12,8 @@ export default function PrivacyPagina() {
       <Kaart className="mt-6 bg-accent-wash">
         <p className="text-sm leading-relaxed text-inkt">
           <strong>Concept.</strong> Dit is een werkversie. Een Nederlandse privacyjurist beoordeelt en ondertekent deze
-          verklaring voordat Wonea live gaat. Tot die tijd draait Wonea alleen lokaal in een testomgeving.
+          verklaring voordat Wonea echte woningdata publiceert. Tot die tijd draait Wonea als openbare testversie: alle
+          woningen en waardes zijn voorbeelddata en er wordt geen echte woningdata gepubliceerd.
         </p>
       </Kaart>
 

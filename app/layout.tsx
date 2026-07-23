@@ -22,6 +22,14 @@ export const metadata: Metadata = {
   // eigen expliciete robots-metadata.
 };
 
+function BetaBanner() {
+  return (
+    <div className="bg-accent-wash px-5 py-2 text-center text-sm text-inkt">
+      Openbare testversie: alle woningen en waardes zijn voorbeelddata, en e-mailfuncties staan nog uit.
+    </div>
+  );
+}
+
 function Header() {
   return (
     <header className="border-b border-lijn bg-paneel">
@@ -90,6 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <script {...jsonLdScriptProps(organizationJsonLd())} />
         <script {...jsonLdScriptProps(websiteJsonLd())} />
+        <BetaBanner />
         <Header />
         <main>{children}</main>
         <Footer />
