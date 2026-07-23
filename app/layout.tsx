@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Analytics } from "@/components/analytics";
+import { WoneaLogo } from "@/components/logo";
 import "@fontsource-variable/inter";
 import "@fontsource/source-serif-4/400.css";
 import "@fontsource/source-serif-4/600.css";
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
   },
   description:
     "Wonea toont de geschatte waarde van elke woning met een eerlijke bandbreedte, de verkopen waarop die is gebaseerd en een uitgelegde methode. Jouw huis, jouw data.",
+  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }] },
   // Geen globale robots-regel meer: adres- en buurtpagina's beslissen via de
   // indexatie-gating (lib/seo/gating.ts); alle overige pagina's dragen hun
   // eigen expliciete robots-metadata.
@@ -24,7 +26,8 @@ function Header() {
   return (
     <header className="border-b border-lijn bg-paneel">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-        <Link href="/" className="font-display text-xl font-bold text-merk">
+        <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold text-merk">
+          <WoneaLogo className="h-7 w-7" />
           Wonea
         </Link>
         <nav className="flex items-center gap-5 text-sm text-inkt-zacht">
@@ -54,7 +57,10 @@ function Footer() {
     <footer className="mt-16 border-t border-lijn bg-paneel">
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 text-sm text-inkt-zacht sm:grid-cols-3">
         <div>
-          <p className="font-display text-lg font-bold text-merk">Wonea</p>
+          <p className="flex items-center gap-2 font-display text-lg font-bold text-merk">
+            <WoneaLogo className="h-6 w-6" />
+            Wonea
+          </p>
           <p className="mt-2 max-w-xs leading-relaxed">
             Eerlijk inzicht in woningwaarde: altijd met bandbreedte, bronnen en uitleg. Jouw huis, jouw data.
           </p>
