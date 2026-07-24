@@ -3,24 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  BandbreedteInvaart,
   GerelateerdeRekenhulpen,
+  KeuzeKaart,
   RekenModule,
   RekenmoduleSamenvatting,
+  UitkomstMoment,
   type SamenvattingRij,
   type StapDefinitie,
 } from "@/components/rekenmodule";
 import {
-  Bandbreedte,
   EnergieLabelBadge,
-  FeitenLijst,
   inputClass,
   Kaart,
   LeadCta,
   SectieLabel,
   UitklapUitleg,
-  UitkomstKaart,
   Veld,
   VergelijkTabel,
+  VoortgangsBalk,
 } from "@/components/ui";
 import { formatEuro } from "@/lib/format";
 import type { EnergielabelKlasse } from "@/lib/hypotheek";
@@ -71,8 +72,6 @@ export type RenteContext = {
   /** Letterlijke DNB-bronvermelding voor de methode-uitleg. */
   bron: string;
 };
-
-const radioCls = "flex items-center gap-3 rounded-lg border border-lijn px-4 py-3 text-sm text-inkt";
 
 /** 3.74 -> "3,74" voor lopende tekst. */
 function renteTekst(pct: number): string {
@@ -155,29 +154,21 @@ export function HypotheekBerekenenStepper({
         <>
           <fieldset>
             <legend className="mb-2 block text-sm font-medium text-inkt">Koop je alleen of samen?</legend>
-            <div className="space-y-2">
-              <label className={radioCls}>
-                <input
-                  type="radio"
-                  name="wie_keuze"
-                  value="alleen"
-                  checked={wie === "alleen"}
-                  onChange={() => setWie("alleen")}
-                  className="accent-merk"
-                />
-                <span className="flex-1">Ik koop alleen</span>
-              </label>
-              <label className={radioCls}>
-                <input
-                  type="radio"
-                  name="wie_keuze"
-                  value="samen"
-                  checked={wie === "samen"}
-                  onChange={() => setWie("samen")}
-                  className="accent-merk"
-                />
-                <span className="flex-1">We kopen samen</span>
-              </label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KeuzeKaart
+                naam="wie_keuze"
+                waarde="alleen"
+                checked={wie === "alleen"}
+                onKies={() => setWie("alleen")}
+                titel="Ik koop alleen"
+              />
+              <KeuzeKaart
+                naam="wie_keuze"
+                waarde="samen"
+                checked={wie === "samen"}
+                onKies={() => setWie("samen")}
+                titel="We kopen samen"
+              />
             </div>
           </fieldset>
           <Veld
@@ -305,36 +296,27 @@ export function HypotheekBerekenenStepper({
               beschouwing, bovenop wat je op basis van je inkomen kunt lenen.
             </p>
             <div className="space-y-2">
-              <label className={radioCls}>
-                <input
-                  type="radio"
-                  name="label_keuze"
-                  value=""
-                  checked={label === ""}
-                  onChange={() => setLabel("")}
-                  className="accent-merk"
-                />
-                <span className="flex-1">Weet ik niet of nog geen woning op het oog</span>
-                <span className="text-xs text-gedempt">geen labelbedrag</span>
-              </label>
+              <KeuzeKaart
+                naam="label_keuze"
+                waarde=""
+                checked={label === ""}
+                onKies={() => setLabel("")}
+                titel="Weet ik niet of nog geen woning op het oog"
+                meta="geen labelbedrag"
+              />
               {ENERGIELABEL_OPTIES.map((o) => (
-                <label key={o.klasse} className={radioCls}>
-                  <input
-                    type="radio"
-                    name="label_keuze"
-                    value={o.klasse}
-                    checked={label === o.klasse}
-                    onChange={() => setLabel(o.klasse)}
-                    className="accent-merk"
-                  />
-                  <span className="flex shrink-0 gap-1">
-                    {o.badges.map((b) => (
-                      <EnergieLabelBadge key={b} label={b} klein />
-                    ))}
-                  </span>
-                  <span className="flex-1">{o.label}</span>
-                  <span className="text-xs text-gedempt">{o.bedrag > 0 ? `+ ${formatEuro(o.bedrag)}` : "geen extra bedrag"}</span>
-                </label>
+                <KeuzeKaart
+                  key={o.klasse}
+                  naam="label_keuze"
+                  waarde={o.klasse}
+                  checked={label === o.klasse}
+                  onKies={() => setLabel(o.klasse)}
+                  voor={o.badges.map((b) => (
+                    <EnergieLabelBadge key={b} label={b} klein />
+                  ))}
+                  titel={o.label}
+                  meta={o.bedrag > 0 ? `+ ${formatEuro(o.bedrag)}` : "geen extra bedrag"}
+                />
               ))}
             </div>
             <p className="mt-2 text-xs text-gedempt">
@@ -435,10 +417,10 @@ function Uitkomst({
     <div className="space-y-5">
       {/* Kaart 1: maximale hypotheek */}
       {rente && max ? (
-        <UitkomstKaart label="Maximale hypotheek (indicatie)" bedrag={formatEuro(max.maximaal)}>
+        <UitkomstMoment label="Maximale hypotheek (indicatie)" waarde={formatEuro(max.maximaal)}>
           {max.maximaal > 0 ? (
             <>
-              <Bandbreedte laag={max.laag} waarde={max.maximaal} hoog={max.hoog} />
+              <BandbreedteInvaart laag={max.laag} waarde={max.maximaal} hoog={max.hoog} />
               <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
                 Gerekend met {TOETS_RENTEVAST_JAREN} jaar rentevast op de gemiddelde bancaire rente van{" "}
                 {renteTekst(rente.pct)}%; vanaf tien jaar rentevast is dat meteen de toetsrente ({renteTekst(max.toetsrente)}
@@ -462,7 +444,7 @@ function Uitkomst({
             2026) en DNB-rentegemiddelden, peilmaand {rente.peilmaand}, opgehaald {rente.opgehaaldOp}. Een indicatie,
             geen offerte en geen advies.
           </p>
-        </UitkomstKaart>
+        </UitkomstMoment>
       ) : (
         <Kaart>
           <SectieLabel>Maximale hypotheek</SectieLabel>
@@ -549,19 +531,27 @@ function Uitkomst({
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           Sinds 2018 kun je maximaal 100% van de woningwaarde lenen; de kosten koper betaal je uit eigen zak.
         </p>
-        <div className="mt-4">
-          <FeitenLijst
-            feiten={[
-              [
-                eigenGeld.ovb.vrijstellingToegepast
-                  ? "Overdrachtsbelasting (startersvrijstelling, 0%)"
-                  : `Overdrachtsbelasting (${renteTekst(eigenGeld.ovb.tariefPct)}%)`,
-                formatEuro(eigenGeld.ovb.belasting),
-              ],
-              ...INDICATIE_KOSTEN.map((k): [string, string] => [`${k.label} (indicatie)`, formatEuro(k.bedrag)]),
-            ]}
-          />
-        </div>
+        {/* Flux-echo: samenstellings-grafiekje van het eigen geld, met
+            lavendel als tweede reeks (zelfde balk als bij /kosten-koper);
+            de legenda met kleurdots is meteen de postenlijst. */}
+        <VoortgangsBalk
+          className="mt-4"
+          formatteer={formatEuro}
+          segmenten={[
+            {
+              label: eigenGeld.ovb.vrijstellingToegepast
+                ? "Overdrachtsbelasting (startersvrijstelling, 0%)"
+                : `Overdrachtsbelasting (${renteTekst(eigenGeld.ovb.tariefPct)}%)`,
+              waarde: eigenGeld.ovb.belasting,
+              kleur: "merk",
+            },
+            ...INDICATIE_KOSTEN.map((k, i) => ({
+              label: `${k.label} (indicatie)`,
+              waarde: k.bedrag,
+              kleur: (["lavendel", "amber", "neutraal"] as const)[i % 3],
+            })),
+          ]}
+        />
         {eigenGeld.ovb.vrijstellingVervallenDoorWaardegrens ? (
           <p className="mt-3 rounded-lg bg-merk-wash p-4 text-sm leading-relaxed text-inkt-zacht">
             Je voldoet aan de leeftijdsvoorwaarde, maar boven de {formatEuro(STARTERS_WONINGWAARDEGRENS)} vervalt de

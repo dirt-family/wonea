@@ -1,13 +1,13 @@
-import Link from "next/link";
-import { Bandbreedte, LegeStaat, VoorbeelddataLabel } from "@/components/ui";
-import { EnergielabelChip } from "@/components/marketing/energielabel-chip";
+import { LegeStaat, VoorbeelddataLabel, WoningKaart } from "@/components/ui";
 import { formatEuro } from "@/lib/format";
 import type { WoningKaartData } from "@/lib/homepage-data";
 
 /**
  * Horizontaal scrollende rij met echte adrespagina's uit het testgebied.
- * CSS-only: scroll-snap, geen JavaScript. Het voorbeelddata-label staat 1x
- * boven de rij.
+ * CSS-only: scroll-snap, geen JavaScript. Huisstijl v3: de rijke
+ * WoningKaart-signatuur (illustratie-hoek op tint, EU-labelbadge, waarde met
+ * bandbreedte, hover-lift). Het voorbeelddata-label staat 1x boven de rij;
+ * een indicatief energielabel wordt eerlijk als tag op de kaart benoemd.
  */
 export function WoningenRij({ woningen }: { woningen: WoningKaartData[] }) {
   return (
@@ -32,25 +32,18 @@ export function WoningenRij({ woningen }: { woningen: WoningKaartData[] }) {
           aria-label="Voorbeeldwoningen met geschatte waarde"
         >
           {woningen.map((w) => (
-            <Link
-              key={w.id}
-              role="listitem"
-              href={`/woning/${w.postcode}/${w.nummerslug}`}
-              className="block w-[272px] shrink-0 snap-start rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold text-inkt">
-                    {w.straat} {w.huisnummer}
-                    {w.toevoeging ? ` ${w.toevoeging}` : ""}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gedempt">{w.plaats}</p>
-                </div>
-                {w.energielabel ? <EnergielabelChip label={w.energielabel} bron={w.energielabelBron} /> : null}
-              </div>
-              <p className="mt-4 font-display text-2xl font-semibold text-merk">{formatEuro(w.waarde)}</p>
-              <Bandbreedte laag={w.intervalLaag} waarde={w.waarde} hoog={w.intervalHoog} />
-            </Link>
+            <div key={w.id} role="listitem" className="w-[272px] shrink-0 snap-start">
+              <WoningKaart
+                href={`/woning/${w.postcode}/${w.nummerslug}`}
+                adres={`${w.straat} ${w.huisnummer}${w.toevoeging ? ` ${w.toevoeging}` : ""}`}
+                plaats={`${w.postcode} ${w.plaats}`}
+                waarde={formatEuro(w.waarde)}
+                bandbreedte={`${formatEuro(w.intervalLaag)} tot ${formatEuro(w.intervalHoog)}`}
+                energielabel={w.energielabel}
+                tag={w.energielabel && w.energielabelBron === "indicatie" ? "Label indicatie" : undefined}
+                className="h-full"
+              />
+            </div>
           ))}
         </div>
       )}

@@ -7,7 +7,9 @@ import { createMagicToken, currentUser, magicLinkRateLimited } from "@/lib/auth"
 import { hasEntitlement } from "@/lib/premium";
 import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { baseUrl, formatEuro } from "@/lib/util";
-import { inputClass, Kaart, KnopPrimair, KnopSecundair, SectieLabel, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, Kaart, KnopPrimair, KnopSecundair, SectieLabel, Veld } from "@/components/ui";
+import { Icoon } from "@/components/iconen";
+import { Illustratie } from "@/components/illustraties";
 import { checkoutQuery, koopPremium, veiligeVanUrl } from "@/app/premium/logic";
 import { parseProduct, PRODUCTEN } from "@/app/premium/producten";
 import { stuurPremiumLoginMail } from "@/app/premium/login-mail";
@@ -105,12 +107,18 @@ export default async function AfrekenenPagina({
   if (sp.stap === "mail") {
     return (
       <div className="mx-auto max-w-2xl px-5 py-16">
-        <h1 className="text-3xl font-semibold">Check je mail</h1>
-        <p className="mt-4 leading-relaxed text-inkt-zacht">
-          We hebben je een inloglink gestuurd. Die is 15 minuten geldig en werkt één keer. Klik erop en je komt terug op
-          deze afrekenpagina, ingelogd en wel. Geen mail? Kijk even in je spamfolder.
-        </p>
-        <p className="mt-4 text-sm text-gedempt">Zonder die klik gebeurt er niets: geen account, geen aankoop.</p>
+        <div className="flex items-start justify-between gap-8">
+          <div className="min-w-0">
+            <IcoonRondje naam="vinkje" tint="amber" maat="l" />
+            <h1 className="mt-5 text-3xl font-semibold">Check je mail</h1>
+            <p className="mt-4 leading-relaxed text-inkt-zacht">
+              We hebben je een inloglink gestuurd. Die is 15 minuten geldig en werkt één keer. Klik erop en je komt terug op
+              deze afrekenpagina, ingelogd en wel. Geen mail? Kijk even in je spamfolder.
+            </p>
+            <p className="mt-4 text-sm text-gedempt">Zonder die klik gebeurt er niets: geen account, geen aankoop.</p>
+          </div>
+          <Illustratie naam="jouw-data" className="hidden w-44 shrink-0 sm:block" />
+        </div>
       </div>
     );
   }
@@ -127,7 +135,10 @@ export default async function AfrekenenPagina({
           een account, zodat je de verdieping niet kwijtraakt. Inloggen gaat met een e-maillink, zonder wachtwoord.
         </p>
         {foutmelding ? (
-          <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{foutmelding}</p>
+          <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+            <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+            {foutmelding}
+          </p>
         ) : null}
         <Kaart className="mt-8">
           <form action={stuurLoginLink} className="space-y-5">
@@ -186,7 +197,7 @@ export default async function AfrekenenPagina({
         <ul className="mt-4 space-y-2 border-t border-lijn pt-4 text-sm leading-relaxed text-inkt-zacht">
           {info.krijgt.map((punt) => (
             <li key={punt} className="flex gap-2">
-              <span aria-hidden="true" className="mt-0.5 text-merk">+</span>
+              <Icoon naam="vinkje" maat="s" className="mt-0.5 shrink-0 text-merk" />
               <span>{punt}</span>
             </li>
           ))}

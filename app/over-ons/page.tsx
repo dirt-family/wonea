@@ -11,17 +11,20 @@ export const metadata: Metadata = {
 };
 
 /**
- * Merkverhaal als rustige leespagina: serif-koppen, één accent-moment
- * (de belofte als citaat), het huisvorm-motief als zacht achtergrond-element
- * en als sectie-scheider. Geen verzonnen team of geschiedenis: het platform
- * is nieuw en dat staat er gewoon.
+ * Merkverhaal als rustige leespagina: serif-koppen, het huisvorm-motief als
+ * zacht achtergrond-element en als sectie-scheider. Huisstijl v3: de belofte
+ * krijgt het ene merkgradient-accent van de pagina (navy naar amber, als
+ * smalle staander naast het citaat) en "Jouw huis, jouw data" is de warme
+ * amber-wash-sectie (de menselijke sectie; de rest blijft wit). Geen
+ * verzonnen team of geschiedenis: het platform is nieuw en dat staat er
+ * gewoon.
  */
 
 function Scheider() {
   return (
     <div aria-hidden="true" className="my-12 flex items-center gap-4">
       <span className="h-px flex-1 bg-lijn" />
-      <WoneaLogo className="h-5 w-5 text-merk-200" />
+      <WoneaLogo variant="mono" className="h-5 w-5 text-merk-200" />
       <span className="h-px flex-1 bg-lijn" />
     </div>
   );
@@ -31,11 +34,11 @@ export default function OverOnsPagina() {
   return (
     <div className="relative overflow-hidden">
       <style>{`@keyframes wonea-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>
-      <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-10 text-merk-50">
-        <WoneaLogo className="h-96 w-96" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-10 text-merk-100">
+        <WoneaLogo variant="mono" className="h-96 w-96" />
       </div>
 
-      <div className="relative mx-auto max-w-3xl px-5 py-14">
+      <div className="relative mx-auto max-w-3xl px-5 pt-14">
         <div style={{ animation: "wonea-enter var(--duur-normaal) var(--ease-uit) both" }}>
           <h1 className="text-3xl font-semibold sm:text-4xl">Waarom Wonea bestaat</h1>
           <p className="mt-5 text-lg leading-relaxed text-inkt-zacht">
@@ -45,9 +48,15 @@ export default function OverOnsPagina() {
           </p>
         </div>
 
-        {/* Het ene accent-moment van de pagina: de belofte. */}
-        <blockquote className="mt-10 border-l-2 border-accent pl-6">
-          <p className="font-display text-2xl font-semibold italic text-merk">Eerlijk inzicht zonder schijnzekerheid.</p>
+        {/* Het ene accent-moment van de pagina: de belofte, met het toegestane
+            kleine merkgradient-moment (navy naar amber) als staander. */}
+        <blockquote className="relative mt-10 pl-6">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-1 left-0 w-1 rounded-full"
+            style={{ backgroundImage: "var(--gradient-merk)" }}
+          />
+          <p className="font-display text-2xl font-semibold italic leading-snug text-merk">Eerlijk inzicht zonder schijnzekerheid.</p>
           <p className="mt-2 text-sm text-gedempt">Dat is de belofte waaraan we elke keuze op Wonea toetsen.</p>
         </blockquote>
 
@@ -60,9 +69,9 @@ export default function OverOnsPagina() {
             niet, en kan er daardoor flink naast zitten, ook dat van ons. Wie je dan één strak getal toont, verkoopt
             schijnzekerheid. Wij tonen daarom de marge, hoe zeker we zijn en de verkopen waarop de schatting rust.
           </p>
-          <div className="mt-6 rounded-[14px] border border-lijn bg-paneel p-5">
+          <div className="mt-6 rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef">
             <p className="text-sm font-medium text-inkt">Zo ziet dat eruit</p>
-            <p className="mt-1 font-display text-2xl font-semibold text-merk">{formatEuro(412000)}</p>
+            <p className="mt-1 font-display text-2xl font-semibold tabular-nums text-merk">{formatEuro(412000)}</p>
             <Bandbreedte laag={379000} waarde={412000} hoog={445000} />
             <p className="mt-3 text-xs leading-relaxed text-gedempt">
               Rekenvoorbeeld, geen echt adres. De breedte van de marge volgt uit de spreiding van de gebruikte verkopen.
@@ -80,7 +89,7 @@ export default function OverOnsPagina() {
             {["BAG (Kadaster)", "CBS", "RVO en EP-Online", "DNB", "OpenStreetMap"].map((bron) => (
               <li
                 key={bron}
-                className="rounded-[14px] border border-lijn bg-paneel px-4 py-3 text-center font-display text-sm font-semibold text-merk"
+                className="rounded-[14px] bg-merk-wash px-4 py-3 text-center font-display text-sm font-semibold text-merk"
               >
                 {bron}
               </li>
@@ -92,10 +101,12 @@ export default function OverOnsPagina() {
             </Link>
           </p>
         </section>
+      </div>
 
-        <Scheider />
-
-        <section>
+      {/* De menselijke sectie op warme amber-wash (huisstijl v3): volle breedte,
+          de leeskolom loopt er gewoon in door. */}
+      <section className="mt-12 border-y border-accent-100 bg-wash-amber">
+        <div className="mx-auto max-w-3xl px-5 py-12">
           <h2 className="text-2xl font-semibold">Jouw huis, jouw data</h2>
           <p className="mt-4 leading-relaxed text-inkt-zacht">
             Wij tonen openbare data over woningen. Alles wat jou als persoon raakt, je e-mail, je claim, je aanvraag,
@@ -113,9 +124,11 @@ export default function OverOnsPagina() {
               Je woning verwijderen
             </Link>
           </p>
-        </section>
+        </div>
+      </section>
 
-        <section className="mt-12 rounded-[14px] border border-lijn bg-paneel p-6">
+      <div className="relative mx-auto max-w-3xl px-5 pb-14">
+        <section className="mt-12 rounded-[14px] border border-lijn bg-paneel p-6 shadow-zweef">
           <h2 className="text-xl font-semibold">Eerlijk over waar we staan</h2>
           <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
             Wonea is nieuw. Er is geen kantoor vol taxateurs en geen tienjarig trackrecord: er is een testgebied, een

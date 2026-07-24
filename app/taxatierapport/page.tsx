@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createLead } from "@/lib/leads";
 import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { normalizePostcode } from "@/lib/util";
-import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, Kaart, KnopPrimair, Veld } from "@/components/ui";
 import { CONSENT_TEKST, CONSENT_TEKSTVERSIE, consentTekstversie } from "@/app/taxatierapport/consent-teksten";
 import { isMoment, MOMENTEN, vindAdres, type Moment } from "@/app/taxatierapport/helpers";
 
@@ -89,7 +89,9 @@ export default async function TaxatierapportPagina({
   const gekozenMoment: Moment | "" = isMoment(sp.moment) ? sp.moment : "";
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash)]" />
+      <div className="relative mx-auto max-w-2xl px-5 py-16">
       <h1 className="text-3xl font-semibold">Gevalideerd taxatierapport (NWWI)</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         De Wonea-schatting is een modelmatige waarde met bandbreedte: handig om richting te krijgen, maar geen taxatie.
@@ -97,11 +99,17 @@ export default async function TaxatierapportPagina({
       </p>
 
       {foutmelding ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{foutmelding}</p>
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+          {foutmelding}
+        </p>
       ) : null}
 
       <Kaart className="mt-8">
-        <SectieLabel>Wat is een gevalideerd rapport?</SectieLabel>
+        <div className="flex items-center gap-3">
+          <IcoonRondje naam="document" tint="merk" />
+          <h2 className="text-base font-semibold text-inkt">Wat is een gevalideerd rapport?</h2>
+        </div>
         <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
           Een gecertificeerde taxateur bekijkt je woning ter plekke en stelt een rapport op. Het NWWI (Nederlands Woning
           Waarde Instituut) controleert dat rapport daarna op kwaliteit en onderbouwing; pas na die controle heet het
@@ -110,7 +118,10 @@ export default async function TaxatierapportPagina({
       </Kaart>
 
       <Kaart className="mt-5">
-        <SectieLabel>Wanneer heb je het nodig?</SectieLabel>
+        <div className="flex items-center gap-3">
+          <IcoonRondje naam="vraag" tint="merk" />
+          <h2 className="text-base font-semibold text-inkt">Wanneer heb je het nodig?</h2>
+        </div>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-inkt-zacht">
           <li>Bij het afsluiten of oversluiten van een hypotheek.</li>
           <li>Bij een verbouwing die je meefinanciert in je hypotheek.</li>
@@ -122,7 +133,10 @@ export default async function TaxatierapportPagina({
       </Kaart>
 
       <Kaart className="mt-5">
-        <SectieLabel>Wat kost het?</SectieLabel>
+        <div className="flex items-center gap-3">
+          <IcoonRondje naam="euro" tint="amber" />
+          <h2 className="text-base font-semibold text-inkt">Wat kost het?</h2>
+        </div>
         <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
           Een gevalideerd taxatierapport kost in de praktijk 450 tot 800 euro, afhankelijk van regio en taxateur. Je
           betaalt de taxateur; de aanvraagkosten via Wonea worden verrekend met het rapport, dus je betaalt niet dubbel.
@@ -130,7 +144,7 @@ export default async function TaxatierapportPagina({
       </Kaart>
 
       <Kaart className="mt-5">
-        <SectieLabel>Vraag je rapport aan</SectieLabel>
+        <h2 className="text-base font-semibold text-inkt">Vraag je rapport aan</h2>
         <form action={vraagRapportAan} className="mt-4 space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Veld label="Postcode">
@@ -182,6 +196,7 @@ export default async function TaxatierapportPagina({
           </p>
         </form>
       </Kaart>
+      </div>
     </div>
   );
 }

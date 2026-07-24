@@ -62,6 +62,7 @@ export default function HypotheekRentesPagina() {
 
       <div className="mt-8">
         <SectieLabel>Gemiddelde rente per rentevaste periode</SectieLabel>
+        {/* Stat-tiles op tint (v3): navy-wash, de rekenhulpen-dramaturgie uit BRAND.md. */}
         <div className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {rentes.buckets.map((bucket) => (
             <StatTegel
@@ -70,6 +71,7 @@ export default function HypotheekRentesPagina() {
               waarde={formatPct(bucket.rentePct)}
               delta={`DNB, ${peilmaand}`}
               deltaRichting="neutraal"
+              tint="merk"
             />
           ))}
         </div>
@@ -81,12 +83,13 @@ export default function HypotheekRentesPagina() {
           <p className="mt-2 text-sm text-inkt-zacht">
             Maandgemiddelden van {peilmaandLabel(historie[0].maand)} tot en met {peilmaandLabel(historie[historie.length - 1].maand)}.
           </p>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Mini-panelen op tint: een reeks = merk-familie (flux-grafiekregel). */}
             {historieBuckets.map(({ bucket, reeks }) => (
-              <div key={bucket.bucket}>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">{bucket.label}</p>
-                <Sparkline waarden={reeks} />
-                <p className="text-sm text-inkt-zacht">
+              <div key={bucket.bucket} className="rounded-[14px] bg-merk-wash p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk-600">{bucket.label}</p>
+                <Sparkline waarden={reeks} className="mt-2 text-merk" />
+                <p className="mt-1 text-sm tabular-nums text-inkt-zacht">
                   van {formatPct(reeks[0])} naar {formatPct(reeks[reeks.length - 1])}
                 </p>
               </div>

@@ -6,6 +6,7 @@ import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/jsonld";
 import { baseUrl } from "@/lib/util";
 import { LegeStaat } from "@/components/ui";
 import { ArtikelKaart } from "@/app/gids/artikel-kaart";
+import { GeplandeOnderwerpen } from "@/app/gids/gepland";
 import { Kruimelpad } from "@/app/gids/kruimelpad";
 
 type Params = { categorie: string };
@@ -65,14 +66,7 @@ export default async function GidsCategoriePagina({ params }: { params: Promise<
             titel="Nog geen artikelen in deze categorie"
             tekst="We schrijven elk artikel op basis van geverifieerde bronnen, en dat kost even. Dit zijn de onderwerpen die eraan komen."
           />
-          <div className="rounded-[14px] border border-lijn bg-paneel p-5">
-            <p className="text-sm font-medium text-inkt">In voorbereiding</p>
-            <ul className="mt-2 space-y-1 text-sm leading-relaxed text-inkt-zacht">
-              {categorie.geplandeOnderwerpen.map((onderwerp) => (
-                <li key={onderwerp}>{onderwerp}</li>
-              ))}
-            </ul>
-          </div>
+          <GeplandeOnderwerpen onderwerpen={categorie.geplandeOnderwerpen} />
         </div>
       )}
 

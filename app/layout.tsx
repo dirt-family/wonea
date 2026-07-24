@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Analytics } from "@/components/analytics";
 import { WoneaLogo } from "@/components/logo";
+import { HeaderNav } from "@/app/header-nav";
 import "@fontsource-variable/inter";
 import "@fontsource/source-serif-4/400.css";
 import "@fontsource/source-serif-4/600.css";
@@ -31,43 +32,30 @@ export const metadata: Metadata = {
 
 function BetaBanner() {
   return (
-    <div className="bg-accent-wash px-5 py-2 text-center text-sm text-inkt">
+    <div className="border-b border-accent-200 bg-accent-wash px-5 py-2 text-center text-sm text-accent-900">
+      <span aria-hidden="true" className="mr-2 inline-block h-2 w-2 rounded-full bg-accent-500 align-middle" />
       Openbare testversie: alle woningen en waardes zijn voorbeelddata, en e-mailfuncties staan nog uit.
     </div>
   );
 }
 
+/**
+ * Header v3: zwevend gevoel via translucent paneel + backdrop-blur + gelaagde
+ * schaduw (shadow-zweef-md); het gradient-logo is het merkmoment. Actieve
+ * navigatie-staten zitten in HeaderNav (client, app/header-nav.tsx).
+ */
 function Header() {
   return (
-    <header className="border-b border-lijn bg-paneel">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-        <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold text-merk">
-          <WoneaLogo className="h-7 w-7" />
+    <header className="sticky top-0 z-40 border-b border-lijn/70 bg-paneel/85 shadow-zweef-md backdrop-blur-md">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 font-display text-2xl font-bold text-merk-900 focus:outline-2 focus:outline-offset-2 focus:outline-merk"
+        >
+          <WoneaLogo className="h-9 w-9" />
           Wonea
         </Link>
-        <nav className="flex items-center gap-5 text-sm text-inkt-zacht">
-          <Link href="/tools" className="transition-colors hover:text-merk">
-            Rekenhulpen
-          </Link>
-          <Link href="/woningmarkt" className="transition-colors hover:text-merk">
-            Woningmarkt
-          </Link>
-          <Link href="/woz-check" className="hidden transition-colors hover:text-merk sm:inline">
-            WOZ-check
-          </Link>
-          <Link href="/methode" className="hidden transition-colors hover:text-merk sm:inline">
-            Onze methode
-          </Link>
-          <Link href="/over-ons" className="hidden transition-colors hover:text-merk md:inline">
-            Over Wonea
-          </Link>
-          <Link
-            href="/claim"
-            className="rounded-full border border-merk px-4 py-1.5 font-semibold text-merk transition-colors hover:bg-merk hover:text-white"
-          >
-            Mijn woning
-          </Link>
-        </nav>
+        <HeaderNav />
       </div>
     </header>
   );
@@ -86,78 +74,94 @@ async function veiligePlaatsen(): Promise<PlaatsLink[]> {
   }
 }
 
+/**
+ * Mega-footer v3: navy-wash canvas (bewust een wash, geen donkere band; het
+ * thema-slot laat max 1 merk-900-band per pagina en die is van de pagina's
+ * zelf). Sectie-scheider met het mono-motief erboven, gradient-logo als
+ * merkmoment in de merkkolom.
+ */
 async function Footer() {
   const plaatsen = await veiligePlaatsen();
+  const kolomKop = "text-xs font-semibold uppercase tracking-[0.12em] text-merk";
+  const voetLink = "text-inkt-zacht transition-colors hover:text-merk";
   return (
-    <footer className="mt-16 border-t border-lijn bg-paneel">
-      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 text-sm text-inkt-zacht sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="flex items-center gap-2 font-display text-lg font-bold text-merk">
-            <WoneaLogo className="h-6 w-6" />
-            Wonea
-          </p>
-          <p className="mt-2 max-w-xs leading-relaxed">
-            Eerlijk inzicht in woningwaarde: altijd met bandbreedte, bronnen en uitleg. Jouw huis, jouw data.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <p className="font-semibold text-inkt">Rekenhulpen</p>
-          <p><Link href="/tools" className="hover:text-merk">Alle rekenhulpen</Link></p>
-          <p><Link href="/budget" className="hover:text-merk">Budgetberekenaar</Link></p>
-          <p><Link href="/woz-check" className="hover:text-merk">Gratis WOZ-check</Link></p>
-          <p><Link href="/hypotheek-rentes" className="hover:text-merk">Actuele hypotheekrentes</Link></p>
-          <p><Link href="/kosten-koper" className="hover:text-merk">Kosten koper</Link></p>
-          <p><Link href="/overbieden" className="hover:text-merk">Overbieden</Link></p>
-          <p><Link href="/verduurzamen" className="hover:text-merk">Verduurzamingscheck</Link></p>
-          <p><Link href="/makelaars" className="hover:text-merk">Vind een makelaar</Link></p>
-        </div>
-        <div className="space-y-2">
-          <p className="font-semibold text-inkt">Wonea</p>
-          <p><Link href="/zoeken" className="hover:text-merk">Woningen zoeken</Link></p>
-          <p><Link href="/vergelijken" className="hover:text-merk">Woningen vergelijken</Link></p>
-          <p><Link href="/gids" className="hover:text-merk">Woongids</Link></p>
-          <p><Link href="/methode" className="hover:text-merk">Hoe we rekenen</Link></p>
-          <p><Link href="/over-ons" className="hover:text-merk">Over ons</Link></p>
-          <p><Link href="/claim" className="hover:text-merk">Mijn woning</Link></p>
-          <p><Link href="/woningmarkt" className="hover:text-merk">Woningmarkt</Link></p>
-        </div>
-        <div className="space-y-2">
-          <p className="font-semibold text-inkt">Jouw data</p>
-          <p><Link href="/privacy" className="hover:text-merk">Privacy</Link></p>
-          <p><Link href="/verwijderen" className="hover:text-merk">Je woning verwijderen</Link></p>
-          <p className="text-xs leading-relaxed text-gedempt">
-            Verwijderen kan altijd, in twee stappen, zonder account.
-          </p>
-        </div>
+    <footer className="mt-16">
+      <div aria-hidden="true" className="mx-auto flex max-w-5xl items-center gap-4 px-5 pb-5">
+        <span className="h-px flex-1 bg-lijn" />
+        <WoneaLogo variant="mono" className="h-5 w-5 text-merk-300" />
+        <span className="h-px flex-1 bg-lijn" />
       </div>
 
-      <div className="border-t border-lijn">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-2 px-5 py-4 text-sm text-inkt-zacht">
-          <p className="font-semibold text-inkt">Woningmarkt</p>
-          {plaatsen.map((p) => (
-            <Link key={p.slug} href={`/woningmarkt/${p.slug}`} className="hover:text-merk">
-              {p.naam}
-            </Link>
-          ))}
-          <Link href="/woningmarkt" className="font-medium text-merk hover:underline">
-            Bekijk alle plaatsen
-          </Link>
-        </div>
-      </div>
-
-      <div className="border-t border-lijn">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-4 text-xs text-gedempt">
-          <div className="flex flex-wrap gap-x-5 gap-y-1">
-            <Link href="/privacy" className="hover:text-merk">Privacy</Link>
-            <Link href="/methode" className="hover:text-merk">Methode</Link>
-            <Link href="/verwijderen" className="hover:text-merk">Verwijderen</Link>
+      <div className="border-t border-merk-100 bg-wash-navy">
+        <div className="mx-auto grid max-w-5xl gap-x-8 gap-y-10 px-5 py-12 text-sm sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div>
+            <p className="flex items-center gap-2.5 font-display text-xl font-bold text-merk-900">
+              <WoneaLogo className="h-8 w-8" />
+              Wonea
+            </p>
+            <p className="mt-3 max-w-xs leading-relaxed text-inkt-zacht">
+              Eerlijk inzicht in woningwaarde: altijd met bandbreedte, bronnen en uitleg. Jouw huis, jouw data.
+            </p>
           </div>
-          <p>
-            Makelaarsdata:{" "}
-            <a href={OSM_COPYRIGHT_URL} className="underline underline-offset-2 hover:text-merk" rel="noreferrer">
-              {OSM_ATTRIBUTIE}
-            </a>
-          </p>
+          <div className="space-y-2.5">
+            <p className={kolomKop}>Rekenhulpen</p>
+            <p><Link href="/tools" className={voetLink}>Alle rekenhulpen</Link></p>
+            <p><Link href="/budget" className={voetLink}>Budgetberekenaar</Link></p>
+            <p><Link href="/woz-check" className={voetLink}>Gratis WOZ-check</Link></p>
+            <p><Link href="/hypotheek-rentes" className={voetLink}>Actuele hypotheekrentes</Link></p>
+            <p><Link href="/kosten-koper" className={voetLink}>Kosten koper</Link></p>
+            <p><Link href="/overbieden" className={voetLink}>Overbieden</Link></p>
+            <p><Link href="/verduurzamen" className={voetLink}>Verduurzamingscheck</Link></p>
+            <p><Link href="/makelaars" className={voetLink}>Vind een makelaar</Link></p>
+          </div>
+          <div className="space-y-2.5">
+            <p className={kolomKop}>Wonea</p>
+            <p><Link href="/zoeken" className={voetLink}>Woningen zoeken</Link></p>
+            <p><Link href="/vergelijken" className={voetLink}>Woningen vergelijken</Link></p>
+            <p><Link href="/gids" className={voetLink}>Woongids</Link></p>
+            <p><Link href="/methode" className={voetLink}>Hoe we rekenen</Link></p>
+            <p><Link href="/over-ons" className={voetLink}>Over ons</Link></p>
+            <p><Link href="/claim" className={voetLink}>Mijn woning</Link></p>
+            <p><Link href="/woningmarkt" className={voetLink}>Woningmarkt</Link></p>
+          </div>
+          <div className="space-y-2.5">
+            <p className={kolomKop}>Jouw data</p>
+            <p><Link href="/privacy" className={voetLink}>Privacy</Link></p>
+            <p><Link href="/verwijderen" className={voetLink}>Je woning verwijderen</Link></p>
+            <p className="text-xs leading-relaxed text-inkt-zacht">
+              Verwijderen kan altijd, in twee stappen, zonder account.
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-merk-100">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-baseline gap-x-4 gap-y-2 px-5 py-4 text-sm">
+            <p className={kolomKop}>Woningmarkt</p>
+            {plaatsen.map((p) => (
+              <Link key={p.slug} href={`/woningmarkt/${p.slug}`} className={voetLink}>
+                {p.naam}
+              </Link>
+            ))}
+            <Link href="/woningmarkt" className="font-medium text-merk hover:underline">
+              Bekijk alle plaatsen
+            </Link>
+          </div>
+        </div>
+
+        <div className="border-t border-merk-100">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-4 text-xs text-inkt-zacht">
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              <Link href="/privacy" className={voetLink}>Privacy</Link>
+              <Link href="/methode" className={voetLink}>Methode</Link>
+              <Link href="/verwijderen" className={voetLink}>Verwijderen</Link>
+            </div>
+            <p>
+              Makelaarsdata:{" "}
+              <a href={OSM_COPYRIGHT_URL} className="underline underline-offset-2 transition-colors hover:text-merk" rel="noreferrer">
+                {OSM_ATTRIBUTIE}
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>

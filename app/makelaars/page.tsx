@@ -8,7 +8,7 @@ import {
   type Makelaar,
   type MakelaarsResultaat,
 } from "@/lib/bronnen/makelaars";
-import { inputClass, Kaart, KnopPrimair, LeadCta, LegeStaat, SectieLabel, UitklapUitleg, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, Kaart, KnopPrimair, LeadCta, LegeStaat, Pil, SectieLabel, UitklapUitleg, Veld } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Vind een makelaar",
@@ -57,9 +57,10 @@ function MakelaarsLijst({ resultaat }: { resultaat: Extract<MakelaarsResultaat, 
   }
   return (
     <Kaart className="mt-5">
-      <SectieLabel>
-        {n === 1 ? "1 makelaarskantoor" : `${n} makelaarskantoren`} in {resultaat.plaats}
-      </SectieLabel>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SectieLabel>Makelaarskantoren in {resultaat.plaats}</SectieLabel>
+        <Pil variant="merk">{n === 1 ? "1 kantoor" : `${n} kantoren`}</Pil>
+      </div>
       <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
         Alfabetisch gesorteerd. Vermelding is geen aanbeveling: Wonea heeft geen band met deze kantoren en ontvangt hier
         niets voor. De lijst komt uit een open kaartendatabase en kan onvolledig of verouderd zijn.
@@ -98,7 +99,9 @@ export default async function MakelaarsPagina({ searchParams }: { searchParams: 
   const resultaat = plaatsInput ? await zoekMakelaars(plaatsInput) : null;
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash-navy)]" />
+      <div className="relative mx-auto max-w-2xl px-5 py-16">
       <h1 className="text-3xl font-semibold">Vind een makelaar</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         Zoek makelaarskantoren in jouw plaats. De lijst komt uit OpenStreetMap, een open kaartendatabase die door
@@ -108,7 +111,10 @@ export default async function MakelaarsPagina({ searchParams }: { searchParams: 
 
       <Kaart className="mt-8">
         <form method="get" action="/makelaars" className="space-y-5">
-          <SectieLabel>In welke plaats zoek je?</SectieLabel>
+          <div className="flex items-center gap-3">
+            <IcoonRondje naam="locatie" tint="merk" />
+            <SectieLabel>In welke plaats zoek je?</SectieLabel>
+          </div>
           <Veld label="Plaats" hint="Bijvoorbeeld Eindhoven, of de gemeentenaam.">
             <input name="plaats" defaultValue={plaatsInput} placeholder="Eindhoven" required maxLength={60} className={inputClass} />
           </Veld>
@@ -120,7 +126,8 @@ export default async function MakelaarsPagina({ searchParams }: { searchParams: 
       </Kaart>
 
       {resultaat?.status === "ongeldige-plaats" ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
           Die plaatsnaam herkennen we niet. Gebruik alleen letters, bijvoorbeeld Eindhoven of Bergen op Zoom.
         </p>
       ) : null}
@@ -171,6 +178,7 @@ export default async function MakelaarsPagina({ searchParams }: { searchParams: 
           href="/verkopen"
           ontvanger="een lokale verkoopmakelaar"
         />
+      </div>
       </div>
     </div>
   );

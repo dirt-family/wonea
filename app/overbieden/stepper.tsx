@@ -6,10 +6,11 @@ import {
   GerelateerdeRekenhulpen,
   RekenModule,
   RekenmoduleSamenvatting,
+  UitkomstMoment,
   type SamenvattingRij,
   type StapDefinitie,
 } from "@/components/rekenmodule";
-import { FeitenLijst, inputClass, LeadCta, UitklapUitleg, UitkomstKaart } from "@/components/ui";
+import { inputClass, LeadCta, UitklapUitleg, VoortgangsBalk } from "@/components/ui";
 import { formatEuro } from "@/lib/format";
 import {
   berekenOverbod,
@@ -181,17 +182,21 @@ export function OverbiedenStepper() {
         ];
         return (
           <div className="space-y-5">
-            <UitkomstKaart label="Jouw bod" bedrag={formatEuro(u.bod)}>
+            <UitkomstMoment label="Jouw bod" waarde={formatEuro(u.bod)}>
               {u.uitEigenZak != null && u.gefinancierdDeel != null ? (
                 <>
-                  <div className="mt-4">
-                    <FeitenLijst
-                      feiten={[
-                        ["Bank financiert (tot de getaxeerde waarde)", formatEuro(u.gefinancierdDeel)],
-                        ["Uit eigen zak (boven de taxatie)", formatEuro(u.uitEigenZak)],
-                      ]}
-                    />
-                  </div>
+                  {/* Flux-echo: uitkomst-grafiekje. De balk splitst het bod
+                      in wat de bank financiert (navy) en wat uit eigen zak
+                      komt (amber, het aandachtspunt); eigen zak 0 valt
+                      eerlijk uit de balk maar blijft in de legenda staan. */}
+                  <VoortgangsBalk
+                    className="mt-5"
+                    formatteer={formatEuro}
+                    segmenten={[
+                      { label: "Bank financiert (tot de getaxeerde waarde)", waarde: u.gefinancierdDeel, kleur: "merk" },
+                      { label: "Uit eigen zak (boven de taxatie)", waarde: u.uitEigenZak, kleur: "amber" },
+                    ]}
+                  />
                   <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
                     {u.uitEigenZak > 0
                       ? `Een bank financiert maximaal tot de getaxeerde waarde. De ${formatEuro(u.uitEigenZak)} boven de taxatie betaal je dus uit eigen geld, bovenop de kosten koper.`
@@ -206,7 +211,7 @@ export function OverbiedenStepper() {
                 </p>
               )}
               <p className="mt-3 text-xs text-gedempt">Bedoeld om je een gevoel te geven, niet om op te baseren.</p>
-            </UitkomstKaart>
+            </UitkomstMoment>
 
             <RekenmoduleSamenvatting rijen={samenvatting} gaNaarStap={api.gaNaarStap} />
 

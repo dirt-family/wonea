@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Zoekbalk } from "@/components/zoekbalk";
-import { LegeStaat } from "@/components/ui";
+import { LegeStaat, Pil, PromoBlok } from "@/components/ui";
 import { MiniWaardePreview } from "@/components/marketing/mini-waarde-preview";
 import { CtaKaarten } from "@/components/marketing/cta-kaarten";
 import { Bronnenstrip } from "@/components/marketing/bronnenstrip";
@@ -36,11 +36,13 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* 1. Hero: split. Links kop + zoekbalk, rechts de echte mini-preview. */}
-      <section className="border-b border-lijn bg-paneel">
-        <div className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-14 lg:grid-cols-[1fr_400px] lg:py-20">
+      {/* 1. Hero: split, met de amber gradient-wash bovenin (huisstijl v3) en
+          de zoekbalk als zwevend element. Rechts de echte mini-preview,
+          opgetild met de grote gelaagde schaduw. */}
+      <section className="relative" style={{ backgroundImage: "var(--gradient-hero-wash)" }}>
+        <div className="mx-auto grid max-w-5xl items-center gap-10 px-5 py-16 lg:grid-cols-[1fr_400px] lg:py-24">
           <div>
-            <h1 className="max-w-xl text-4xl font-semibold sm:text-5xl">Wat je huis waard is, en waarom</h1>
+            <h1 className="max-w-xl text-4xl font-semibold sm:text-6xl">Wat je huis waard is, en waarom</h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-inkt-zacht">
               Geen zwevend getal, maar een eerlijke bandbreedte met de verkopen eronder en een methode die we gewoon
               uitleggen.
@@ -48,7 +50,7 @@ export default async function HomePage() {
             <div className="mt-8">
               <Zoekbalk />
             </div>
-            <p className="mt-4 text-sm text-gedempt">Gratis en zonder account.</p>
+            <p className="mt-4"><Pil variant="amber">Gratis en zonder account</Pil></p>
           </div>
           <div className="hidden lg:block">
             {voorbeeld ? (
@@ -63,9 +65,22 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* 2. Twee CTA-kaarten: budget en WOZ-check. */}
+      {/* 2. Twee CTA-kaarten (budget en WOZ-check) met ernaast het ene lime
+          promo-moment van deze pagina (flux-echo, BRAND.md "Flux-kleurlaag"):
+          functioneel, de claim-flow. De arbitrary variant [&>a]:mt-auto duwt
+          de zwarte pill-knop naar de onderrand van het gestrekte blok. */}
       <section className="mx-auto max-w-5xl px-5 py-16">
-        <CtaKaarten />
+        <div className="grid items-stretch gap-5 lg:grid-cols-[1.7fr_1fr]">
+          <CtaKaarten />
+          <PromoBlok
+            titel="Volg je eigen woning"
+            tekst="Claim je adres en volg de waarde vanuit je eigen dashboard. Gratis, en opzeggen kan altijd."
+            knopTekst="Claim je woning"
+            href="/claim"
+            illustratie="rapport"
+            className="flex h-full flex-col [&>a]:mt-auto"
+          />
+        </div>
       </section>
 
       {/* 3. Bronnenstrip: echte open bronnen, geen verzonnen social proof. */}

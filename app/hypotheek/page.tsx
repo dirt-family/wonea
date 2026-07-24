@@ -6,9 +6,17 @@ import { addresses } from "@/db/schema";
 import { isSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation } from "@/lib/valuation";
 import { formatEuro, normalizePostcode } from "@/lib/util";
-import { Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
+import { IcoonRondje, Kaart, KnopSecundair } from "@/components/ui";
+import { type IcoonNaam } from "@/components/iconen";
 import { HypotheekStepper, type StepperWaarde } from "@/app/hypotheek/stepper";
-import { HYPOTHEEK_SUBTYPES, isHypotheekSubtype, SUBTYPE_META } from "@/app/hypotheek/schema";
+import { HYPOTHEEK_SUBTYPES, isHypotheekSubtype, SUBTYPE_META, type HypotheekSubtype } from "@/app/hypotheek/schema";
+
+/** Icoon per ingang: overwaarde = euro, oversluiten = weegschaal, aankoop = huis. */
+const SUBTYPE_ICONEN: Record<HypotheekSubtype, IcoonNaam> = {
+  overwaarde: "euro",
+  oversluiten: "weegschaal",
+  aankoop: "huis",
+};
 
 export const metadata: Metadata = { title: "Hypotheekadvies aanvragen", robots: { index: false, follow: false } };
 
@@ -56,7 +64,9 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
   // Zonder (geldig) subtype: de startpagina met de drie ingangen.
   if (!isHypotheekSubtype(sp.subtype)) {
     return (
-      <div className="mx-auto max-w-2xl px-5 py-16">
+      <div className="relative">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash)]" />
+        <div className="relative mx-auto max-w-2xl px-5 py-16">
         <h1 className="text-3xl font-semibold">Hypotheekvraag? Begin bij je situatie</h1>
         <p className="mt-4 leading-relaxed text-inkt-zacht">
           Kies hieronder wat op jou van toepassing is en beantwoord een paar korte vragen. Alleen als jij dat in de laatste
@@ -65,7 +75,10 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
         </p>
 
         {foutmelding ? (
-          <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{foutmelding}</p>
+          <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+            <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+            {foutmelding}
+          </p>
         ) : null}
 
         {adres ? (
@@ -84,11 +97,16 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
             const meta = SUBTYPE_META[subtype];
             return (
               <Kaart key={subtype}>
-                <SectieLabel>{meta.titel}</SectieLabel>
-                <h2 className="mt-2 text-lg font-semibold">{meta.vraag}</h2>
-                <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">{meta.omschrijving}</p>
-                <div className="mt-4">
-                  <KnopSecundair href={`/hypotheek?subtype=${subtype}${adresQuery}`}>Beantwoord de vragen</KnopSecundair>
+                <div className="flex items-start gap-4">
+                  <IcoonRondje naam={SUBTYPE_ICONEN[subtype]} tint="merk" maat="l" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-merk">{meta.titel}</p>
+                    <h2 className="mt-1 text-lg font-semibold">{meta.vraag}</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">{meta.omschrijving}</p>
+                    <div className="mt-4">
+                      <KnopSecundair href={`/hypotheek?subtype=${subtype}${adresQuery}`}>Beantwoord de vragen</KnopSecundair>
+                    </div>
+                  </div>
                 </div>
               </Kaart>
             );
@@ -99,6 +117,7 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
           Eerlijk is eerlijk: Wonea is geen hypotheekadviseur en geeft geen advies. Wij stellen de vragen die een adviseur
           nodig heeft en geven je aanvraag alleen met jouw toestemming door.
         </p>
+        </div>
       </div>
     );
   }
@@ -118,7 +137,9 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
     : null;
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash)]" />
+      <div className="relative mx-auto max-w-2xl px-5 py-16">
       <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
         <Link href={`/hypotheek${adresQuery ? `?${adresQuery.slice(1)}` : ""}`} className="hover:text-merk">
           Hypotheek
@@ -131,25 +152,33 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
       </p>
 
       {foutmelding ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{foutmelding}</p>
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+          {foutmelding}
+        </p>
       ) : null}
 
       {adres && adresNaam ? (
-        <Kaart className="mt-8 bg-merk-wash">
-          <SectieLabel>Je aanvraag gaat over</SectieLabel>
-          <p className="mt-2 text-lg font-semibold text-inkt">{adresNaam}</p>
-          {waarde ? (
-            <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
-              Wonea-waarde: <strong className="text-merk">{formatEuro(waarde.waarde)}</strong>, bandbreedte{" "}
-              {formatEuro(waarde.laag)} tot {formatEuro(waarde.hoog)}. Een modelmatige indicatie, geen taxatie.
-            </p>
-          ) : null}
-          <Link
-            href={`/hypotheek?subtype=${subtype}`}
-            className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4"
-          >
-            Niet jouw adres? Ga verder zonder adres
-          </Link>
+        <Kaart className="mt-8 border-merk-200 bg-merk-wash">
+          <div className="flex items-start gap-4">
+            <IcoonRondje naam="huis" tint="merk" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk">Je aanvraag gaat over</p>
+              <p className="mt-2 text-lg font-semibold text-inkt">{adresNaam}</p>
+              {waarde ? (
+                <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
+                  Wonea-waarde: <strong className="tabular-nums text-merk">{formatEuro(waarde.waarde)}</strong>, bandbreedte{" "}
+                  {formatEuro(waarde.laag)} tot {formatEuro(waarde.hoog)}. Een modelmatige indicatie, geen taxatie.
+                </p>
+              ) : null}
+              <Link
+                href={`/hypotheek?subtype=${subtype}`}
+                className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4"
+              >
+                Niet jouw adres? Ga verder zonder adres
+              </Link>
+            </div>
+          </div>
         </Kaart>
       ) : null}
 
@@ -160,6 +189,7 @@ export default async function HypotheekPagina({ searchParams }: { searchParams: 
           waarde={waarde}
         />
       </Kaart>
+      </div>
     </div>
   );
 }

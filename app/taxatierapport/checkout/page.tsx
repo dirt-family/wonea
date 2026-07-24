@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
+import { IcoonRondje, Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
 import { isMoment, MOMENTEN, vindAdres } from "@/app/taxatierapport/helpers";
 
 export const metadata: Metadata = { title: "Taxatierapport: betaalstap", robots: { index: false, follow: false } };
@@ -29,7 +29,10 @@ export default async function TaxatieCheckoutPagina({
       </p>
 
       <Kaart className="mt-8">
-        <SectieLabel>Overzicht</SectieLabel>
+        <div className="flex items-center gap-3">
+          <IcoonRondje naam="document" tint="merk" />
+          <SectieLabel>Overzicht</SectieLabel>
+        </div>
         <dl className="mt-4 space-y-3 text-sm">
           {naam ? (
             <div className="flex justify-between gap-4">
@@ -45,7 +48,7 @@ export default async function TaxatieCheckoutPagina({
           ) : null}
           <div className="flex justify-between gap-4">
             <dt className="text-gedempt">Gevalideerd taxatierapport (NWWI)</dt>
-            <dd className="text-right font-medium">450 tot 800 euro</dd>
+            <dd className="text-right font-medium tabular-nums">450 tot 800 euro</dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt className="text-gedempt">Aanvraagkosten via Wonea</dt>

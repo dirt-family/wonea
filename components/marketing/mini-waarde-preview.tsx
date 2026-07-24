@@ -22,7 +22,7 @@ export function MiniWaardePreview({ voorbeeld }: { voorbeeld: VoorbeeldWoning })
   const plek = niveau === "straat" ? "in deze straat" : "in deze buurt";
 
   return (
-    <Kaart className="shadow-sm">
+    <Kaart className="shadow-zweef-lg">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-inkt">{naam}</p>
@@ -40,8 +40,8 @@ export function MiniWaardePreview({ voorbeeld }: { voorbeeld: VoorbeeldWoning })
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <StatTegel label="Zekerheid" waarde={CONFIDENCE_TEKST[valuation.confidence]} />
-        <StatTegel label="Verkopen" waarde={String(valuation.nComparables)} delta={plek} deltaRichting="neutraal" />
+        <StatTegel tint="merk" label="Zekerheid" waarde={CONFIDENCE_TEKST[valuation.confidence]} />
+        <StatTegel tint="merk" label="Verkopen" waarde={String(valuation.nComparables)} delta={plek} deltaRichting="neutraal" />
       </div>
 
       <div className="mt-4">

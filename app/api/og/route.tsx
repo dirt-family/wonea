@@ -22,8 +22,8 @@ const KLEUR = {
   inktZacht: "#4b5563",
   gedempt: "#6b7280",
   lijn: "#e5e1da",
-  merk: "#16324f",
-  merkWash: "#eef3f8",
+  merk: "#253853",
+  merkWash: "#eef2f7",
 };
 
 const MAAT = { width: 1200, height: 630 };

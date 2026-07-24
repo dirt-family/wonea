@@ -4,6 +4,7 @@ import { GIDS_CATEGORIEEN, artikelenInCategorie } from "@/lib/gids";
 import { breadcrumbJsonLd, jsonLdScriptProps } from "@/lib/seo/jsonld";
 import { baseUrl } from "@/lib/util";
 import { ArtikelKaart } from "@/app/gids/artikel-kaart";
+import { GeplandeOnderwerpen } from "@/app/gids/gepland";
 import { Kruimelpad } from "@/app/gids/kruimelpad";
 
 export const metadata: Metadata = {
@@ -68,13 +69,8 @@ export default function GidsPagina() {
                 ))}
               </div>
             ) : (
-              <div className="mt-5 rounded-[14px] border border-dashed border-lijn bg-paneel p-5">
-                <p className="text-sm font-medium text-inkt">In voorbereiding</p>
-                <ul className="mt-2 space-y-1 text-sm leading-relaxed text-inkt-zacht">
-                  {categorie.geplandeOnderwerpen.map((onderwerp) => (
-                    <li key={onderwerp}>{onderwerp}</li>
-                  ))}
-                </ul>
+              <div className="mt-5">
+                <GeplandeOnderwerpen onderwerpen={categorie.geplandeOnderwerpen} />
               </div>
             )}
 
@@ -93,18 +89,29 @@ export default function GidsPagina() {
         ))}
       </div>
 
-      <div className="mt-12 rounded-[14px] border border-lijn bg-merk-wash p-6">
-        <h2 className="text-xl font-semibold">Liever meteen rekenen?</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
+      {/* Slot-dramaturgie (huisstijl v3): de ene donkere navy band van deze
+          pagina (radius-band 20), met de amber knop. Zelfde vorm als CtaBand
+          in ui.tsx; hier met de hand omdat CtaBand's witte kop nu nog verliest
+          van de ongelaagde h1-h3-regel in globals.css (gemeld; na die fix kan
+          dit terug naar <CtaBand />). */}
+      <div className="mt-12 rounded-[20px] bg-merk-900 px-7 py-10 sm:px-10">
+        {/* Wit via het paneel-token (geen losse hex); inline omdat de
+            ongelaagde h1-h3-regel in globals.css van text-white wint. */}
+        <h2 className="font-display text-2xl font-semibold sm:text-3xl" style={{ color: "var(--color-paneel)" }}>
+          Liever meteen rekenen?
+        </h2>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-merk-200">
           Alle rekenhulpen uit de gids staan bij elkaar: woningwaarde, budget, WOZ-check, verduurzamen en meer. Gratis
           en zonder account.
         </p>
-        <Link
-          href="/tools"
-          className="mt-4 inline-flex items-center justify-center rounded-full bg-merk px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-merk-licht focus:outline-2 focus:outline-offset-2 focus:outline-merk"
-        >
-          Bekijk alle rekenhulpen
-        </Link>
+        <div className="mt-6">
+          <Link
+            href="/tools"
+            className="inline-flex items-center justify-center rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-merk-900 transition-colors hover:bg-accent-400 focus:outline-2 focus:outline-offset-2 focus:outline-accent-300"
+          >
+            Bekijk alle rekenhulpen
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ export function WozCheckModule({
   const absPct = formatPct(Math.abs(vergelijk.verschilPct)).replace("+", "");
 
   return (
-    <Kaart className={afwijking ? "bg-accent-wash" : undefined}>
+    <Kaart className={afwijking ? "border-accent-200 bg-accent-wash" : undefined}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-xl font-semibold">Klopt de WOZ-waarde?</h2>
         <ModuleTag>gratis check</ModuleTag>

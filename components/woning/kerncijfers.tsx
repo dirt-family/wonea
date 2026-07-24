@@ -8,12 +8,19 @@ import { deltaRichting, formatPct, type WozReeksRij } from "@/components/woning/
  * lokaal gebouwd omdat twee tegels geen platte tekst zijn (energielabel-badge,
  * bronlabels). GEEN vraagprijs: die data hebben we niet (PROTOTYPE-OOGST.md).
  * Tegels zonder data worden weggelaten, nooit gevuld met een verzonnen getal.
+ *
+ * v3: stat-tiles op tint (prototype-patroon): navy-wash als basis, de
+ * bandbreedte-tegel op amber-wash als het ene warme accent (de bandbreedte is
+ * de Wonea-eerlijkheid, dus die mag warm oplichten). Labelkleuren volgen de
+ * contrast-paren uit BRAND.md (merk-600 en accent-800 op wash).
  */
 
-function Tegel({ label, children, sub }: { label: string; children: ReactNode; sub?: ReactNode }) {
+function Tegel({ label, children, sub, tint = "merk" }: { label: string; children: ReactNode; sub?: ReactNode; tint?: "merk" | "amber" }) {
+  const vlak = tint === "amber" ? "bg-accent-wash" : "bg-merk-wash";
+  const labelKleur = tint === "amber" ? "text-accent-800" : "text-merk-600";
   return (
-    <div className="rounded-[14px] border border-lijn bg-paneel p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">{label}</p>
+    <div className={`rounded-[14px] p-5 ${vlak}`}>
+      <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${labelKleur}`}>{label}</p>
       <div className="mt-2">{children}</div>
       {sub}
     </div>
@@ -58,7 +65,7 @@ export function KerncijferStrip({
                   {formatPct(woz.deltaPct)} t.o.v. {woz.peiljaar - 1}
                 </p>
               ) : (
-                <p className="mt-1 text-sm text-gedempt">peiljaar {woz.peiljaar}</p>
+                <p className="mt-1 text-sm text-inkt-zacht">peiljaar {woz.peiljaar}</p>
               )}
               {woz.bron === "seed" ? (
                 <p className="mt-2">
@@ -76,7 +83,7 @@ export function KerncijferStrip({
         label="Prijs per m2"
         sub={
           prijsPerM2 !== null && buurtM2Prijs !== null ? (
-            <p className="mt-1 text-sm tabular-nums text-gedempt">buurt: {formatEuro(buurtM2Prijs)} per m2, afgeleid van WOZ</p>
+            <p className="mt-1 text-sm tabular-nums text-inkt-zacht">buurt: {formatEuro(buurtM2Prijs)} per m2, afgeleid van WOZ</p>
           ) : undefined
         }
       >
@@ -89,7 +96,7 @@ export function KerncijferStrip({
           energielabel ? (
             <p className="mt-2">
               {energielabelBron === "echt" ? (
-                <span className="text-sm text-gedempt">geregistreerd label (EP-Online)</span>
+                <span className="text-sm text-inkt-zacht">geregistreerd label (EP-Online)</span>
               ) : (
                 <BronLabel>indicatie op basis van bouwjaar</BronLabel>
               )}
@@ -100,7 +107,7 @@ export function KerncijferStrip({
         {energielabel ? <EnergieLabelBadge label={energielabel} /> : <p className="text-sm text-inkt-zacht">Onbekend voor dit adres.</p>}
       </Tegel>
 
-      <Tegel label="Bandbreedte" sub={bandbreedte ? <p className="mt-1 text-sm text-gedempt">de eerlijke marge rond de schatting</p> : undefined}>
+      <Tegel label="Bandbreedte" tint="amber" sub={bandbreedte ? <p className="mt-1 text-sm text-inkt-zacht">de eerlijke marge rond de schatting</p> : undefined}>
         {bandbreedte ? (
           <p className="font-display text-xl font-semibold tabular-nums text-merk">
             {formatEuro(bandbreedte.laag)} tot {formatEuro(bandbreedte.hoog)}

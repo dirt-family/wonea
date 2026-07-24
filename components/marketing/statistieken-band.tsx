@@ -6,7 +6,9 @@ import { Telcijfer } from "@/components/marketing/telcijfer";
  * Statistieken-band: de ene donkere band op de site (thema-slot uit BRAND.md).
  * Alle cijfers zijn echt: live geteld in de database of afgeleid van een
  * benoembare lijst (rekenhulpen, open bronnen). De cijfers tellen op bij het
- * in beeld komen (Telcijfer, reduced-motion-veilig).
+ * in beeld komen (Telcijfer, reduced-motion-veilig). Huisstijl v3: merk-900 is
+ * exact de logo-navy; het amber accent-streepje per cijfer is het warme
+ * merkaccent in de slot-dramaturgie (accent-500 op merk-900, decoratief).
  */
 export function StatistiekenBand({ stats }: { stats: HomepageStats }) {
   const cijfers = [
@@ -22,8 +24,9 @@ export function StatistiekenBand({ stats }: { stats: HomepageStats }) {
         <dl className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
           {cijfers.map((c) => (
             <div key={c.label} className="flex flex-col">
-              <dt className="order-2 mt-2 text-sm text-merk-200">{c.label}</dt>
-              <dd className="order-1 font-display text-4xl font-semibold text-white sm:text-5xl">
+              <span aria-hidden="true" className="order-1 mb-3 h-1 w-8 rounded-full bg-accent-500" />
+              <dt className="order-3 mt-2 text-sm text-merk-200">{c.label}</dt>
+              <dd className="order-2 font-display text-4xl font-semibold text-white sm:text-5xl">
                 <Telcijfer waarde={c.waarde} />
               </dd>
             </div>

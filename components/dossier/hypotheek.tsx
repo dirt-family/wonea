@@ -2,7 +2,8 @@ import type { mortgageInfo, valuations } from "@/db/schema";
 import { getActueleRentes, peilmaandLabel } from "@/lib/bronnen/rentes";
 import { maandlastenOverzicht } from "@/lib/hypotheek";
 import { formatDatumNl, formatEuro } from "@/lib/util";
-import { Bandbreedte, inputClass, Kaart, KnopSecundair, LeadCta, LegeStaat, SectieLabel, Veld, VergelijkTabel } from "@/components/ui";
+import { Bandbreedte, IcoonRondje, inputClass, KnopSecundair, LeadCta, LegeStaat, SectieLabel, Veld, VergelijkTabel } from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
 import { bewaarHypotheek } from "@/app/dashboard/actions";
 import { bepaalOversluitSignaal, berekenOverwaarde } from "@/components/dossier/data";
 
@@ -39,15 +40,18 @@ export function HypotheekSectie({
     : [];
 
   return (
-    <section id="hypotheek" aria-label="Hypotheek en overwaarde" className="scroll-mt-6">
-      <h2 className="text-2xl font-semibold">Hypotheek en overwaarde</h2>
+    <section id="hypotheek" aria-label="Hypotheek en overwaarde" className="scroll-mt-24">
+      <div className="flex items-center gap-3">
+        <IcoonRondje naam="euro" tint="merk" maat="l" />
+        <h2 className="text-2xl font-semibold">Hypotheek en overwaarde</h2>
+      </div>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
         Waarom we dit vragen: met je hypotheekrestant zie je je overwaarde en of oversluiten interessant wordt. Alleen jij
         ziet deze gegevens; ze staan niet op de publieke woningpagina.
       </p>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-2">
-        <Kaart>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Blok>
           <SectieLabel>Overwaarde-indicatie</SectieLabel>
           {overwaarde ? (
             <>
@@ -74,8 +78,8 @@ export function HypotheekSectie({
             </div>
           )}
           {oversluit ? (
-            <div className="mt-4 rounded-lg bg-accent-wash p-4">
-              <p className="text-sm font-semibold text-accent">
+            <div className="mt-4 rounded-lg bg-lime-wash p-4">
+              <p className="text-sm font-semibold text-lime-diep">
                 {oversluit.status === "verlopen"
                   ? "Je rentevaste periode is verlopen"
                   : oversluit.maandenResterend <= 1
@@ -89,9 +93,9 @@ export function HypotheekSectie({
               </p>
             </div>
           ) : null}
-        </Kaart>
+        </Blok>
 
-        <Kaart>
+        <Blok>
           <SectieLabel>Je hypotheekgegevens</SectieLabel>
           <form action={bewaarHypotheek} className="mt-3 space-y-3">
             <input type="hidden" name="claimId" value={claimId} />
@@ -121,11 +125,11 @@ export function HypotheekSectie({
             </div>
             <KnopSecundair type="submit">Bewaar hypotheekgegevens</KnopSecundair>
           </form>
-        </Kaart>
+        </Blok>
       </div>
 
       {hypotheek ? (
-        <Kaart className="mt-5">
+        <Blok className="mt-5">
           <SectieLabel>Maandlasten-context bij de actuele rentes</SectieLabel>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
             Wat je restant van {formatEuro(hypotheek.restantEur)} per maand zou kosten bij de actuele gemiddelde
@@ -144,7 +148,7 @@ export function HypotheekSectie({
               bron={`Bron: ${rentes.bron}, maandgemiddelden over banken, peilmaand ${peilmaandLabel(rentes.peildatum)}, opgehaald ${formatDatumNl(rentes.opgehaaldOp)}. Geen tarieven per geldverstrekker en geen NHG-splitsing.`}
             />
           </div>
-        </Kaart>
+        </Blok>
       ) : null}
 
       <div className="mt-5">

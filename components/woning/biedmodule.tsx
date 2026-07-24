@@ -36,22 +36,23 @@ export function BiedModule({
 
       {comparables.length > 0 ? (
         <div className="mt-4 overflow-x-auto">
+          {/* Tint-zebra (v3): even rijen op navy-wash, zodat de rij leesbaar blijft zonder zware lijnen. */}
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
-                <th className="py-2 pr-4 font-medium">Wanneer</th>
-                <th className="py-2 pr-4 font-medium">Straat</th>
-                <th className="py-2 pr-4 font-medium">Oppervlakte</th>
-                <th className="py-2 font-medium">Prijs</th>
+                <th className="px-3 py-2 font-medium">Wanneer</th>
+                <th className="px-3 py-2 font-medium">Straat</th>
+                <th className="px-3 py-2 font-medium">Oppervlakte</th>
+                <th className="px-3 py-2 font-medium">Prijs</th>
               </tr>
             </thead>
             <tbody>
               {comparables.map((c) => (
-                <tr key={c.id} className="border-b border-lijn last:border-0">
-                  <td className="py-2.5 pr-4">{maandFmt.format(new Date(c.datum))}</td>
-                  <td className="py-2.5 pr-4">{c.straat ?? "onbekend"}</td>
-                  <td className="py-2.5 pr-4 tabular-nums">{c.oppervlakteM2} m2</td>
-                  <td className="py-2.5 font-semibold tabular-nums">{formatEuro(c.prijs)}</td>
+                <tr key={c.id} className="even:bg-merk-50">
+                  <td className="rounded-l-lg px-3 py-2.5">{maandFmt.format(new Date(c.datum))}</td>
+                  <td className="px-3 py-2.5">{c.straat ?? "onbekend"}</td>
+                  <td className="px-3 py-2.5 tabular-nums">{c.oppervlakteM2} m2</td>
+                  <td className="rounded-r-lg px-3 py-2.5 font-semibold tabular-nums">{formatEuro(c.prijs)}</td>
                 </tr>
               ))}
             </tbody>

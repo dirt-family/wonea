@@ -19,7 +19,13 @@ export const metadata: Metadata = {
 function Stap({ nummer, titel, children }: { nummer: string; titel: string; children: React.ReactNode }) {
   return (
     <section className="flex gap-5">
-      <p aria-hidden="true" className="font-display text-3xl font-semibold text-merk-300">{nummer}</p>
+      {/* Stapnummer in een amber tint-rondje (huisstijl v3, icoon-in-rondje-patroon). */}
+      <p
+        aria-hidden="true"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent-wash font-display text-lg font-semibold text-accent-800"
+      >
+        {nummer}
+      </p>
       <div className="min-w-0 flex-1">
         <h3 className="text-xl font-semibold">{titel}</h3>
         {children}
@@ -41,7 +47,7 @@ export default function MethodePagina() {
       </div>
 
       {/* Het model in het kort. */}
-      <div className="mt-8 rounded-[14px] border border-lijn bg-paneel p-6">
+      <div className="mt-8 rounded-[14px] border border-lijn bg-paneel p-6 shadow-zweef">
         <h2 className="text-xl font-semibold">Het model in het kort</h2>
         <dl className="mt-4 grid gap-5 sm:grid-cols-2">
           <div>
@@ -149,8 +155,10 @@ export default function MethodePagina() {
         </Stap>
       </div>
 
+      {/* De menselijke, eerlijke kaart: het ene amber-wash-moment van deze
+          pagina (huisstijl v3: warme adem voor mens/eerlijkheid). */}
       <div className="mt-12">
-        <Kaart className="bg-merk-wash">
+        <Kaart className="border-accent-100 bg-accent-wash">
           <h2 className="text-xl font-semibold">Waarom elke onlineschatting ernaast zit, ook die van ons</h2>
           <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
             Een rekenmodel kent jouw keuken, achterstallig onderhoud of nieuwe dakkapel niet. Zonder recente verkoop van
@@ -215,7 +223,7 @@ export default function MethodePagina() {
       </section>
 
       {/* Eerlijk over de grenzen. */}
-      <section className="mt-12 rounded-[14px] border border-lijn bg-paneel p-6">
+      <section className="mt-12 rounded-[14px] border border-lijn bg-paneel p-6 shadow-zweef">
         <h2 className="text-2xl font-semibold">Wat we niet weten</h2>
         <p className="mt-3 leading-relaxed text-inkt-zacht">
           Een eerlijke methode benoemt ook zijn grenzen. Dit weten we niet, en dat beloven we dus ook niet:

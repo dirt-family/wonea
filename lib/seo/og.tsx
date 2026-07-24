@@ -15,17 +15,22 @@ import { ImageResponse } from "next/og";
  * app/api/og/route.tsx: die heeft database- en suppressielogica nodig.
  */
 
-// Kleurwaarden zijn 1-op-1 de design tokens uit app/globals.css (ImageResponse
-// kan geen CSS-variabelen of Tailwind-tokens lezen). Geen nieuwe hexcodes.
+// Kleurwaarden zijn 1-op-1 de v3-design-tokens uit app/globals.css
+// (ImageResponse kan geen CSS-variabelen of Tailwind-tokens lezen).
+// Geen nieuwe hexcodes buiten het tokenstelsel.
 const KLEUR = {
   achtergrond: "#faf9f7",
   inktZacht: "#4b5563",
   gedempt: "#6b7280",
   lijn: "#e5e1da",
-  merk: "#16324f",
-  merkWash: "#eef3f8",
-  merk100: "#e4ebf2",
-  accent: "#b4740f",
+  merk: "#253853", // actiekleur (merk-800)
+  merk900: "#1e293b", // exact de logo-navy
+  merk700: "#33496a",
+  merk100: "#e8edf4",
+  merkWash: "#eef2f7",
+  accent500: "#f59e0b", // exact de logo-amber
+  accent700: "#b4740f",
+  washAmber: "#fdf6e9",
   wit: "#ffffff",
 };
 
@@ -37,26 +42,34 @@ export const OG_ALT = "Wonea, eerlijk inzicht in je woningwaarde";
 const STANDAARD_TITEL = "Eerlijk inzicht in je woningwaarde";
 
 /**
- * Het oplopende-huizen-merkteken, dezelfde vier paden als components/logo.tsx
- * (dat component rendert via Tailwind-classes en currentColor en is daarom
- * niet direct bruikbaar in satori; de vorm is hier 1-op-1 overgenomen).
+ * Het oplopende-huizen-merkteken, dezelfde vier paden als components/logo.tsx.
+ * Satori's steun voor SVG-gradients is wisselend, dus de merkgradient
+ * (navy naar amber) is hier benaderd door de vier huizen in stappen van
+ * logo-navy naar logo-amber te kleuren: een eerlijke, robuuste vertaling van
+ * hetzelfde merkmoment. Met kleuren=[1 kleur] rendert het teken egaal
+ * (voor het zachte achtergrond-motief).
  */
-function WoneaMerkteken({ maat, kleur }: { maat: number; kleur: string }) {
+function WoneaMerkteken({ maat, kleuren }: { maat: number; kleuren: string[] }) {
+  const kleur = (i: number) => kleuren[Math.min(i, kleuren.length - 1)];
   return (
-    <svg width={maat} height={maat} viewBox="0 0 200 200" fill={kleur} xmlns="http://www.w3.org/2000/svg">
-      <path d="M 40 160 V 90 L 95 35 H 115 L 60 90 V 160 Z" />
-      <path d="M 72 160 V 102 L 120 47 H 140 L 92 102 V 160 Z" />
-      <path d="M 104 160 V 114 L 145 62 L 165 82 L 124 125 V 160 Z" opacity="0.9" />
-      <path d="M 136 160 V 130 L 165 101 V 160 Z" opacity="0.8" />
+    <svg width={maat} height={maat} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <path fill={kleur(0)} d="M 40 160 V 90 L 95 35 H 115 L 60 90 V 160 Z" />
+      <path fill={kleur(1)} d="M 72 160 V 102 L 120 47 H 140 L 92 102 V 160 Z" />
+      <path fill={kleur(2)} d="M 104 160 V 114 L 145 62 L 165 82 L 124 125 V 160 Z" opacity="0.92" />
+      <path fill={kleur(3)} d="M 136 160 V 130 L 165 101 V 160 Z" opacity="0.9" />
     </svg>
   );
 }
 
+/** De vier logo-stappen navy -> amber (tokens: merk-900, merk-700, accent-700, accent-500). */
+const LOGO_STAPPEN = [KLEUR.merk900, KLEUR.merk700, KLEUR.accent700, KLEUR.accent500];
+
 /**
- * Site-brede og-afbeelding in de Wonea-huid: licht, rustig, merk-diepblauw,
- * met de bandbreedte-balk als grafisch element (de kern van de merkbelofte)
- * en 1 amber accent-moment (de marker). Zonder cijfers: een og-afbeelding
- * met verzonnen bedragen zou de eerlijkheidsregel schenden.
+ * Site-brede og-afbeelding in huisstijl v3 (navy naar amber): warm licht
+ * canvas met een amber hero-wash bovenin (sectie-dramaturgie), het
+ * gradient-logo als merkmoment, en de bandbreedte-balk als grafisch element
+ * (de kern van de merkbelofte) met de amber marker. Zonder cijfers: een
+ * og-afbeelding met verzonnen bedragen zou de eerlijkheidsregel schenden.
  */
 export function woneaOgImage(opties: { titel?: string } = {}): ImageResponse {
   const titel = opties.titel ?? STANDAARD_TITEL;
@@ -77,15 +90,28 @@ export function woneaOgImage(opties: { titel?: string } = {}): ImageResponse {
           position: "relative",
         }}
       >
-        {/* Groot, zacht achtergrond-motief: de oplopende huisvorm in merk-100 (BRAND.md). */}
+        {/* Amber hero-wash: eenkleurige tint die naar de achtergrond vervloeit. */}
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300,
+            background: `linear-gradient(180deg, ${KLEUR.washAmber} 0%, rgba(253, 246, 233, 0) 90%)`,
+          }}
+        />
+
+        {/* Groot, zacht achtergrond-motief: de oplopende huisvorm in merk-100. */}
         <div style={{ display: "flex", position: "absolute", right: -70, bottom: -90 }}>
-          <WoneaMerkteken maat={560} kleur={KLEUR.merk100} />
+          <WoneaMerkteken maat={560} kleuren={[KLEUR.merk100]} />
         </div>
 
-        {/* Merkregel */}
+        {/* Merkregel: het logo in de navy-naar-amber-stappen. */}
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <WoneaMerkteken maat={64} kleur={KLEUR.merk} />
-          <div style={{ display: "flex", fontSize: 46, fontWeight: 700 }}>Wonea</div>
+          <WoneaMerkteken maat={64} kleuren={LOGO_STAPPEN} />
+          <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: KLEUR.merk900 }}>Wonea</div>
         </div>
 
         {/* Titel + bandbreedte-balk */}
@@ -123,8 +149,9 @@ export function woneaOgImage(opties: { titel?: string } = {}): ImageResponse {
                   width: 30,
                   height: 30,
                   borderRadius: 999,
-                  backgroundColor: KLEUR.accent,
+                  backgroundColor: KLEUR.accent500,
                   border: `5px solid ${KLEUR.wit}`,
+                  boxShadow: "0 4px 8px rgba(30, 41, 59, 0.18)",
                 }}
               />
             </div>

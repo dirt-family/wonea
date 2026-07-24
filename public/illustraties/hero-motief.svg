@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180">
-  <rect x="15" y="142" width="210" height="6" rx="3" fill="#e4ebf2"/>
-  <path d="M28 116L46 100L64 116Z" fill="#f4f7fa" stroke="#c3d3e2" stroke-width="3" stroke-linejoin="round"/>
-  <rect x="33" y="116" width="26" height="26" rx="3" fill="#f4f7fa" stroke="#c3d3e2" stroke-width="3"/>
-  <path d="M72 102L93 84L114 102Z" fill="#e4ebf2" stroke="#6690b2" stroke-width="3" stroke-linejoin="round"/>
-  <rect x="78" y="102" width="30" height="40" rx="3" fill="#e4ebf2" stroke="#6690b2" stroke-width="3"/>
-  <path d="M124 86L148 65L172 86Z" fill="#c3d3e2" stroke="#235684" stroke-width="3" stroke-linejoin="round"/>
-  <rect x="131" y="86" width="34" height="56" rx="3" fill="#c3d3e2" stroke="#235684" stroke-width="3"/>
-  <path d="M180 70L206 47L232 70Z" fill="#6690b2" stroke="#16324f" stroke-width="3" stroke-linejoin="round"/>
-  <rect x="187" y="70" width="38" height="72" rx="3" fill="#6690b2" stroke="#16324f" stroke-width="3"/>
+  <rect x="15" y="142" width="210" height="6" rx="3" fill="#e8edf4"/>
+  <path d="M28 116L46 100L64 116Z" fill="#f5f7fa" stroke="#cdd9e6" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="33" y="116" width="26" height="26" rx="3" fill="#f5f7fa" stroke="#cdd9e6" stroke-width="3"/>
+  <path d="M72 102L93 84L114 102Z" fill="#e8edf4" stroke="#7d97b4" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="78" y="102" width="30" height="40" rx="3" fill="#e8edf4" stroke="#7d97b4" stroke-width="3"/>
+  <path d="M124 86L148 65L172 86Z" fill="#cdd9e6" stroke="#33496a" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="131" y="86" width="34" height="56" rx="3" fill="#cdd9e6" stroke="#33496a" stroke-width="3"/>
+  <path d="M180 70L206 47L232 70Z" fill="#f59e0b" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="187" y="70" width="38" height="72" rx="3" fill="#f59e0b" stroke="#1e293b" stroke-width="3"/>
 </svg>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { adresNaam, vindVerduurzaamAdres } from "@/app/verduurzamen/logic";
 import { isVerticaal, VERTICALEN } from "@/app/verduurzamen/verticalen";
-import { BronLabel } from "@/components/ui";
+import { BronLabel, EnergieLabelBadge } from "@/components/ui";
 import { VerduurzaamStepper } from "./stepper";
 
 /**
@@ -46,16 +46,18 @@ export default async function VerticaalPagina({
   const adresQuery = `postcode=${adres.postcode}&nummer=${encodeURIComponent(adres.nummerslug)}`;
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-10">
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash)]" />
+      <div className="relative mx-auto max-w-5xl px-5 py-10">
       <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
         <Link href="/" className="hover:text-merk">Wonea</Link> /{" "}
         <Link href={`/verduurzamen?${adresQuery}`} className="hover:text-merk">Verduurzamen</Link> / {config.titel}
       </nav>
       <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">{config.titel} voor {naam}</h1>
-      <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-inkt-zacht">
+      <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-inkt-zacht">
         {adres.energielabel ? (
           <>
-            Energielabel {adres.energielabel}
+            <EnergieLabelBadge label={adres.energielabel} klein />
             {adres.energielabelBron === "indicatie" ? <BronLabel>indicatie op basis van bouwjaar</BronLabel> : <BronLabel>geregistreerd label</BronLabel>}
           </>
         ) : (
@@ -80,6 +82,7 @@ export default async function VerticaalPagina({
         </Link>
         .
       </p>
+      </div>
     </div>
   );
 }

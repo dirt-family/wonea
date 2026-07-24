@@ -11,7 +11,8 @@ import { applyOptoutCascade } from "@/lib/suppression";
 import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { nowIso } from "@/lib/util";
 import { stuurOptoutAfgerond } from "@/emails/optout";
-import { Kaart, KnopPrimair } from "@/components/ui";
+import { IcoonRondje, Kaart, KnopPrimair } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 
 export const metadata: Metadata = { title: "Verwijdering bevestigen", robots: { index: false, follow: false } };
 
@@ -76,14 +77,20 @@ export default async function BevestigPagina({ params }: { params: Promise<{ tok
   if (token === "klaar") {
     return (
       <div className="mx-auto max-w-2xl px-5 py-16">
-        <h1 className="text-3xl font-semibold">Verwijderd</h1>
-        <p className="mt-4 leading-relaxed text-inkt-zacht">
-          De woningpagina is weg: de pagina zelf, gedeelde rapporten en waarde-alerts voor dit adres. Het adres staat nu op
-          onze verwijderlijst en komt ook bij nieuwe data-imports niet terug.
-        </p>
-        <p className="mt-4 leading-relaxed text-inkt-zacht">
-          Bedenk je je later? Mail ons via het adres in de <Link href="/privacy" className="font-semibold text-merk underline underline-offset-4">privacyverklaring</Link>, dan zetten we de pagina terug.
-        </p>
+        <div className="flex items-start justify-between gap-8">
+          <div className="min-w-0">
+            <IcoonRondje naam="schild" tint="merk" maat="l" />
+            <h1 className="mt-5 text-3xl font-semibold">Verwijderd</h1>
+            <p className="mt-4 leading-relaxed text-inkt-zacht">
+              De woningpagina is weg: de pagina zelf, gedeelde rapporten en waarde-alerts voor dit adres. Het adres staat nu op
+              onze verwijderlijst en komt ook bij nieuwe data-imports niet terug.
+            </p>
+            <p className="mt-4 leading-relaxed text-inkt-zacht">
+              Bedenk je je later? Mail ons via het adres in de <Link href="/privacy" className="font-semibold text-merk underline underline-offset-4">privacyverklaring</Link>, dan zetten we de pagina terug.
+            </p>
+          </div>
+          <Illustratie naam="jouw-data" className="hidden w-44 shrink-0 sm:block" />
+        </div>
       </div>
     );
   }

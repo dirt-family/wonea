@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { BronLabel, inputClass, Kaart, KnopSecundair, LegeStaat, SectieLabel, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, KnopSecundair, LegeStaat, Pil, SectieLabel, Veld } from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
 import { formatEuro } from "@/lib/format";
 import { bewaarWoz } from "@/app/dashboard/actions";
 import { WOZ_PEILJAAR_MIN, wozPeiljaarMax, wozVerschilPct, type JaarSchatting, type WozRij } from "@/components/dossier/data";
@@ -29,15 +30,18 @@ export function WozSectie({
   const schattingPerJaar = new Map(jaarSchattingen.map((s) => [s.jaar, s]));
 
   return (
-    <section id="woz" aria-label="WOZ-dossier" className="scroll-mt-6">
-      <h2 className="text-2xl font-semibold">WOZ-dossier</h2>
+    <section id="woz" aria-label="WOZ-dossier" className="scroll-mt-24">
+      <div className="flex items-center gap-3">
+        <IcoonRondje naam="weegschaal" tint="merk" maat="l" />
+        <h2 className="text-2xl font-semibold">WOZ-dossier</h2>
+      </div>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
         Leg hier per peiljaar de WOZ-waarde van je eigen beschikking vast. Dat kan alleen voor je eigen geclaimde woning;
         we vergelijken elk jaar met onze marktschatting van dat jaar. Je officiële WOZ vind je op je beschikking of via
         wozwaardeloket.nl.
       </p>
 
-      <Kaart className="mt-4">
+      <Blok className="mt-4">
         <SectieLabel>WOZ per peiljaar</SectieLabel>
         {wozRijen.length > 0 ? (
           <div className="mt-3 overflow-x-auto">
@@ -61,7 +65,7 @@ export function WozSectie({
                         {formatEuro(rij.waarde)}
                         {rij.bron === "seed" ? (
                           <span className="mt-1 block">
-                            <BronLabel>voorbeeldwaarde, niet je echte WOZ</BronLabel>
+                            <Pil variant="lavendel">voorbeeldwaarde, niet je echte WOZ</Pil>
                           </span>
                         ) : null}
                       </td>
@@ -113,9 +117,9 @@ export function WozSectie({
             />
           </div>
         )}
-      </Kaart>
+      </Blok>
 
-      <Kaart className="mt-5">
+      <Blok className="mt-5">
         <SectieLabel>WOZ-waarde toevoegen of bijwerken</SectieLabel>
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           Neem het peiljaar en de waarde over van je WOZ-beschikking. Vul je een jaar in dat er al staat, dan werken we die
@@ -139,9 +143,9 @@ export function WozSectie({
             <KnopSecundair type="submit">Bewaar WOZ-waarde</KnopSecundair>
           </div>
         </form>
-      </Kaart>
+      </Blok>
 
-      <Kaart className="mt-5 bg-merk-wash">
+      <div className="mt-5 rounded-[24px] bg-lavendel-wash p-6">
         <SectieLabel>Bezwaar maken?</SectieLabel>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
           Ligt je WOZ duidelijk boven de bandbreedte van onze schatting, dan kan bezwaar zinvol zijn. Doe dat binnen zes
@@ -155,7 +159,7 @@ export function WozSectie({
         >
           Naar de volledige WOZ-check
         </Link>
-      </Kaart>
+      </div>
     </section>
   );
 }

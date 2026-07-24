@@ -42,7 +42,12 @@ export default function HypotheekBerekenenPagina() {
   const verstrekkers = getVerstrekkersRentes();
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="relative">
+      {/* Hero-wash (v3, zelfde patroon als /claim en /hypotheek): rekenhulpen
+          krijgen de navy-variant (wash-dramaturgie in docs/BRAND.md); de
+          uitkomststap van de stepper is al het warme amber-moment. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash-navy)]" />
+      <div className="relative mx-auto max-w-2xl px-5 py-16">
       <h1 className="text-3xl font-semibold sm:text-4xl">Bereken je hypotheek</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         In drie korte stappen zie je je maximale hypotheek volgens de wettelijke leennormen van 2026, de maandlasten bij
@@ -63,6 +68,7 @@ export default function HypotheekBerekenenPagina() {
         </Link>
         .
       </p>
+      </div>
     </div>
   );
 }

@@ -4,9 +4,12 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Woningtype } from "@/db/schema";
 import {
+  EnergieLabelKeuze,
   GerelateerdeRekenhulpen,
+  KeuzeKaart,
   RekenModule,
   RekenmoduleSamenvatting,
+  UitkomstMoment,
   type SamenvattingRij,
   type StapDefinitie,
 } from "@/components/rekenmodule";
@@ -16,10 +19,10 @@ import {
   FeitenLijst,
   inputClass,
   LeadCta,
+  Pil,
   SectieLabel,
   StatTegel,
   UitklapUitleg,
-  UitkomstKaart,
   Veld,
 } from "@/components/ui";
 import { formatDatumNl, formatEuro } from "@/lib/format";
@@ -84,8 +87,6 @@ const LABEL_LETTERS = ["A", "B", "C", "D", "E", "F", "G"] as const;
 const VERWARMING_VRAAG = VERTICALEN.warmtepomp.vragen.find((v) => v.naam === "huidigeVerwarming")!;
 const ISOLATIEGRAAD_VRAAG = VERTICALEN.warmtepomp.vragen.find((v) => v.naam === "isolatiegraad")!;
 
-const radioCls = "flex cursor-pointer items-center gap-3 rounded-lg border border-lijn bg-paneel px-4 py-3 text-sm text-inkt transition-colors hover:border-merk";
-const chipCls = "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors";
 // Zelfde token-klassen als KnopSecundair; ui.tsx kent geen onClick-variant
 // (zelfde precedent als de budget-stepper en het frame zelf).
 const knopSecundairCls =
@@ -314,17 +315,14 @@ export function PlanStepper({
             </legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {WONINGTYPEN.map((w) => (
-                <label key={w.waarde} className={radioCls}>
-                  <input
-                    type="radio"
-                    name="woningtype_keuze"
-                    value={w.waarde}
-                    checked={woningtype === w.waarde}
-                    onChange={() => setWoningtype(w.waarde)}
-                    className="accent-merk"
-                  />
-                  {w.label}
-                </label>
+                <KeuzeKaart
+                  key={w.waarde}
+                  naam="woningtype_keuze"
+                  waarde={w.waarde}
+                  checked={woningtype === w.waarde}
+                  onKies={() => setWoningtype(w.waarde)}
+                  titel={w.label}
+                />
               ))}
             </div>
             <p className="mt-2 text-xs text-gedempt">
@@ -367,33 +365,21 @@ export function PlanStepper({
             <fieldset>
               <legend className="mb-2 block text-sm font-medium text-inkt">Wat is het energielabel van je woning?</legend>
               <div className="flex flex-wrap gap-2">
-                {LABEL_LETTERS.map((letter) => {
-                  const actief = huidigLabel === letter;
-                  return (
-                    <label key={letter} className={`${chipCls} ${actief ? "border-merk bg-merk-wash" : "border-lijn bg-paneel hover:border-merk"}`}>
-                      <input
-                        type="radio"
-                        name="label_keuze"
-                        value={letter}
-                        checked={actief}
-                        onChange={() => setHuidigLabel(letter)}
-                        className="accent-merk"
-                      />
-                      {letter}
-                    </label>
-                  );
-                })}
-                <label className={`${chipCls} ${huidigLabel === "weet-niet" ? "border-merk bg-merk-wash" : "border-lijn bg-paneel hover:border-merk"}`}>
-                  <input
-                    type="radio"
-                    name="label_keuze"
-                    value="weet-niet"
-                    checked={huidigLabel === "weet-niet"}
-                    onChange={() => setHuidigLabel("weet-niet")}
-                    className="accent-merk"
+                {LABEL_LETTERS.map((letter) => (
+                  <EnergieLabelKeuze
+                    key={letter}
+                    naam="label_keuze"
+                    letter={letter}
+                    checked={huidigLabel === letter}
+                    onKies={() => setHuidigLabel(letter)}
                   />
-                  Weet ik niet
-                </label>
+                ))}
+                <EnergieLabelKeuze
+                  naam="label_keuze"
+                  tekst="Weet ik niet"
+                  checked={huidigLabel === "weet-niet"}
+                  onKies={() => setHuidigLabel("weet-niet")}
+                />
               </div>
               <p className="mt-2 text-xs text-gedempt">
                 {adres && !adres.labelEcht && adres.label
@@ -406,17 +392,14 @@ export function PlanStepper({
             <legend className="mb-2 block text-sm font-medium text-inkt">{VERWARMING_VRAAG.label}</legend>
             <div className="space-y-2">
               {(VERWARMING_VRAAG.opties ?? []).map((o) => (
-                <label key={o.waarde} className={radioCls}>
-                  <input
-                    type="radio"
-                    name="verwarming_keuze"
-                    value={o.waarde}
-                    checked={verwarming === o.waarde}
-                    onChange={() => setVerwarming(o.waarde)}
-                    className="accent-merk"
-                  />
-                  {o.label}
-                </label>
+                <KeuzeKaart
+                  key={o.waarde}
+                  naam="verwarming_keuze"
+                  waarde={o.waarde}
+                  checked={verwarming === o.waarde}
+                  onKies={() => setVerwarming(o.waarde)}
+                  titel={o.label}
+                />
               ))}
             </div>
           </fieldset>
@@ -424,17 +407,14 @@ export function PlanStepper({
             <legend className="mb-2 block text-sm font-medium text-inkt">{ISOLATIEGRAAD_VRAAG.label}</legend>
             <div className="space-y-2">
               {(ISOLATIEGRAAD_VRAAG.opties ?? []).map((o) => (
-                <label key={o.waarde} className={radioCls}>
-                  <input
-                    type="radio"
-                    name="isolatiegraad_keuze"
-                    value={o.waarde}
-                    checked={isolatiegraad === o.waarde}
-                    onChange={() => setIsolatiegraad(o.waarde)}
-                    className="accent-merk"
-                  />
-                  {o.label}
-                </label>
+                <KeuzeKaart
+                  key={o.waarde}
+                  naam="isolatiegraad_keuze"
+                  waarde={o.waarde}
+                  checked={isolatiegraad === o.waarde}
+                  onKies={() => setIsolatiegraad(o.waarde)}
+                  titel={o.label}
+                />
               ))}
             </div>
             {ISOLATIEGRAAD_VRAAG.hint ? <p className="mt-2 text-xs text-gedempt">{ISOLATIEGRAAD_VRAAG.hint}</p> : null}
@@ -466,37 +446,35 @@ export function PlanStepper({
                 }
               }
               return (
-                <label
+                <KeuzeKaart
                   key={a.key}
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                    actief ? "border-merk bg-merk-wash" : "border-lijn bg-paneel hover:border-merk"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={actief}
-                    onChange={() => toggleMaatregel(a.key)}
-                    className="mt-1 accent-merk"
-                  />
-                  <span className="flex flex-1 flex-col gap-1">
-                    <span className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                      <span className="text-sm font-semibold text-inkt">{a.titel}</span>
-                      <span className="text-sm tabular-nums text-inkt-zacht">
-                        {a.besparing ? `bespaart ${formatEuroBereik(a.besparing.bereik)} per jaar` : "geen besparingskental"}
-                      </span>
-                    </span>
-                    <span className="text-xs text-gedempt">
+                  soort="checkbox"
+                  checked={actief}
+                  onKies={() => toggleMaatregel(a.key)}
+                  titel={a.titel}
+                  // Flux-echo: de besparing als lime-pill (wash-variant, tekst
+                  // lime-diep); geen kental blijft eerlijk stille tekst.
+                  meta={
+                    a.besparing ? (
+                      <Pil variant="lime">bespaart {formatEuroBereik(a.besparing.bereik)} per jaar</Pil>
+                    ) : (
+                      "geen besparingskental"
+                    )
+                  }
+                  detail={
+                    <>
                       {a.subsidie ? `ISDE 2026: ${formatEuro(a.subsidie.bedrag)} (indicatie)` : "geen ISDE-subsidie"}
                       {" · bron: "}
                       {bronNamen(a.bronnen)}
+                    </>
+                  }
+                >
+                  {waarschuwingen.map((w) => (
+                    <span key={w} className="text-xs leading-relaxed text-inkt-zacht">
+                      {w}
                     </span>
-                    {waarschuwingen.map((w) => (
-                      <span key={w} className="text-xs leading-relaxed text-inkt-zacht">
-                        {w}
-                      </span>
-                    ))}
-                  </span>
-                </label>
+                  ))}
+                </KeuzeKaart>
               );
             })}
           </div>
@@ -601,9 +579,9 @@ function Uitkomst({
 
   return (
     <div className="space-y-5">
-      <UitkomstKaart
+      <UitkomstMoment
         label="Besparing per jaar (indicatie)"
-        bedrag={plan.besparing ? formatEuroBereik(plan.besparing) : "geen kental"}
+        waarde={plan.besparing ? formatEuroBereik(plan.besparing) : "geen kental"}
       >
         <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
           {plan.besparing
@@ -619,10 +597,14 @@ function Uitkomst({
         <p className="mt-3 text-xs text-gedempt">
           Kentallen: Milieu Centraal, opgehaald {formatDatumNl(BESPARING_PEILDATUM)}. Een indicatie, geen belofte.
         </p>
-      </UitkomstKaart>
+      </UitkomstMoment>
 
       <div className="grid gap-5 sm:grid-cols-2">
+        {/* Flux-echo: de subsidie is het geld-terug-moment van dit plan; bij
+            een echt bedrag is dit de ene lime-kleurtegel van de rij (tekst
+            shell, zie BRAND.md Flux-kleurlaag). */}
         <StatTegel
+          tint={plan.subsidie > 0 ? "lime" : "merk"}
           label="ISDE-subsidie 2026"
           waarde={plan.subsidie > 0 ? formatEuro(plan.subsidie) : "geen ISDE"}
           delta={
@@ -634,6 +616,7 @@ function Uitkomst({
           }
         />
         <StatTegel
+          tint="merk"
           label="Netto-investering"
           waarde={plan.netto ? formatEuroBereik(plan.netto) : "onbekend"}
           delta={
@@ -643,6 +626,7 @@ function Uitkomst({
           }
         />
         <StatTegel
+          tint="merk"
           label="Terugverdientijd"
           waarde={plan.terugverdientijd ? formatTerugverdientijd(plan.terugverdientijd) : "niet te berekenen"}
           delta={
@@ -652,6 +636,7 @@ function Uitkomst({
           }
         />
         <StatTegel
+          tint="merk"
           label="Extra leenruimte verduurzaming"
           waarde={leenruimte ? formatEuro(leenruimte.bedrag) : "onbekend"}
           delta={
@@ -664,7 +649,7 @@ function Uitkomst({
         />
       </div>
 
-      <div className="rounded-[14px] border border-lijn bg-paneel p-5">
+      <div className="rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef">
         <SectieLabel>Wat is die extra leenruimte?</SectieLabel>
         <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
           Leen je extra voor energiebesparende voorzieningen, dan mag een geldverstrekker dat deel van de hypotheek tot

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Bandbreedte, BronLabel, Kaart } from "@/components/ui";
+import { Bandbreedte, BronLabel, IcoonRondje, Kaart } from "@/components/ui";
+import type { IcoonNaam } from "@/components/iconen";
 import { WoneaLogo } from "@/components/logo";
+import { Illustratie } from "@/components/illustraties";
 import { Zoekbalk } from "@/components/zoekbalk";
 import { MODEL_VERSIE } from "@/lib/avm";
 import { getActueleRentes, peilmaandLabel } from "@/lib/bronnen/rentes";
@@ -39,6 +41,9 @@ type GridTool = {
   bron: string;
   href: string;
   linkTekst: string;
+  icoon: IcoonNaam;
+  /** Amber-rondje voor de warme actie-tools (zelfde mapping als de homepage). */
+  tintAmber?: boolean;
   breed?: boolean;
   datapunt?: { waarde: string; uitleg: string };
 };
@@ -54,6 +59,8 @@ export default function ToolsPagina() {
       bron: "Jouw eigen WOZ-beschikking",
       href: "/woz-check",
       linkTekst: "Start de WOZ-check",
+      icoon: "weegschaal",
+      tintAmber: true,
     },
     {
       titel: "Budgetberekenaar",
@@ -61,6 +68,7 @@ export default function ToolsPagina() {
       bron: "Leennormen 2026 en NHG",
       href: "/budget",
       linkTekst: "Bereken je budget",
+      icoon: "rekenhulp",
       datapunt: { waarde: formatEuro(NHG_GRENS_2026), uitleg: "NHG-kostengrens 2026" },
     },
     {
@@ -69,6 +77,7 @@ export default function ToolsPagina() {
       bron: `DNB, ${peilmaandLabel()}`,
       href: "/hypotheek-rentes",
       linkTekst: "Bekijk de rentes",
+      icoon: "grafiek",
       datapunt:
         rentes.totaalRentePct !== null
           ? {
@@ -83,6 +92,8 @@ export default function ToolsPagina() {
       bron: "RVO (ISDE en EP-Online)",
       href: "/verduurzamen",
       linkTekst: "Start de verduurzamingscheck",
+      icoon: "blad",
+      tintAmber: true,
       breed: true,
       datapunt: warmtepomp
         ? {
@@ -92,22 +103,25 @@ export default function ToolsPagina() {
         : undefined,
     },
     {
-      titel: "Kosten koper",
-      zin: "Hoeveel eigen geld heb je nodig bovenop je hypotheek? Overdrachtsbelasting plus een eerlijke indicatie van de bijkomende kosten, met de startersvrijstelling erbij.",
-      bron: "Wet op belastingen van rechtsverkeer",
-      href: "/kosten-koper",
-      linkTekst: "Bereken je kosten koper",
-      datapunt: {
-        waarde: `${OVB_TARIEF_HOOFDVERBLIJF_PCT}%`,
-        uitleg: `overdrachtsbelasting eigen woning; starters tot ${formatEuro(STARTERS_WONINGWAARDEGRENS)} eenmalig 0%`,
-      },
-    },
-    {
       titel: "Overbieden",
       zin: "Wat betekent een bod boven de vraagprijs voor je eigen geld? Vul je taxatie-inschatting in en zie welk deel de bank niet financiert.",
       bron: "Eigen invoer en rekenregels",
       href: "/overbieden",
       linkTekst: "Reken je bod door",
+      icoon: "huis",
+    },
+    {
+      titel: "Kosten koper",
+      zin: "Hoeveel eigen geld heb je nodig bovenop je hypotheek? Overdrachtsbelasting plus een eerlijke indicatie van de bijkomende kosten, met de startersvrijstelling erbij.",
+      bron: "Wet op belastingen van rechtsverkeer",
+      href: "/kosten-koper",
+      linkTekst: "Bereken je kosten koper",
+      icoon: "euro",
+      breed: true,
+      datapunt: {
+        waarde: `${OVB_TARIEF_HOOFDVERBLIJF_PCT}%`,
+        uitleg: `overdrachtsbelasting eigen woning; starters tot ${formatEuro(STARTERS_WONINGWAARDEGRENS)} eenmalig 0%`,
+      },
     },
     {
       titel: "Vind een makelaar",
@@ -115,6 +129,7 @@ export default function ToolsPagina() {
       bron: "OpenStreetMap",
       href: "/makelaars",
       linkTekst: "Vind een makelaar",
+      icoon: "locatie",
     },
   ];
 
@@ -122,16 +137,18 @@ export default function ToolsPagina() {
     <div>
       <style>{`@keyframes wonea-enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>
 
-      {/* Compacte intro: geen hero-herhaling van home, wel het huisvorm-motief. */}
-      <section className="relative overflow-hidden border-b border-lijn bg-paneel">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-14 text-merk-50">
-          <WoneaLogo className="h-72 w-72" />
+      {/* Compacte intro: geen hero-herhaling van home, wel het huisvorm-motief.
+          Huisstijl v3: de koele navy hero-wash (vervloeit naar de achtergrond)
+          in plaats van een vlak wit paneel. */}
+      <section className="relative overflow-hidden" style={{ backgroundImage: "var(--gradient-hero-wash-navy)" }}>
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-14 text-merk-200">
+          <WoneaLogo variant="mono" className="h-72 w-72" />
         </div>
         <div
           className="relative mx-auto max-w-5xl px-5 py-12"
           style={{ animation: "wonea-enter var(--duur-normaal) var(--ease-uit) both" }}
         >
-          <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
+          <nav className="text-sm text-inkt-zacht" aria-label="Kruimelpad">
             <Link href="/" className="hover:text-merk">Wonea</Link> / Rekenhulpen
           </nav>
           <h1 className="mt-3 max-w-xl text-3xl font-semibold sm:text-4xl">Gratis inzicht, zonder account</h1>
@@ -144,7 +161,7 @@ export default function ToolsPagina() {
 
       {/* Uitgelicht: de woningwaarde-check, met een echte mini-preview van onze UI. */}
       <section className="mx-auto max-w-5xl px-5 py-12">
-        <div className="grid items-center gap-8 rounded-[14px] border border-lijn bg-paneel p-6 sm:p-8 lg:grid-cols-[1.2fr_1fr]">
+        <div className="grid items-center gap-8 rounded-[14px] border border-lijn bg-paneel p-6 shadow-zweef-lg sm:p-8 lg:grid-cols-[1.2fr_1fr]">
           <div>
             <h2 className="text-2xl font-semibold">Woningwaarde-check</h2>
             <p className="mt-3 leading-relaxed text-inkt-zacht">
@@ -173,39 +190,74 @@ export default function ToolsPagina() {
         </div>
       </section>
 
-      {/* De overige tools: gevarieerd grid, per kaart bronlabel + echt datapunt waar dat kan. */}
+      {/* De overige tools: gemengd blokken-grid (flux-echo blokken-taal).
+          Twee brede kaarten (verduurzamen, kosten koper) vullen samen met de
+          smalle kaarten elke rij van het 3-koloms grid; brede kaarten leggen
+          hun datapunt als stat-vak op tint naast de tekst. */}
       <section className="mx-auto max-w-5xl px-5 pb-12">
         <h2 className="text-2xl font-semibold">De andere rekenhulpen</h2>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {gridTools.map((tool) => (
-            <Kaart key={tool.titel} className={`flex flex-col ${tool.breed ? "lg:col-span-2" : ""}`}>
-              <h3 className="text-lg font-semibold">{tool.titel}</h3>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-inkt-zacht">{tool.zin}</p>
-              {tool.datapunt ? (
-                <p className="mt-4 border-t border-lijn pt-3">
-                  <span className="font-display text-xl font-semibold text-merk">{tool.datapunt.waarde}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-gedempt">{tool.datapunt.uitleg}</span>
-                </p>
-              ) : null}
-              <div className="mt-4">
-                <BronLabel>{tool.bron}</BronLabel>
-              </div>
-              <Link
-                href={tool.href}
-                className="mt-3 self-start text-sm font-semibold text-merk underline underline-offset-4 transition-colors hover:text-merk-licht"
-              >
-                {tool.linkTekst}
-              </Link>
-            </Kaart>
-          ))}
+        <div className="mt-6 grid grid-flow-dense gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {gridTools.map((tool) =>
+            tool.breed ? (
+              <Kaart key={tool.titel} className="sm:col-span-2">
+                <div className="grid gap-6 sm:grid-cols-[1.4fr_1fr] sm:items-center">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <IcoonRondje naam={tool.icoon} tint={tool.tintAmber ? "amber" : "merk"} />
+                      <h3 className="text-lg font-semibold">{tool.titel}</h3>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">{tool.zin}</p>
+                    <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <BronLabel>{tool.bron}</BronLabel>
+                      <Link
+                        href={tool.href}
+                        className="text-sm font-semibold text-merk underline underline-offset-4 transition-colors hover:text-merk-licht"
+                      >
+                        {tool.linkTekst}
+                      </Link>
+                    </div>
+                  </div>
+                  {tool.datapunt ? (
+                    <div className={`rounded-lg p-5 ${tool.tintAmber ? "bg-accent-wash" : "bg-merk-wash"}`}>
+                      <p className="font-display text-3xl font-semibold tabular-nums text-merk">{tool.datapunt.waarde}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-inkt-zacht">{tool.datapunt.uitleg}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </Kaart>
+            ) : (
+              <Kaart key={tool.titel} className="flex flex-col">
+                <div className="flex items-center gap-3">
+                  <IcoonRondje naam={tool.icoon} tint={tool.tintAmber ? "amber" : "merk"} />
+                  <h3 className="text-lg font-semibold">{tool.titel}</h3>
+                </div>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-inkt-zacht">{tool.zin}</p>
+                {tool.datapunt ? (
+                  <p className="mt-4 border-t border-lijn pt-3">
+                    <span className="font-display text-xl font-semibold tabular-nums text-merk">{tool.datapunt.waarde}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-gedempt">{tool.datapunt.uitleg}</span>
+                  </p>
+                ) : null}
+                <div className="mt-4">
+                  <BronLabel>{tool.bron}</BronLabel>
+                </div>
+                <Link
+                  href={tool.href}
+                  className="mt-3 self-start text-sm font-semibold text-merk underline underline-offset-4 transition-colors hover:text-merk-licht"
+                >
+                  {tool.linkTekst}
+                </Link>
+              </Kaart>
+            ),
+          )}
         </div>
       </section>
 
       {/* Biedadvies: hoort bij een adres, dus een eigen kaart met uitleg
           (bewust geen volle-breedte band: die familie is voor de donkere slotband). */}
       <section id="biedadvies" className="mx-auto max-w-5xl px-5 pb-12">
-        <div className="rounded-[14px] bg-merk-wash p-6 sm:p-8">
-          <div className="max-w-2xl">
+        <div className="flex items-center gap-8 rounded-[14px] bg-merk-wash p-6 sm:p-8">
+          <div className="min-w-0 max-w-2xl flex-1">
             <h2 className="text-2xl font-semibold">Biedadvies: wat is een realistisch bod?</h2>
             <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
               Het biedadvies hoort bij een specifieke woning: een realistische biedrange op basis van de
@@ -223,22 +275,35 @@ export default function ToolsPagina() {
               Zoek een adres
             </Link>
           </div>
+          <Illustratie naam="bieden" className="hidden h-auto w-48 shrink-0 md:block lg:w-56" />
         </div>
       </section>
 
-      {/* Donkere band: de ene bewuste thema-uitzondering, voor het eerlijke gratis-verhaal. */}
-      <section className="bg-merk-900">
-        <div className="mx-auto max-w-5xl px-5 py-12">
-          <h2 className="text-2xl font-semibold text-white">Hoe zit het met gratis?</h2>
+      {/* Donkere slotband: de ene bewuste thema-uitzondering (radius-band 20,
+          logo-navy merk-900, amber knop) voor het eerlijke gratis-verhaal. */}
+      <section className="mx-auto max-w-5xl px-5 pb-16">
+        <div className="rounded-[20px] bg-merk-900 px-7 py-10 sm:px-10">
+          {/* Inline color: de ongelaagde h1-h3-regel in globals.css wint van
+              Tailwind-utilities (text-white), dus op donker forceren we wit,
+              via het paneel-token (geen losse hex). Gemeld aan de
+              tokens-eigenaar; fix hoort in globals.css (@layer). */}
+          <h2 className="text-2xl font-semibold" style={{ color: "var(--color-paneel)" }}>Hoe zit het met gratis?</h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-merk-100">
             Alle rekenhulpen zijn gratis en werken zonder account. Sommige eindigen in een vrijblijvende vervolgstap, zoals een
             voorstel voor verduurzaming. Verstuur je zo&apos;n aanvraag, dan staat er altijd vooraf bij naar welk type partij
             hij gaat, en zonder jouw akkoord gaat er niets de deur uit.
           </p>
-          <p className="mt-5 space-x-5 text-sm">
-            <Link href="/methode" className="font-semibold text-white underline underline-offset-4">Zo rekenen we</Link>
-            <Link href="/privacy" className="font-semibold text-white underline underline-offset-4">Privacy en verwijderen</Link>
-          </p>
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link
+              href="/methode"
+              className="inline-flex items-center justify-center rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-merk-900 transition-colors hover:bg-accent-400 focus:outline-2 focus:outline-offset-2 focus:outline-accent-300"
+            >
+              Zo rekenen we
+            </Link>
+            <Link href="/privacy" className="text-sm font-semibold text-white underline underline-offset-4">
+              Privacy en verwijderen
+            </Link>
+          </div>
         </div>
       </section>
     </div>

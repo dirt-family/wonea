@@ -131,3 +131,25 @@ eigendom van de nog lopende Wave B/C. Oogst geparkeerd; oppakken na oplevering B
 - Nepkaart-placeholders en placeholder-huisillustraties als "foto" → geen nep-media.
 - Vuistregel "4,5x inkomen" voor maximale hypotheek → wij hebben de echte leennormen-
   tabellen; altijd lib/normen/leennormen-2026.ts gebruiken.
+
+## Levendigheids-patronen uit het prototype (addendum 23 jul, avond)
+Mitch leverde het prototype opnieuw als levendigheids-referentie plus een NIEUW
+logo-concept (gekozen richting: navy #1E293B naar amber #F59E0B gradient; staat
+in components/logo.tsx en public/icon.svg). De patronen die het prototype
+levend maken en die de huisstijl v3 in Wonea-vorm moet dragen:
+- **Hero met gradient-wash bovenin** (tint-50 naar transparant) in plaats van
+  een vlak paneel; zoekbalk als zwevend element met gelaagde schaduw en een
+  focus-ring in de merkkleur.
+- **Pill/badge-systeem overal**: merk-wash-pills met rand, neutrale pills,
+  delta-pills op/neer met eigen washes, "tag"-microlabels op kaartkoppen.
+- **Energielabels in de echte EU-labelkleuren** (A groen t/m G rood) als
+  vierkante badges; overal identiek.
+- **Stat-tiles op tint** (achtergrond-tint, geen witte kaart) met klein label,
+  groot tabular getal en een subregel.
+- **Gelaagde zachte schaduwen** (sm/md/lg) voor zweefgevoel op kaarten en de
+  zoekbalk; hover tilt de schaduw een laag omhoog + translateY(-2px).
+- **Alert/lijst-rijen met kleurdot** voor feeds en keuzelijsten.
+- **Donkere band (radius 20) met witte kop + pills** als afsluitende CTA-sectie.
+- **CSS-staafgrafiekjes** met de merkkleur voor "nu" en tint voor historie.
+- **Sticky sidebar-kaarten** op detailpagina's.
+- De prototype-PAARSE kleur vervalt: de gekozen richting is navy naar amber.

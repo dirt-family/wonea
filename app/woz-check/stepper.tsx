@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useRef, useState, type KeyboardEvent } from "react";
 import {
+  BandbreedteInvaart,
   GerelateerdeRekenhulpen,
   RekenModule,
   RekenmoduleSamenvatting,
+  UitkomstMoment,
   type SamenvattingRij,
   type StapDefinitie,
 } from "@/components/rekenmodule";
-import { Bandbreedte, BronLabel, inputClass, LeadCta, SectieLabel, UitklapUitleg, UitkomstKaart, Veld } from "@/components/ui";
+import { BronLabel, DeltaPil, inputClass, LeadCta, SectieLabel, UitklapUitleg, Veld } from "@/components/ui";
 import { formatDatumNl, formatEuro } from "@/lib/format";
 import {
   leesAdresResultaat,
@@ -314,9 +316,9 @@ function Uitkomst({
 
   return (
     <div className="space-y-5">
-      <UitkomstKaart label={`Jouw WOZ, peiljaar ${peiljaar}`} bedrag={formatEuro(woz)}>
+      <UitkomstMoment label={`Jouw WOZ, peiljaar ${peiljaar}`} waarde={formatEuro(woz)}>
         <p className={`mt-3 text-sm font-semibold ${duiding.kleur}`}>{duiding.kop}</p>
-        <Bandbreedte laag={s.laag} waarde={s.waarde} hoog={s.hoog} />
+        <BandbreedteInvaart laag={s.laag} waarde={s.waarde} hoog={s.hoog} />
         <p className="mt-2 text-xs text-gedempt">
           Onze marktschatting voor {adres.naam}: {formatEuro(s.waarde)}, op basis van {s.nComparables} vergelijkbare
           verkopen (berekend op {formatDatumNl(s.datum)}). Een indicatie, geen taxatie.
@@ -326,11 +328,18 @@ function Uitkomst({
           Let wel: je WOZ hoort bij waardepeildatum 1 januari {peiljaar}, onze schatting is van nu. Zit daar tijd tussen,
           dan kan een deel van het verschil gewone marktontwikkeling zijn.
         </p>
-      </UitkomstKaart>
+      </UitkomstMoment>
 
       {v.categorie === "boven" ? (
-        <div className="rounded-[14px] border border-lijn bg-paneel p-5">
-          <SectieLabel>Rekenvoorbeeld OZB</SectieLabel>
+        <div className="rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef">
+          {/* Flux-echo: de besparing als lime-pill (tekst shell), hetzelfde
+              echte bedrag als in de zin eronder (ozbVoorbeeldPerJaar). */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <SectieLabel>Rekenvoorbeeld OZB</SectieLabel>
+            <DeltaPil richting="op" tint="lime">
+              scheelt ongeveer {formatEuro(ozbVoorbeeldPerJaar(v.verschil))} per jaar
+            </DeltaPil>
+          </div>
           <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
             Komt je WOZ na bezwaar uit op onze schatting, dan gaat hij {formatEuro(v.verschil)} omlaag. Bij een
             voorbeeldtarief van {String(OZB_VOORBEELD_TARIEF_PCT).replace(".", ",")}% OZB scheelt dat ongeveer{" "}
@@ -341,7 +350,7 @@ function Uitkomst({
         </div>
       ) : null}
 
-      <div className="rounded-[14px] border border-lijn bg-paneel p-5">
+      <div className="rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef">
         <SectieLabel>Bezwaar maken is gratis</SectieLabel>
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           Denk je dat je WOZ niet klopt? Bezwaar maken doe je gratis en rechtstreeks via de site van je gemeente, binnen

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bandbreedte, Kaart, KnopPrimair, KnopSecundair, SectieLabel } from "@/components/ui";
+import { Bandbreedte, IcoonRondje, Kaart, KnopPrimair, KnopSecundair, SectieLabel } from "@/components/ui";
 import { formatEuro } from "@/lib/util";
 
 /**
@@ -8,6 +8,10 @@ import { formatEuro } from "@/lib/util";
  * dashboard-flow) en de hulp-kaart met de introductie-copy uit
  * PROTOTYPE-OOGST.md: eerlijk benoemen dat partijen ons voor de introductie
  * betalen, en dat gegevens alleen met toestemming worden gedeeld.
+ *
+ * v3: de waardekaart zweeft een laag hoger (shadow-zweef-md), de hulp-kaart
+ * is de warme amber-adem (mens/actie). Sticky offset top-24 zodat de kaart
+ * niet onder de sticky header schuift.
  */
 export function WoningSidebar({
   valuation,
@@ -17,8 +21,8 @@ export function WoningSidebar({
   adresQuery: string;
 }) {
   return (
-    <div className="space-y-5 lg:sticky lg:top-6">
-      <Kaart>
+    <div className="space-y-5 lg:sticky lg:top-24">
+      <Kaart className="shadow-zweef-md">
         <SectieLabel>Geschatte waarde</SectieLabel>
         {valuation ? (
           <>
@@ -38,8 +42,11 @@ export function WoningSidebar({
         </p>
       </Kaart>
 
-      <Kaart className="bg-merk-wash">
-        <h2 className="text-lg font-semibold">Hulp bij de volgende stap</h2>
+      <Kaart className="border-accent-200 bg-accent-wash">
+        <div className="flex items-center gap-3">
+          <IcoonRondje naam="vraag" tint="amber" />
+          <h2 className="text-lg font-semibold">Hulp bij de volgende stap</h2>
+        </div>
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           Wil je een hypotheekadviseur of makelaar spreken? Wij brengen je in contact. Zij betalen ons voor de
           introductie. Zo simpel is het.

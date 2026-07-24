@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Kaart } from "@/components/ui";
+import { IcoonRondje, Kaart } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 
 export const metadata: Metadata = {
   title: "Privacy en jouw data",
@@ -12,7 +13,13 @@ export const metadata: Metadata = {
 export default function PrivacyPagina() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">
-      <h1 className="text-3xl font-semibold sm:text-4xl">Privacy en jouw data</h1>
+      <div className="flex items-start justify-between gap-8">
+        <div className="min-w-0">
+          <IcoonRondje naam="schild" tint="merk" maat="l" />
+          <h1 className="mt-5 text-3xl font-semibold sm:text-4xl">Privacy en jouw data</h1>
+        </div>
+        <Illustratie naam="jouw-data" className="hidden w-40 shrink-0 sm:block" />
+      </div>
 
       <Kaart className="mt-6 bg-accent-wash">
         <p className="text-sm leading-relaxed text-inkt">

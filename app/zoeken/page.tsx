@@ -11,12 +11,20 @@ import {
 } from "@/lib/zoeken";
 import { formatEuro } from "@/lib/util";
 import { EnergieLabelBadge, inputClass, KnopPrimair, LegeStaat, Veld } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 import { VergelijkBalk, VergelijkCheckbox, VergelijkProvider } from "./vergelijk-selectie";
 
 /**
  * /zoeken: server-side zoekresultaten op de eigen adressen-database.
  * Adresdiepe pagina; volgt de gating-lijn en blijft dus noindex.
  * Geen kaart of map: we hebben geen betrouwbare coordinaten-weergave (backlog).
+ *
+ * v3: navy hero-wash bovenin (functioneel wit + navy-wash, BRAND.md), het
+ * filterpaneel als zwevend element (shadow-zweef-md) en resultaten in de
+ * WoningKaart-signatuur. De kaart is hier lokaal gecomponeerd omdat de
+ * vergelijk-checkbox niet ín een Link mag wonen; het vormsysteem
+ * (illustratie-hoek op tint, labelbadge, waarde + bandbreedte, hover-lift)
+ * is identiek aan WoningKaart in components/ui.tsx.
  */
 
 export const metadata: Metadata = {
@@ -41,14 +49,16 @@ export default async function ZoekenPagina({
 
   return (
     <VergelijkProvider>
-      <div className="mx-auto max-w-5xl px-5 py-10 pb-28">
-        <h1 className="text-3xl font-semibold sm:text-4xl">Zoek een woning</h1>
-        <p className="mt-2 max-w-2xl text-inkt-zacht">
-          Zoek op straat, postcode of plaats en filter op wat jij belangrijk vindt. Elke waarde is een indicatie met
-          bandbreedte, geen taxatie.
-        </p>
+      {/* Navy hero-wash: koele adem boven het zoekmoment, vervloeit naar de achtergrond. */}
+      <div style={{ backgroundImage: "var(--gradient-hero-wash-navy)" }}>
+        <div className="mx-auto max-w-5xl px-5 pb-2 pt-10">
+          <h1 className="text-3xl font-semibold sm:text-4xl">Zoek een woning</h1>
+          <p className="mt-2 max-w-2xl text-inkt-zacht">
+            Zoek op straat, postcode of plaats en filter op wat jij belangrijk vindt. Elke waarde is een indicatie met
+            bandbreedte, geen taxatie.
+          </p>
 
-        <form method="GET" action="/zoeken" className="mt-8 rounded-[14px] border border-lijn bg-paneel p-5">
+          <form method="GET" action="/zoeken" className="mt-8 rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef-md">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2 lg:col-span-3">
               <Veld label="Zoekterm">
@@ -103,16 +113,18 @@ export default async function ZoekenPagina({
               </select>
             </Veld>
           </div>
-          <div className="mt-5 flex flex-wrap items-center gap-4">
-            <KnopPrimair type="submit">Zoeken</KnopPrimair>
-            {heeftFilters(filters) ? (
-              <Link href="/zoeken" className="text-sm text-gedempt underline underline-offset-4 transition-colors hover:text-merk">
-                Wis alle filters
-              </Link>
-            ) : null}
-          </div>
-        </form>
-
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              <KnopPrimair type="submit">Zoeken</KnopPrimair>
+              {heeftFilters(filters) ? (
+                <Link href="/zoeken" className="text-sm text-gedempt underline underline-offset-4 transition-colors hover:text-merk">
+                  Wis alle filters
+                </Link>
+              ) : null}
+            </div>
+          </form>
+        </div>
+      </div>
+      <div className="mx-auto max-w-5xl px-5 pb-28">
         {resultaten.length > 0 ? (
           <>
             <p className="mt-6 text-sm text-gedempt tabular-nums" aria-live="polite">
@@ -123,40 +135,51 @@ export default async function ZoekenPagina({
               {resultaten.map((r) => {
                 const naam = `${r.straat} ${r.huisnummer}${r.toevoeging ? ` ${r.toevoeging}` : ""}`;
                 return (
-                  <div key={r.id} className="flex flex-col rounded-[14px] border border-lijn bg-paneel p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <Link
-                          href={`/woning/${r.postcode}/${r.nummerslug}`}
-                          className="font-semibold text-inkt transition-colors hover:text-merk"
-                        >
-                          {naam}
-                        </Link>
-                        <p className="mt-0.5 text-sm text-gedempt">
-                          {r.postcode} {r.plaats}
-                        </p>
-                      </div>
-                      {r.energielabel ? <EnergieLabelBadge label={r.energielabel} klein /> : null}
-                    </div>
-                    <p className="mt-3 text-sm text-inkt-zacht tabular-nums">
-                      {r.oppervlakteM2} m2 · {r.woningtype} · {r.bouwjaar}
-                    </p>
-                    <div className="mt-3 grow">
-                      {r.waarde !== null && r.intervalLaag !== null && r.intervalHoog !== null ? (
-                        <>
-                          <p className="font-display text-2xl font-semibold text-merk tabular-nums">{formatEuro(r.waarde)}</p>
-                          <p className="mt-0.5 text-xs text-gedempt tabular-nums">
-                            {formatEuro(r.intervalLaag)} tot {formatEuro(r.intervalHoog)}
+                  <div key={r.id} className="til-op group flex flex-col overflow-hidden rounded-[14px] border border-lijn bg-paneel shadow-zweef">
+                    {/* Illustratie-hoek op tint: de WoningKaart-signatuur. */}
+                    <Link
+                      href={`/woning/${r.postcode}/${r.nummerslug}`}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="relative flex h-24 items-end justify-end bg-wash-navy px-5"
+                    >
+                      <Illustratie naam="woningwaarde" className="h-20 w-auto translate-y-1" />
+                    </Link>
+                    <div className="flex grow flex-col p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Link
+                            href={`/woning/${r.postcode}/${r.nummerslug}`}
+                            className="font-semibold text-inkt transition-colors focus:outline-2 focus:outline-offset-2 focus:outline-merk group-hover:text-merk"
+                          >
+                            {naam}
+                          </Link>
+                          <p className="mt-0.5 text-sm text-gedempt">
+                            {r.postcode} {r.plaats}
                           </p>
-                        </>
-                      ) : (
-                        <p className="text-sm leading-relaxed text-inkt-zacht">
-                          Nog geen schatting voor dit adres. Open de woningpagina voor een verse berekening.
-                        </p>
-                      )}
-                    </div>
-                    <div className="mt-4 border-t border-lijn pt-3">
-                      <VergelijkCheckbox slug={r.slug} naam={naam} />
+                        </div>
+                        {r.energielabel ? <EnergieLabelBadge label={r.energielabel} klein /> : null}
+                      </div>
+                      <p className="mt-3 text-xs text-inkt-zacht tabular-nums">
+                        {r.oppervlakteM2} m2 · {r.woningtype} · {r.bouwjaar}
+                      </p>
+                      <div className="mt-3 grow border-t border-lijn pt-3">
+                        {r.waarde !== null && r.intervalLaag !== null && r.intervalHoog !== null ? (
+                          <>
+                            <p className="font-display text-2xl font-semibold text-merk tabular-nums">{formatEuro(r.waarde)}</p>
+                            <p className="mt-0.5 text-xs text-gedempt tabular-nums">
+                              {formatEuro(r.intervalLaag)} tot {formatEuro(r.intervalHoog)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm leading-relaxed text-inkt-zacht">
+                            Nog geen schatting voor dit adres. Open de woningpagina voor een verse berekening.
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-4 border-t border-lijn pt-3">
+                        <VergelijkCheckbox slug={r.slug} naam={naam} />
+                      </div>
                     </div>
                   </div>
                 );

@@ -5,13 +5,16 @@ import { Illustratie } from "@/components/illustraties";
 
 /**
  * Volle-breedte vertrouwenssectie: het differentiator-verhaal. Rustig en
- * feitelijk: verwijderen kan altijd, de methode is openbaar. De grote
- * huisvorm is het ene toegestane achtergrond-motief op deze pagina.
+ * feitelijk: verwijderen kan altijd, de methode is openbaar. Huisstijl v3:
+ * dit is de warme amber-adem (mens/actie-sectie) in de homepage-dramaturgie;
+ * de grote huisvorm is het ene toegestane achtergrond-motief op deze pagina.
  */
 export function Vertrouwen() {
   return (
-    <section className="relative overflow-hidden border-y border-lijn bg-paneel">
-      <WoneaLogo className="pointer-events-none absolute -bottom-20 -right-12 h-80 w-80 text-merk-50 sm:-right-4" />
+    <section className="relative overflow-hidden border-y border-accent-100 bg-wash-amber">
+      {/* Motief-gebruik = mono (huisstijl v3): de merkgradient is exclusief
+          voor echte logo-momenten, niet voor achtergrond-watermerken. */}
+      <WoneaLogo variant="mono" className="pointer-events-none absolute -bottom-20 -right-12 h-80 w-80 text-accent-200 sm:-right-4" />
       <div className="relative mx-auto flex max-w-5xl items-center gap-12 px-5 py-16">
         <div className="min-w-0 flex-1">
           <h2 className="max-w-xl text-3xl font-semibold">Jouw huis, jouw data</h2>

@@ -9,11 +9,11 @@ import {
   vergelijkbareBuurten,
   vindBuurtMetGemeente,
   woningenInBuurt,
-  type PrijsPunt,
 } from "@/lib/buurt-data";
 import { isBuurtIndexeerbaar } from "@/lib/seo/gating";
 import { formatEuro } from "@/lib/util";
-import { BronLabel, EnergieLabelBadge, Kaart, ModuleTag, StatTegel, VoorbeelddataLabel } from "@/components/ui";
+import { AnalyseKaart, Kaart, ModuleTag, Pil, StatTegel, VoorbeelddataLabel, WoningKaart } from "@/components/ui";
+import { WaardeGrafiek } from "@/components/grafieken/waarde-grafiek";
 import { MarktSignalenKaart } from "@/components/markt/signalen";
 
 /**
@@ -61,52 +61,6 @@ function maandLabel(maand: string): string {
   return new Intl.DateTimeFormat("nl-NL", { month: "short", year: "numeric" }).format(new Date(`${maand}-01`));
 }
 
-/**
- * Staafgrafiek van de mediaanprijs per maand (server-side SVG, currentColor).
- * Staven beginnen op nul: eerlijke verhoudingen, geen aangezette y-as die
- * kleine verschillen dramatisch maakt.
- */
-function PrijsStaven({ punten }: { punten: PrijsPunt[] }) {
-  const w = 560;
-  const h = 150;
-  const pad = 4;
-  const max = Math.max(...punten.map((p) => p.mediaan));
-  const gap = 6;
-  const staafBreedte = (w - pad * 2 - gap * (punten.length - 1)) / punten.length;
-  const eerste = punten[0];
-  const laatste = punten[punten.length - 1];
-  return (
-    <figure className="mt-4">
-      <svg
-        viewBox={`0 0 ${w} ${h}`}
-        className="w-full text-merk"
-        role="img"
-        aria-label={`Mediaanprijs per maand, van ${formatEuro(eerste.mediaan)} in ${maandLabel(eerste.maand)} naar ${formatEuro(laatste.mediaan)} in ${maandLabel(laatste.maand)}`}
-      >
-        {punten.map((p, i) => {
-          const hoogte = (p.mediaan / max) * (h - pad * 2);
-          return (
-            <rect
-              key={p.maand}
-              x={(pad + i * (staafBreedte + gap)).toFixed(1)}
-              y={(h - pad - hoogte).toFixed(1)}
-              width={staafBreedte.toFixed(1)}
-              height={hoogte.toFixed(1)}
-              rx="3"
-              fill="currentColor"
-              opacity={i === punten.length - 1 ? 1 : 0.55}
-            />
-          );
-        })}
-      </svg>
-      <figcaption className="mt-2 flex justify-between text-xs text-gedempt tabular-nums">
-        <span>{maandLabel(eerste.maand)}: {formatEuro(eerste.mediaan)}</span>
-        <span>{maandLabel(laatste.maand)}: {formatEuro(laatste.mediaan)}</span>
-      </figcaption>
-    </figure>
-  );
-}
-
 /** Verschil in m2-prijs met de eigen buurt, in gewone taal en zonder oordeel. */
 function verschilTekst(verschilPct: number): string {
   const abs = Math.abs(verschilPct).toLocaleString("nl-NL", { maximumFractionDigits: 1 });
@@ -144,6 +98,7 @@ export default async function BuurtPagina({ params }: { params: Promise<Params> 
       {/* Stats-rij: alle cijfers echt; een tegel zonder bron laten we weg.
           Geen delta bij de m2-prijs: er is geen historische reeks van dit
           cijfer, dus ook geen delta-claim. */}
+      {/* Stat-tiles op tint (v3): navy-wash als basis, de m2-prijs als het ene amber-accent. */}
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {buurt.ankerM2Prijs != null ? (
           <StatTegel
@@ -151,37 +106,61 @@ export default async function BuurtPagina({ params }: { params: Promise<Params> 
             waarde={formatEuro(Math.round(buurt.ankerM2Prijs))}
             delta="gemiddelde WOZ gedeeld door gemiddelde oppervlakte"
             deltaRichting="neutraal"
+            tint="amber"
           />
         ) : null}
         {buurt.gemWoz != null ? (
-          <StatTegel label="Gemiddelde WOZ" waarde={formatEuro(buurt.gemWoz)} delta="bron: CBS" deltaRichting="neutraal" />
+          <StatTegel label="Gemiddelde WOZ" waarde={formatEuro(buurt.gemWoz)} delta="bron: CBS" deltaRichting="neutraal" tint="merk" />
         ) : null}
         <StatTegel
           label="Woningen in ons bestand"
           waarde={kerncijfers.aantalWoningen.toLocaleString("nl-NL")}
           delta="adressen in het testgebied"
           deltaRichting="neutraal"
+          tint="merk"
         />
         <StatTegel
           label="Recente verkopen"
           waarde={kerncijfers.aantalRecenteVerkopen.toLocaleString("nl-NL")}
           delta="laatste 12 maanden"
           deltaRichting="neutraal"
+          tint="merk"
         />
       </div>
 
-      {/* Prijsontwikkeling: alleen bij een echte reeks. */}
+      {/* Prijsontwikkeling: alleen bij een echte reeks. Flux-kleurlaag: de
+          donkere AnalyseKaart (shell-zwart, radius-band 20) is het ene donkere
+          moment op deze pagina; chart-op-shell dempt de historie-staven en
+          markeert de actuele maand in het lime-anker. */}
       {prijsreeks ? (
-        <Kaart className="mt-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">Prijsontwikkeling</h2>
-            {prijsreeks.heeftSeed ? <VoorbeelddataLabel /> : <ModuleTag>per maand</ModuleTag>}
-          </div>
-          <p className="mt-2 text-sm text-inkt-zacht">
-            Mediaan verkoopprijs per maand, laatste {prijsreeks.punten.length} maanden.
-          </p>
-          <PrijsStaven punten={prijsreeks.punten} />
-        </Kaart>
+        <section className="mt-8" aria-labelledby="prijsontwikkeling-kop">
+          <h2 id="prijsontwikkeling-kop" className="sr-only">
+            Prijsontwikkeling
+          </h2>
+          <AnalyseKaart
+            titel="Prijsontwikkeling"
+            meta={`Mediaan verkoopprijs per maand, laatste ${prijsreeks.punten.length} maanden.`}
+            className="shadow-zweef-md"
+          >
+            {/* Het lange voorbeelddata-label hoort in de flow (het actie-slot is
+                shrink-0 en zou de kaart op mobiel breder dan het scherm duwen). */}
+            {prijsreeks.heeftSeed ? (
+              <p className="mb-4 -mt-1">
+                <VoorbeelddataLabel />
+              </p>
+            ) : null}
+            <WaardeGrafiek data={prijsreeks.punten.map((p) => ({ label: maandLabel(p.maand), waarde: p.mediaan }))} maxLabels={6} />
+            <p className="mt-3 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs tabular-nums text-op-shell-zacht">
+              <span>
+                {maandLabel(prijsreeks.punten[0].maand)}: {formatEuro(prijsreeks.punten[0].mediaan)}
+              </span>
+              <span>
+                {maandLabel(prijsreeks.punten[prijsreeks.punten.length - 1].maand)}:{" "}
+                {formatEuro(prijsreeks.punten[prijsreeks.punten.length - 1].mediaan)}
+              </span>
+            </p>
+          </AnalyseKaart>
+        </section>
       ) : null}
 
       {/* Woningen in de buurt: echte adressen met een echte schatting. */}
@@ -192,34 +171,22 @@ export default async function BuurtPagina({ params }: { params: Promise<Params> 
           een goed startpunt.
         </p>
         {woningen.length > 0 ? (
-          <div className="mt-6 flex gap-4 overflow-x-auto pb-2" role="list">
+          <div className="mt-6 flex gap-4 overflow-x-auto px-1 pb-3 pt-1" role="list">
             {woningen.map((woning) => {
               const naam = `${woning.straat} ${woning.huisnummer}${woning.toevoeging ? ` ${woning.toevoeging}` : ""}`;
+              const indicatie = woning.energielabel && woning.energielabelBron === "indicatie";
               return (
-                <Link
-                  key={woning.adresId}
-                  role="listitem"
-                  href={`/woning/${woning.postcode}/${woning.nummerslug}`}
-                  className="block w-64 shrink-0 rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-inkt">{naam}</p>
-                      <p className="mt-0.5 text-xs text-gedempt">{woning.postcode} {woning.plaats}</p>
-                    </div>
-                    {woning.energielabel ? <EnergieLabelBadge label={woning.energielabel} klein /> : null}
-                  </div>
-                  <p className="mt-3 font-display text-xl font-semibold text-merk tabular-nums">{formatEuro(woning.waarde)}</p>
-                  <p className="mt-1 text-xs text-inkt-zacht tabular-nums">
-                    {formatEuro(woning.intervalLaag)} tot {formatEuro(woning.intervalHoog)}
-                  </p>
-                  <p className="mt-2 text-xs text-gedempt tabular-nums">
-                    {woning.oppervlakteM2} m2, {woning.woningtype}, bouwjaar {woning.bouwjaar}
-                  </p>
-                  {woning.energielabel && woning.energielabelBron === "indicatie" ? (
-                    <p className="mt-2"><BronLabel>label: indicatie op basis van bouwjaar</BronLabel></p>
-                  ) : null}
-                </Link>
+                <div key={woning.adresId} role="listitem" className="w-72 shrink-0">
+                  <WoningKaart
+                    href={`/woning/${woning.postcode}/${woning.nummerslug}`}
+                    adres={naam}
+                    plaats={`${woning.postcode} ${woning.plaats}`}
+                    micro={`${woning.oppervlakteM2} m2, ${woning.woningtype}, bouwjaar ${woning.bouwjaar}${indicatie ? " · label: indicatie op basis van bouwjaar" : ""}`}
+                    waarde={formatEuro(woning.waarde)}
+                    bandbreedte={`${formatEuro(woning.intervalLaag)} tot ${formatEuro(woning.intervalHoog)}`}
+                    energielabel={woning.energielabel}
+                  />
+                </div>
               );
             })}
           </div>
@@ -239,24 +206,25 @@ export default async function BuurtPagina({ params }: { params: Promise<Params> 
         </div>
         {verkopen.length > 0 ? (
           <div className="mt-4 overflow-x-auto">
+            {/* Tint-zebra (v3): even rijen op navy-wash in plaats van lijnen onder elke rij. */}
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
-                  <th className="py-2 pr-4 font-medium">Wanneer</th>
-                  <th className="py-2 pr-4 font-medium">Straat</th>
-                  <th className="py-2 pr-4 font-medium">Prijs</th>
-                  <th className="py-2 pr-4 font-medium">Oppervlakte</th>
-                  <th className="py-2 font-medium">Type</th>
+                  <th className="px-3 py-2 font-medium">Wanneer</th>
+                  <th className="px-3 py-2 font-medium">Straat</th>
+                  <th className="px-3 py-2 font-medium">Prijs</th>
+                  <th className="px-3 py-2 font-medium">Oppervlakte</th>
+                  <th className="px-3 py-2 font-medium">Type</th>
                 </tr>
               </thead>
               <tbody>
                 {verkopen.map((verkoop) => (
-                  <tr key={verkoop.id} className="border-b border-lijn last:border-0">
-                    <td className="py-2.5 pr-4">{maandFmt.format(new Date(verkoop.datum))}</td>
-                    <td className="py-2.5 pr-4">{verkoop.straat ?? "onbekend"}</td>
-                    <td className="py-2.5 pr-4 font-medium tabular-nums">{formatEuro(verkoop.prijs)}</td>
-                    <td className="py-2.5 pr-4 tabular-nums">{verkoop.oppervlakteM2} m2</td>
-                    <td className="py-2.5">{verkoop.woningtype}</td>
+                  <tr key={verkoop.id} className="even:bg-merk-50">
+                    <td className="rounded-l-lg px-3 py-2.5">{maandFmt.format(new Date(verkoop.datum))}</td>
+                    <td className="px-3 py-2.5">{verkoop.straat ?? "onbekend"}</td>
+                    <td className="px-3 py-2.5 font-medium tabular-nums">{formatEuro(verkoop.prijs)}</td>
+                    <td className="px-3 py-2.5 tabular-nums">{verkoop.oppervlakteM2} m2</td>
+                    <td className="rounded-r-lg px-3 py-2.5">{verkoop.woningtype}</td>
                   </tr>
                 ))}
               </tbody>
@@ -285,13 +253,15 @@ export default async function BuurtPagina({ params }: { params: Promise<Params> 
               <Link
                 key={buur.buurtCode}
                 href={`/buurt/${gemeente.slug}/${buur.slug}`}
-                className="block rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
+                className="til-op block rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef focus:outline-2 focus:outline-offset-2 focus:outline-merk"
               >
                 <p className="font-semibold text-inkt">{buur.naam}</p>
                 <p className="mt-2 font-display text-xl font-semibold text-merk tabular-nums">
                   {formatEuro(Math.round(buur.ankerM2Prijs))} per m2
                 </p>
-                <p className="mt-1 text-xs text-gedempt tabular-nums">{verschilTekst(buur.verschilPct)}</p>
+                <p className="mt-2">
+                  <Pil variant="merk">{verschilTekst(buur.verschilPct)}</Pil>
+                </p>
                 {buur.gemWoz != null ? (
                   <p className="mt-2 text-xs text-inkt-zacht tabular-nums">Gemiddelde WOZ: {formatEuro(buur.gemWoz)}</p>
                 ) : null}

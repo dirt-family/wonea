@@ -61,7 +61,7 @@ export function VergelijkBalk() {
   const n = ctx.selectie.length;
   const href = `/vergelijken?w=${ctx.selectie.map((s) => s.slug).join(",")}`;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lijn bg-paneel shadow-lg">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-lijn bg-paneel/95 shadow-[0_-4px_18px_-4px_rgba(30,41,59,0.14)] backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-3">
         <p className="text-sm text-inkt">
           <span className="font-semibold tabular-nums">{n} van {MAX_VERGELIJK}</span> geselecteerd

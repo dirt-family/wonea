@@ -160,7 +160,10 @@ export function VerduurzaamStepper({
           <input type="text" name="bedrijfsnaam" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
 
           {state.fout ? (
-            <p className="rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{state.fout}</p>
+            <p className="flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+              <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+              {state.fout}
+            </p>
           ) : null}
 
           <p className="text-sm leading-relaxed text-inkt-zacht">

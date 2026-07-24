@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { addresses, marketStats, municipalities, neighborhoods, valuations } from "@/db/schema";
@@ -75,12 +75,81 @@ export type HomepageStats = {
 export type PlaatsLink = { naam: string; slug: string };
 
 /**
- * Deterministisch voorbeeldadres voor de hero-preview: het eerste actieve,
- * niet-gesupprimeerde adres (laagste id) waarvoor een eerlijke schatting
- * bestaat. getOrCreateValuation is hetzelfde pad als de woningpagina en
- * schrijft hooguit 1 valuation-rij per adres per dag.
+ * Het vaste voorbeeldadres voor de hero-preview: Jamaïcaring 9, 5152ME Drunen.
+ * Dit is Mitch' eigen woonadres, op zijn eigen verzoek het voorbeeldadres van
+ * Wonea (aangemaakt en gevuld door scripts/adres-drunen.ts). Bestaat het adres
+ * niet in de database (bv. testdatabase), is het inactief of gesupprimeerd, of
+ * lukt er geen eerlijke schatting, dan valt getVoorbeeldWoning terug op het
+ * eerste actieve adres met een schatting (laagste id).
+ */
+export const VOORBEELD_ADRES = { postcode: "5152ME", nummerslug: "9" } as const;
+
+/**
+ * Bouwt de hero-preview voor een kandidaat-adres, of geeft null als het adres
+ * gesupprimeerd is of geen eerlijke schatting krijgt. getOrCreateValuation is
+ * hetzelfde pad als de woningpagina en schrijft hooguit 1 valuation-rij per
+ * adres per dag.
+ */
+async function bouwVoorbeeldWoning(adres: Adres): Promise<VoorbeeldWoning | null> {
+  if (await isSuppressed(adres.postcode, adres.nummerslug)) return null;
+
+  const { valuation, comparables, buurt } = await getOrCreateValuation(adres);
+  if (!valuation) return null; // liever een adres met een echte schatting dan een lege preview
+
+  const statRijen = await db
+    .select()
+    .from(marketStats)
+    .where(eq(marketStats.buurtCode, adres.buurtCode))
+    .orderBy(desc(marketStats.maand))
+    .limit(6);
+
+  const biedadvies = berekenBiedadvies({
+    valuation: { intervalLaag: valuation.intervalLaag, intervalHoog: valuation.intervalHoog },
+    marktMaanden: statRijen.map((r) => ({
+      maand: r.maand,
+      overbiedingPct: r.overbiedingPct,
+      doorlooptijdDagen: r.doorlooptijdDagen,
+    })),
+  });
+
+  return {
+    adres,
+    valuation: {
+      waarde: valuation.waarde,
+      intervalLaag: valuation.intervalLaag,
+      intervalHoog: valuation.intervalHoog,
+      confidence: valuation.confidence,
+      nComparables: valuation.nComparables,
+    },
+    niveau: comparables.niveau,
+    buurtNaam: buurt?.naam ?? null,
+    biedadvies,
+  };
+}
+
+/**
+ * Voorbeeldadres voor de hero-preview: eerst het vaste VOORBEELD_ADRES
+ * (indien actief, niet gesupprimeerd en met een schatting), anders het eerste
+ * actieve, niet-gesupprimeerde adres (laagste id) waarvoor een eerlijke
+ * schatting bestaat.
  */
 async function getVoorbeeldWoningOngecachet(): Promise<VoorbeeldWoning | null> {
+  const vastRows = await db
+    .select()
+    .from(addresses)
+    .where(
+      and(
+        eq(addresses.postcode, VOORBEELD_ADRES.postcode),
+        eq(addresses.nummerslug, VOORBEELD_ADRES.nummerslug),
+        eq(addresses.status, "actief"),
+      ),
+    )
+    .limit(1);
+  if (vastRows[0]) {
+    const vast = await bouwVoorbeeldWoning(vastRows[0]);
+    if (vast) return vast;
+  }
+
   const kandidaten = await db
     .select()
     .from(addresses)
@@ -89,40 +158,8 @@ async function getVoorbeeldWoningOngecachet(): Promise<VoorbeeldWoning | null> {
     .limit(10);
 
   for (const adres of kandidaten) {
-    if (await isSuppressed(adres.postcode, adres.nummerslug)) continue;
-
-    const { valuation, comparables, buurt } = await getOrCreateValuation(adres);
-    if (!valuation) continue; // liever een adres met een echte schatting dan een lege preview
-
-    const statRijen = await db
-      .select()
-      .from(marketStats)
-      .where(eq(marketStats.buurtCode, adres.buurtCode))
-      .orderBy(desc(marketStats.maand))
-      .limit(6);
-
-    const biedadvies = berekenBiedadvies({
-      valuation: { intervalLaag: valuation.intervalLaag, intervalHoog: valuation.intervalHoog },
-      marktMaanden: statRijen.map((r) => ({
-        maand: r.maand,
-        overbiedingPct: r.overbiedingPct,
-        doorlooptijdDagen: r.doorlooptijdDagen,
-      })),
-    });
-
-    return {
-      adres,
-      valuation: {
-        waarde: valuation.waarde,
-        intervalLaag: valuation.intervalLaag,
-        intervalHoog: valuation.intervalHoog,
-        confidence: valuation.confidence,
-        nComparables: valuation.nComparables,
-      },
-      niveau: comparables.niveau,
-      buurtNaam: buurt?.naam ?? null,
-      biedadvies,
-    };
+    const voorbeeld = await bouwVoorbeeldWoning(adres);
+    if (voorbeeld) return voorbeeld;
   }
   return null;
 }

@@ -1,9 +1,15 @@
-/** Klein energielabel-chipje voor woningkaarten. Indicaties worden eerlijk benoemd. */
+import { EnergieLabelBadge } from "@/components/ui";
+
+/**
+ * Energielabel voor de hero-preview: de echte EnergieLabelBadge (EU-labelkleuren,
+ * overal identiek — BRAND-regel), met het bron-suffix als meta-tekst.
+ * Indicaties worden eerlijk benoemd.
+ */
 export function EnergielabelChip({ label, bron }: { label: string; bron: "echt" | "indicatie" }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-merk-wash px-2.5 py-0.5 text-[11px] font-medium text-merk">
-      Label {label.toUpperCase()}
-      {bron === "indicatie" ? <span className="ml-1 text-merk-400">(indicatie)</span> : null}
+    <span className="inline-flex items-center gap-1.5">
+      <EnergieLabelBadge label={label} klein />
+      {bron === "indicatie" ? <span className="text-[11px] text-gedempt">(indicatie)</span> : null}
     </span>
   );
 }

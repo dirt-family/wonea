@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
+import { IcoonRondje, Kaart, KnopSecundair, ModuleTag } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 
 export const metadata: Metadata = { title: "Aanvraag ontvangen", robots: { index: false, follow: false } };
 
@@ -21,20 +22,29 @@ export default async function HypotheekKlaarPagina({
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16">
-      <h1 className="text-3xl font-semibold">We hebben je aanvraag</h1>
-      <p className="mt-4 leading-relaxed text-inkt-zacht">
-        Je krijgt een bevestiging per e-mail. Zoals in het formulier stond, geven we je aanvraag eenmalig door aan een
-        onafhankelijke hypotheekadviseur; die neemt contact met je op. Niet aan anderen, en niet vaker dan hiervoor nodig
-        is.
-      </p>
-      <p className="mt-4 text-sm leading-relaxed text-gedempt">
-        In deze testfase wordt er nog niets echt doorgestuurd. Dat gebeurt pas als Wonea live is en jij daarvoor tekende.
-        Van gedachten veranderd? Antwoord op de bevestigingsmail en we trekken de aanvraag in.
-      </p>
+      <div className="flex items-start justify-between gap-8">
+        <div className="min-w-0">
+          <IcoonRondje naam="vinkje" tint="amber" maat="l" />
+          <h1 className="mt-5 text-3xl font-semibold">We hebben je aanvraag</h1>
+          <p className="mt-4 leading-relaxed text-inkt-zacht">
+            Je krijgt een bevestiging per e-mail. Zoals in het formulier stond, geven we je aanvraag eenmalig door aan een
+            onafhankelijke hypotheekadviseur; die neemt contact met je op. Niet aan anderen, en niet vaker dan hiervoor nodig
+            is.
+          </p>
+          <p className="mt-4 text-sm leading-relaxed text-gedempt">
+            In deze testfase wordt er nog niets echt doorgestuurd. Dat gebeurt pas als Wonea live is en jij daarvoor tekende.
+            Van gedachten veranderd? Antwoord op de bevestigingsmail en we trekken de aanvraag in.
+          </p>
+        </div>
+        <Illustratie naam="bieden" className="hidden w-44 shrink-0 sm:block" />
+      </div>
 
       <Kaart className="mt-8">
-        <SectieLabel>Handig om te weten</SectieLabel>
-        <h2 className="mt-2 text-lg font-semibold">Taxatierapport voor je hypotheek</h2>
+        <div className="flex items-start justify-between gap-3">
+          <IcoonRondje naam="document" tint="merk" />
+          <ModuleTag>Handig om te weten</ModuleTag>
+        </div>
+        <h2 className="mt-3 text-lg font-semibold">Taxatierapport voor je hypotheek</h2>
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           Voor een hypotheek heb je een gevalideerd taxatierapport nodig (NWWI, doorgaans 450 tot 800 euro). Wonea kan de
           aanvraag voor je klaarzetten.

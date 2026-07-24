@@ -5,45 +5,173 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Wonea design tokens. Eigen identiteit: licht, rustig, vertrouwen-eerst.
- * Bewust GEEN groen als merkkleur en geen dark patterns.
+ * Wonea design tokens — huisstijl v3 "navy naar amber" (zie docs/BRAND.md).
+ * Merkanker: het logo, oplopende huizenreeks navy #1E293B -> amber #F59E0B.
+ * Bewust GEEN groen als merkkleur, geen paars, geen dark patterns.
  * Display: Source Serif 4 (notarieel vertrouwen). Body/UI: Inter.
  */
 @theme {
-  --color-achtergrond: #faf9f7;
-  --color-paneel: #ffffff;
-  --color-inkt: #1f2733;
-  --color-inkt-zacht: #4b5563;
-  --color-gedempt: #6b7280;
-  --color-lijn: #e5e1da;
-  --color-merk: #16324f; /* diep blauw: primaire merk- en actiekleur */
-  --color-merk-licht: #235684;
-  --color-merk-wash: #eef3f8;
-  --color-accent: #b4740f; /* warm amber, spaarzaam voor nadruk */
-  --color-accent-wash: #faf3e6;
+  /* Basis-oppervlakken */
+  --color-achtergrond: #faf9f7; /* warm licht; de vaste paginabodem */
+  --color-paneel: #ffffff; /* kaarten, header, witte secties */
+  --color-inkt: #1f2733; /* primaire tekst (15,9:1 op wit) */
+  --color-inkt-zacht: #4b5563; /* secundaire tekst (7,5:1 op wit) */
+  --color-gedempt: #6b7280; /* meta/bijschriften, spaarzaam (4,8:1) */
+  --color-lijn: #e5e1da; /* hairlines en randen */
+
+  /*
+   * NAVY-familie. De hele schaal is her-getint naar de slate-ondertoon van de
+   * logo-navy (hue ~217, minder verzadigd dan de oude #16324f). Besluit:
+   * merk-900 SCHUIFT naar exact de logo-navy #1E293B, zodat donkere vlakken
+   * (CTA-band, statistieken-band, dashboard-sidebar) naadloos op het donkere
+   * logo-uiteinde aansluiten. De actiekleur (merk / merk-800) blijft een stap
+   * levendiger dan de logo-navy, anders ogen knoppen grijs.
+   */
+  --color-merk: #253853; /* actiekleur: knoppen, koppen, links (11,9:1 op wit) */
+  --color-merk-licht: #33496a; /* hover op merk (alias merk-700) */
+  --color-merk-wash: #eef2f7; /* zachte navy-achtergrond (alias wash-navy) */
+  --color-merk-50: #f5f7fa;
+  --color-merk-100: #e8edf4;
+  --color-merk-200: #cdd9e6;
+  --color-merk-300: #a4b8cf;
+  --color-merk-400: #7d97b4;
+  --color-merk-500: #587499; /* 4,8:1 op wit: tekst alleen groot/kort */
+  --color-merk-600: #415c7e; /* 6,9:1 op wit: tekst-capabel */
+  --color-merk-700: #33496a;
+  --color-merk-800: #253853; /* = merk */
+  --color-merk-900: #1e293b; /* exact de logo-navy: donkere banden/shell */
+  --color-merk-950: #131b28; /* diepste laag (gradiëntbodem, schaduwkern) */
+
+  /*
+   * AMBER-familie: volwaardige tweede merkkleur, geharmoniseerd rond de
+   * logo-amber #F59E0B (= accent-500) en het bestaande #b4740f (= accent-700).
+   * LET OP contrast: amber haalt op wit geen 4,5:1. Tekstregels:
+   *  - accent-800/900: tekst op licht (5,8:1 / 7,9:1) — de amber-tekstkleuren.
+   *  - accent-700: alleen groot/bold (>=18px bold) of iconen op licht (3,9:1).
+   *  - accent-500/600: nooit tekst op wit; vlakken/graphics, met merk-900 als
+   *    tekst erop (500 vs merk-900 = 6,8:1).
+   *  - accent-300: tekst-accent op merk-900 (9,1:1).
+   */
+  --color-accent: #b4740f; /* bestaand warm amber; UI-accent op licht (3,9:1) */
+  --color-accent-wash: #fdf6e9; /* zachte amber-achtergrond (alias wash-amber) */
+  --color-accent-50: #fdf8ed;
+  --color-accent-100: #faedd2;
+  --color-accent-200: #f6dca6;
+  --color-accent-300: #f2c572;
+  --color-accent-400: #f4b03c;
+  --color-accent-500: #f59e0b; /* exact de logo-amber: badges, dots, grafiek-accent */
+  --color-accent-600: #d48806;
+  --color-accent-700: #b4740f; /* = accent */
+  --color-accent-800: #8f5a10; /* amber-TEKST op licht (5,8:1) */
+  --color-accent-900: #74480d; /* donkerste amber-tekst (7,9:1) */
+
+  /* Sectie-washes: de drie canvassen waar secties tussen wisselen */
+  --color-wash-navy: #eef2f7; /* koele adem: data/uitleg-secties */
+  --color-wash-amber: #fdf6e9; /* warme adem: mens/actie-secties */
+  /* paneel-wit = --color-paneel hierboven */
+
+  /*
+   * FLUX-KLEURLAAG (besluit Mitch 24 jul, zie BRAND.md "Flux-kleurlaag").
+   * Drie families voor de ingelogde omgeving + gedoseerde site-brede echo.
+   *
+   * SHELL-familie: neutraal bijna-zwart (bewust GEEN navy) voor de
+   * dashboard-sidebar, de donkere analysekaart en zwarte pill-knoppen.
+   * Tekstparen: op-shell op shell 15,5:1 · op-shell-zacht op shell 7,3:1
+   * (ook op shell-hoog nog 6,4:1). shell-lijn is decoratief (hairlines).
+   */
+  --color-shell: #1b1c20; /* het zwarte vlak zelf */
+  --color-shell-hoog: #26272d; /* hover/actief-vlak en verhoogde laag op shell */
+  --color-shell-lijn: #34353c; /* hairlines en randen op shell (decoratief) */
+  --color-op-shell: #f4f4f5; /* primaire tekst op shell (15,5:1) */
+  --color-op-shell-zacht: #a8a9b3; /* secundaire tekst op shell (7,3:1) */
+  --color-canvas: #ececea; /* het lichtgrijze dashboard-canvas rond witte blokken */
+
+  /*
+   * LIME-familie: energie en actie (positieve delta-pills, promo-blok, de
+   * actieve grafiekstaaf, teller-badges). Anker = lime-400 (alias --color-lime).
+   * HARDE tekstregels: lime 50-500 is NOOIT tekst op licht; tekst op
+   * lime-vlakken is shell (13,5:1 op het anker) of inkt (11,9:1).
+   *  - lime-600: kleine graphics/dots op licht (3,6:1 wit · 3,0:1 canvas).
+   *  - lime-700: groot/bold of UI op licht (4,9:1).
+   *  - lime-800 (= lime-diep): lime-TEKST op licht (7,5:1 wit; 7,1:1 op wash).
+   */
+  --color-lime: #d9f154; /* = lime-400, het flux-anker: vlakken en badges */
+  --color-lime-wash: #f8fbe2; /* = lime-50, zachte lime-achtergrond */
+  --color-lime-diep: #4f5a19; /* = lime-800, de lime-tekstkleur op licht */
+  --color-lime-50: #f8fbe2;
+  --color-lime-100: #f1f8c4;
+  --color-lime-200: #e8f596;
+  --color-lime-300: #e1f376;
+  --color-lime-400: #d9f154; /* anker */
+  --color-lime-500: #bcd63a; /* alleen vlak/schaalstap, geen tekst of losse graphic */
+  --color-lime-600: #7e901f; /* graphics op licht (3,6:1 wit / 3,0:1 canvas) */
+  --color-lime-700: #68781b; /* groot/bold of UI op licht (4,9:1) */
+  --color-lime-800: #4f5a19; /* = lime-diep */
+  --color-lime-900: #3d4614;
+  --color-lime-950: #2c330f; /* sluit de schaal (overschaduwt de Tailwind-default) */
+
+  /*
+   * LAVENDEL-familie: de rustige datakant (tweede grafiekreeks, dot-matrix,
+   * metriek-vlakken). Anker = lavendel-300 (alias --color-lavendel).
+   * HARDE tekstregels: lavendel 50-400 is NOOIT tekst op licht; tekst op
+   * lavendel-vlakken is shell (7,9:1 op het anker) of inkt (7,0:1).
+   *  - lavendel-500: graphics/grafiekreeks op licht (3,9:1 wit · 3,3:1 canvas).
+   *  - lavendel-600: tekst-capabel op wit (5,4:1), krap op de wash (4,9:1).
+   *  - lavendel-700 (= lavendel-diep): lavendel-TEKST op licht (7,1:1 wit;
+   *    6,5:1 op wash) en vlak-met-witte-tekst (wit erop 7,1:1).
+   */
+  --color-lavendel: #b3a8f2; /* = lavendel-300, het flux-anker: vlakken en dots */
+  --color-lavendel-wash: #f4f2fd; /* = lavendel-50, zachte lavendel-achtergrond */
+  --color-lavendel-diep: #5a47ad; /* = lavendel-700, de lavendel-tekstkleur op licht */
+  --color-lavendel-50: #f4f2fd;
+  --color-lavendel-100: #e9e5fb;
+  --color-lavendel-200: #d3ccf8;
+  --color-lavendel-300: #b3a8f2; /* anker */
+  --color-lavendel-400: #9c8ce9;
+  --color-lavendel-500: #8371d9; /* grafiekreeks 2 / graphics op licht (3,9:1) */
+  --color-lavendel-600: #6d59c6;
+  --color-lavendel-700: #5a47ad; /* = lavendel-diep */
+  --color-lavendel-800: #483a8b;
+  --color-lavendel-900: #3a3070;
+
+  /* Status */
   --color-positief: #2f6f4f;
   --color-negatief: #9b3535;
-
-  /* Merk-tintenschaal (voor grafieken, hovers, nuance; merk zelf = 800) */
-  --color-merk-50: #f4f7fa;
-  --color-merk-100: #e4ebf2;
-  --color-merk-200: #c3d3e2;
-  --color-merk-300: #97b3cc;
-  --color-merk-400: #6690b2;
-  --color-merk-500: #427298;
-  --color-merk-600: #2f597d;
-  --color-merk-700: #234563;
-  --color-merk-800: #16324f;
-  --color-merk-900: #0f2439;
-
-  /* Statuswashes (zachte achtergronden bij positief/negatief) */
   --color-positief-wash: #ecf4ef;
   --color-negatief-wash: #f9eded;
+
+  /*
+   * EU-energielabelkleuren (A t/m G), overal identiek. Tekst op de badge:
+   * wit op A/E/F/G (>=3:1, badge-letters zijn groot en bold), inkt op B/C/D.
+   */
+  --color-label-a: #2c9b45;
+  --color-label-b: #6bb23a;
+  --color-label-c: #c7c23b;
+  --color-label-d: #e7a12e;
+  --color-label-e: #d26a26;
+  --color-label-f: #d9542b;
+  --color-label-g: #c0392b;
 
   --font-display: "Source Serif 4", Georgia, serif;
   --font-sans: "Inter Variable", -apple-system, "Segoe UI", sans-serif;
 
+  /* Radius-drieslag: kaart 14 / knop pill / input 8. Gedocumenteerde
+   * uitzonderingen: band 20 voor volle-breedte banden en de donkere
+   * analysekaart, en blok 24 voor de grote flux-blokken BINNEN het
+   * dashboard-frame (shell-frame zelf 24-32, exclusief J5). Buiten het
+   * dashboard geldt gewoon kaart 14. */
   --radius-kaart: 14px;
+  --radius-band: 20px;
+  --radius-blok: 24px;
+
+  /*
+   * Gelaagde, navy-getinte schaduwen (prototype-patroon "zweefgevoel").
+   * sm = rustende kaart, md = zwevend element (zoekbalk, dropdown),
+   * lg = opgetild (hover-lift, hero-preview). Nooit pure zwarte drops.
+   */
+  --shadow-zweef: 0 1px 2px rgba(30, 41, 59, 0.06), 0 2px 6px rgba(30, 41, 59, 0.05);
+  --shadow-zweef-md: 0 2px 4px rgba(30, 41, 59, 0.05), 0 8px 18px -4px rgba(30, 41, 59, 0.1);
+  --shadow-zweef-lg: 0 4px 8px rgba(30, 41, 59, 0.05), 0 18px 40px -12px rgba(30, 41, 59, 0.18);
 
   /* Motion: rustig en doelgericht. Enters ease-out, exits ease-in. */
   --duur-micro: 120ms;
@@ -53,6 +181,40 @@
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
 }
 
+:root {
+  /*
+   * MERKGRADIENT navy -> amber: UITSLUITEND voor logo- en merkmomenten
+   * (logo zelf, één merkaccent zoals een hero-onderstreping of de amber-punt
+   * in een grafiek-eindstand). NOOIT als vlakvulling van secties, kaarten of
+   * knoppen. Gebruik: background-image: var(--gradient-merk).
+   */
+  --gradient-merk: linear-gradient(135deg, #1e293b, #f59e0b);
+  /* Hero-wash: éénkleurige tint die naar de achtergrond vervloeit; dit is
+   * sectie-dramaturgie en valt NIET onder de merkgradient-regel. */
+  --gradient-hero-wash: linear-gradient(180deg, var(--color-wash-amber) 0%, rgba(253, 246, 233, 0) 78%);
+  --gradient-hero-wash-navy: linear-gradient(180deg, var(--color-wash-navy) 0%, rgba(238, 242, 247, 0) 78%);
+}
+
+/*
+ * Hover-lift (prototype-patroon): schaduwlaag omhoog + translateY(-2px).
+ * Op de motion-tokens; reduced motion laat het element gewoon staan.
+ */
+.til-op {
+  transition:
+    transform var(--duur-kort) var(--ease-uit),
+    box-shadow var(--duur-kort) var(--ease-uit);
+}
+.til-op:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-zweef-lg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .til-op,
+  .til-op:hover {
+    transform: none;
+  }
+}
+
 html {
   background: var(--color-achtergrond);
   color: var(--color-inkt);
@@ -60,13 +222,18 @@ html {
   -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3 {
-  font-family: var(--font-display);
-  color: var(--color-merk);
-  line-height: 1.15;
-  text-wrap: balance;
+/* In @layer base, zodat Tailwind-utilities (bijv. text-white op de donkere
+ * CtaBand) de kopkleur kunnen overschrijven; ongelaagde CSS zou van elke
+ * utility winnen (cascade layers). */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    color: var(--color-merk);
+    line-height: 1.15;
+    text-wrap: balance;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -146,17 +313,22 @@ h3 {
 }
 /* -------------------------------------------------------------------------
  * Grafiek-tokens (Bklit-chartlaag, her-skinned naar het Wonea-palet).
- * De site is licht (thema-slot in BRAND.md): geen .dark-varianten.
- * Reeksen: merk-tinten; amber alleen als vierde reeks-accent.
+ * De site is licht (thema-slot in BRAND.md): geen .dark-varianten;
+ * de enige donkere grafiekcontext is de scope .chart-op-shell hieronder.
+ * Reeksen (flux-kleurlaag, 24 jul): reeks 1 = merk, reeks 2 = LAVENDEL
+ * (de rustige vergelijkingsreeks), reeks 3/5 = merk-tinten (historie),
+ * reeks 4 = amber-accent. --chart-actueel = LIME voor het actuele punt /
+ * de actieve staaf (op licht de verdiepte lime-600; op shell het anker).
  * ---------------------------------------------------------------------- */
 :root {
   --foreground: var(--color-inkt);
   --muted-foreground: var(--color-gedempt);
   --chart-1: var(--color-merk);
-  --chart-2: var(--color-merk-500);
+  --chart-2: var(--color-lavendel-500);
   --chart-3: var(--color-merk-300);
   --chart-4: var(--color-accent);
   --chart-5: var(--color-merk-200);
+  --chart-actueel: var(--color-lime-600);
   --chart-background: var(--color-paneel);
   --chart-foreground: var(--color-inkt);
   --chart-foreground-muted: var(--color-gedempt);
@@ -207,7 +379,47 @@ h3 {
   --color-chart-scale-04: var(--chart-scale-04);
   --color-chart-scale-05: var(--chart-scale-05);
   --color-chart-scale-pattern-color: var(--chart-scale-pattern-color);
+  --color-chart-actueel: var(--chart-actueel);
 }
+
+/*
+ * Donkere grafiekcontext (flux "donkere analysekaart"): AnalyseKaart in
+ * components/ui.tsx zet deze klasse; elke Bklit-grafiek erbinnen leest dan
+ * automatisch de shell-varianten. Reeksrollen op shell: historie = gedempte
+ * staven (op-shell op lage dekking), vergelijking = lavendel-anker (7,9:1 op
+ * shell), actueel = lime-anker (13,5:1 op shell). Dit is de ENIGE donkere
+ * grafiekcontext; een .dark-thema blijft verboden.
+ */
+.chart-op-shell {
+  --foreground: var(--color-op-shell);
+  --muted-foreground: var(--color-op-shell-zacht);
+  --chart-1: color-mix(in srgb, var(--color-op-shell) 34%, transparent);
+  --chart-2: var(--color-lavendel);
+  --chart-3: color-mix(in srgb, var(--color-op-shell) 20%, transparent);
+  --chart-4: var(--color-accent-300);
+  --chart-5: color-mix(in srgb, var(--color-op-shell) 12%, transparent);
+  --chart-actueel: var(--color-lime);
+  --chart-background: var(--color-shell);
+  --chart-foreground: var(--color-op-shell);
+  --chart-foreground-muted: var(--color-op-shell-zacht);
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-crosshair: var(--color-op-shell-zacht);
+  --chart-grid: var(--color-shell-lijn);
+  --chart-brush-border: var(--chart-grid);
+  --chart-tooltip-background: var(--color-op-shell);
+  --chart-tooltip-foreground: var(--color-shell);
+  --chart-tooltip-muted: var(--color-shell-hoog);
+  --chart-marker-background: var(--color-shell-hoog);
+  --chart-marker-border: var(--color-shell-lijn);
+  --chart-marker-foreground: var(--color-op-shell);
+  --chart-marker-badge-background: var(--color-lime);
+  --chart-marker-badge-foreground: var(--color-shell);
+  --chart-segment-background: var(--color-shell-hoog);
+  --chart-segment-line: var(--color-shell-lijn);
+  --chart-label: var(--color-op-shell-zacht);
+}
+
 /* LET OP voor volgende registry-installs: shadcn injecteert hier soms opnieuw
  * een .dark-blok en kapotte var(----...)-regels; verwijder die dan weer.
  * De grafiek-tokens hierboven zijn de enige bron van waarheid. */

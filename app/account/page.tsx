@@ -8,7 +8,8 @@ import { addresses, claims, consents, users } from "@/db/schema";
 import { currentUser } from "@/lib/auth";
 import { isAddressIdSuppressed } from "@/lib/suppression";
 import { formatDatumNl } from "@/lib/util";
-import { BronLabel, Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
+import { IcoonRondje, KnopSecundair, Pil, SectieLabel } from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
 import { DOEL_LABELS, telActieveSessies, trekConsentIn } from "@/app/account/logic";
 
 export const metadata: Metadata = { title: "Accountinstellingen", robots: { index: false, follow: false } };
@@ -72,7 +73,7 @@ export default async function AccountPagina({ searchParams }: { searchParams: Pr
     .orderBy(desc(consents.consentedAt));
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-10">
+    <div>
       <Link href="/dashboard" className="text-sm font-semibold text-merk underline underline-offset-4">
         Terug naar mijn woningen
       </Link>
@@ -92,8 +93,11 @@ export default async function AccountPagina({ searchParams }: { searchParams: Pr
       ) : null}
 
       <div className="mt-8 space-y-8">
-        <Kaart>
-          <SectieLabel>Account</SectieLabel>
+        <Blok>
+          <div className="flex items-center gap-3">
+            <IcoonRondje naam="schild" tint="merk" />
+            <SectieLabel>Account</SectieLabel>
+          </div>
           <p className="mt-3 text-lg font-semibold">{user.email}</p>
           {userRij ? <p className="mt-1 text-sm text-inkt-zacht">Account sinds {formatDatumNl(userRij.createdAt)}.</p> : null}
           <div className="mt-4 border-t border-lijn pt-4">
@@ -106,10 +110,13 @@ export default async function AccountPagina({ searchParams }: { searchParams: Pr
               keer.
             </p>
           </div>
-        </Kaart>
+        </Blok>
 
-        <Kaart>
-          <SectieLabel>Mijn claims</SectieLabel>
+        <Blok>
+          <div className="flex items-center gap-3">
+            <IcoonRondje naam="huis" tint="merk" />
+            <SectieLabel>Mijn claims</SectieLabel>
+          </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
             Een claim is jouw zelfverklaring dat dit je woning is. Beheren (alerts, hypotheek, rapport delen) doe je op je
             dashboard; opzeggen per woning kan daar ook.
@@ -130,7 +137,7 @@ export default async function AccountPagina({ searchParams }: { searchParams: Pr
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <BronLabel>zelfverklaard {claim.rol}</BronLabel>
+                    <Pil variant="lavendel">zelfverklaard {claim.rol}</Pil>
                     {link ? (
                       <Link href={link} className="text-sm font-semibold text-merk underline underline-offset-4">
                         Woningpagina
@@ -141,10 +148,13 @@ export default async function AccountPagina({ searchParams }: { searchParams: Pr
               ))}
             </ul>
           )}
-        </Kaart>
+        </Blok>
 
-        <Kaart>
-          <SectieLabel>Mijn toestemmingen</SectieLabel>
+        <Blok>
+          <div className="flex items-center gap-3">
+            <IcoonRondje naam="vinkje" tint="merk" />
+            <SectieLabel>Mijn toestemmingen</SectieLabel>
+          </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
             Intrekken is net zo makkelijk als geven: een klik. Ingetrokken toestemmingen blijven hier grijs staan als bewijs
             van wat je wanneer gaf en introk; we handelen er niet meer naar.
@@ -195,33 +205,41 @@ export default async function AccountPagina({ searchParams }: { searchParams: Pr
               })}
             </div>
           )}
-        </Kaart>
+        </Blok>
 
-        <Kaart>
-          <SectieLabel>Inzage in je gegevens</SectieLabel>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
-            Download alles wat Wonea aan jouw account of e-mailadres koppelt als JSON-bestand: account, claims (met
-            hypotheekgegevens), toestemmingen, aanvragen, WOZ-invoer en abonnementen. Machineleesbaar, zodat je het kunt
-            bewaren of meenemen (AVG artikel 15 en 20).
-          </p>
-          <div className="mt-4">
-            <KnopSecundair href="/account/gegevens">Download mijn gegevens</KnopSecundair>
-          </div>
-        </Kaart>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Blok className="flex flex-col">
+            <div className="flex items-center gap-3">
+              <IcoonRondje naam="document" tint="merk" />
+              <SectieLabel>Inzage in je gegevens</SectieLabel>
+            </div>
+            <p className="mt-2 max-w-2xl flex-1 text-sm leading-relaxed text-inkt-zacht">
+              Download alles wat Wonea aan jouw account of e-mailadres koppelt als JSON-bestand: account, claims (met
+              hypotheekgegevens), toestemmingen, aanvragen, WOZ-invoer en abonnementen. Machineleesbaar, zodat je het kunt
+              bewaren of meenemen (AVG artikel 15 en 20).
+            </p>
+            <div className="mt-4">
+              <KnopSecundair href="/account/gegevens">Download mijn gegevens</KnopSecundair>
+            </div>
+          </Blok>
 
-        <Kaart>
-          <SectieLabel>Account opzeggen</SectieLabel>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-inkt-zacht">
-            Opzeggen beeindigt je claims, trekt je toestemmingen in en verwijdert je sessies en je account. Je aanvragen
-            blijven anoniem in onze statistieken staan, zonder je e-mailadres. Het gebeurt pas na een aparte
-            bevestigingsstap; zonder die stap verandert er niets.
-          </p>
-          <div className="mt-4">
-            <Link href="/account/opzeggen" className="text-sm font-semibold text-negatief underline underline-offset-4">
-              Account opzeggen
-            </Link>
-          </div>
-        </Kaart>
+          <Blok className="flex flex-col">
+            <div className="flex items-center gap-3">
+              <IcoonRondje naam="verwijderen" tint="merk" />
+              <SectieLabel>Account opzeggen</SectieLabel>
+            </div>
+            <p className="mt-2 max-w-2xl flex-1 text-sm leading-relaxed text-inkt-zacht">
+              Opzeggen beeindigt je claims, trekt je toestemmingen in en verwijdert je sessies en je account. Je aanvragen
+              blijven anoniem in onze statistieken staan, zonder je e-mailadres. Het gebeurt pas na een aparte
+              bevestigingsstap; zonder die stap verandert er niets.
+            </p>
+            <div className="mt-4">
+              <Link href="/account/opzeggen" className="text-sm font-semibold text-negatief underline underline-offset-4">
+                Account opzeggen
+              </Link>
+            </div>
+          </Blok>
+        </div>
       </div>
     </div>
   );

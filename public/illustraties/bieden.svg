@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180">
-  <line x1="15" y1="145" x2="225" y2="145" stroke="#e4ebf2" stroke-width="3" stroke-linecap="round"/>
-  <polygon points="120,118 104,145 136,145" fill="#235684"/>
-  <line x1="38" y1="115" x2="202" y2="115" stroke="#16324f" stroke-width="3" stroke-linecap="round"/>
-  <rect x="30" y="48" width="52" height="64" rx="6" fill="#f4f7fa" stroke="#16324f" stroke-width="3"/>
-  <path d="M44 79L56 67L68 79Z" fill="#e4ebf2" stroke="#235684" stroke-width="2" stroke-linejoin="round"/>
-  <rect x="48" y="79" width="16" height="18" rx="2" fill="#e4ebf2" stroke="#235684" stroke-width="2"/>
-  <rect x="158" y="48" width="52" height="64" rx="6" fill="#f4f7fa" stroke="#16324f" stroke-width="3"/>
-  <line x1="170" y1="66" x2="198" y2="66" stroke="#6690b2" stroke-width="3" stroke-linecap="round"/>
-  <line x1="170" y1="78" x2="194" y2="78" stroke="#c3d3e2" stroke-width="3" stroke-linecap="round"/>
-  <line x1="170" y1="90" x2="186" y2="90" stroke="#c3d3e2" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="120" cy="115" r="5" fill="#b4740f" stroke="#faf9f7" stroke-width="2"/>
+  <line x1="15" y1="145" x2="225" y2="145" stroke="#e8edf4" stroke-width="3" stroke-linecap="round"/>
+  <polygon points="120,118 104,145 136,145" fill="#33496a"/>
+  <line x1="38" y1="115" x2="202" y2="115" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+  <rect x="30" y="48" width="52" height="64" rx="6" fill="#f5f7fa" stroke="#1e293b" stroke-width="3"/>
+  <path d="M44 79L56 67L68 79Z" fill="#e8edf4" stroke="#33496a" stroke-width="2" stroke-linejoin="round"/>
+  <rect x="48" y="79" width="16" height="18" rx="2" fill="#e8edf4" stroke="#33496a" stroke-width="2"/>
+  <rect x="158" y="48" width="52" height="64" rx="6" fill="#f5f7fa" stroke="#1e293b" stroke-width="3"/>
+  <line x1="170" y1="66" x2="198" y2="66" stroke="#7d97b4" stroke-width="3" stroke-linecap="round"/>
+  <line x1="170" y1="78" x2="194" y2="78" stroke="#cdd9e6" stroke-width="3" stroke-linecap="round"/>
+  <line x1="170" y1="90" x2="186" y2="90" stroke="#cdd9e6" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="120" cy="115" r="5" fill="#f59e0b" stroke="#faf9f7" stroke-width="2"/>
 </svg>

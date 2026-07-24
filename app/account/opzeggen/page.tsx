@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser, destroySession } from "@/lib/auth";
-import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
+import { KnopPrimair, SectieLabel } from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
 import { zegAccountOp } from "@/app/account/logic";
 
 export const metadata: Metadata = { title: "Account opzeggen", robots: { index: false, follow: false } };
@@ -49,7 +50,7 @@ export default async function OpzeggenPagina({ searchParams }: { searchParams: P
   if (!user) redirect("/claim");
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="max-w-2xl py-2">
       <h1 className="text-3xl font-semibold">Account opzeggen</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         Dit is stap twee van twee, voor het account <strong>{user.email}</strong>. Na je bevestiging gebeurt dit, direct en
@@ -65,7 +66,7 @@ export default async function OpzeggenPagina({ searchParams }: { searchParams: P
           zodat onze statistieken kloppen zonder iets over jou te bewaren.
         </li>
       </ul>
-      <Kaart className="mt-8">
+      <Blok className="mt-8">
         <SectieLabel>Goed om te weten</SectieLabel>
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           De publieke woningpagina van je adres staat los van je account en blijft bestaan; die toont alleen openbare data.
@@ -85,7 +86,7 @@ export default async function OpzeggenPagina({ searchParams }: { searchParams: P
           </Link>
           ; zonder bevestiging verandert er niets.
         </p>
-      </Kaart>
+      </Blok>
     </div>
   );
 }

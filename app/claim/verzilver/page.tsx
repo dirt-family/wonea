@@ -7,7 +7,8 @@ import { addresses } from "@/db/schema";
 import { consumeMagicToken, createSession } from "@/lib/auth";
 import { isSuppressed } from "@/lib/suppression";
 import { normalizePostcode } from "@/lib/util";
-import { Kaart, KnopPrimair, SectieLabel } from "@/components/ui";
+import { IcoonRondje, Kaart, KnopPrimair } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 import { CONSENT_TEKST_ALERTS, CONSENT_TEKST_MARKETING } from "@/app/claim/consent-teksten";
 import { verzilverClaim } from "@/app/claim/verzilver/logic";
 
@@ -75,10 +76,15 @@ type SearchParams = {
 function Foutpagina({ titel, tekst, knopHref, knopTekst }: { titel: string; tekst: string; knopHref: string; knopTekst: string }) {
   return (
     <div className="mx-auto max-w-2xl px-5 py-16">
-      <h1 className="text-3xl font-semibold">{titel}</h1>
-      <p className="mt-4 leading-relaxed text-inkt-zacht">{tekst}</p>
-      <div className="mt-8">
-        <KnopPrimair href={knopHref}>{knopTekst}</KnopPrimair>
+      <div className="flex items-start justify-between gap-8">
+        <div className="min-w-0">
+          <h1 className="text-3xl font-semibold">{titel}</h1>
+          <p className="mt-4 leading-relaxed text-inkt-zacht">{tekst}</p>
+          <div className="mt-8">
+            <KnopPrimair href={knopHref}>{knopTekst}</KnopPrimair>
+          </div>
+        </div>
+        <Illustratie naam="lege-staat" className="hidden w-40 shrink-0 sm:block" />
       </div>
     </div>
   );
@@ -152,8 +158,11 @@ export default async function VerzilverPagina({ searchParams }: { searchParams: 
         Eén klik op de knop hieronder en je claim is actief. Dit is wat er dan gebeurt, niets meer:
       </p>
       <Kaart className="mt-8">
-        <SectieLabel>Je bevestigt</SectieLabel>
-        <ul className="mt-3 space-y-2 text-sm leading-relaxed text-inkt">
+        <div className="flex items-center gap-3">
+          <IcoonRondje naam="schild" tint="merk" />
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk">Je bevestigt</p>
+        </div>
+        <ul className="mt-4 space-y-2 text-sm leading-relaxed text-inkt">
           <li>
             Je claimt <strong>{naam}</strong>, {adres.postcode} {adres.plaats}, als {parsed.data.rol}. Dit is een
             zelfverklaring: we controleren geen eigendom en labelen het ook zo.

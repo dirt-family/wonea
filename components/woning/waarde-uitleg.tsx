@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { BronLabel, DeltaPil, Kaart, ModuleTag } from "@/components/ui";
+import { AnalyseKaart, BronLabel, DeltaPil, Kaart, ModuleTag } from "@/components/ui";
+import { WaardeGrafiek } from "@/components/grafieken/waarde-grafiek";
 import { formatEuro } from "@/lib/util";
 import { deltaRichting, formatPct, type MaandPunt, type WozReeksRij } from "@/components/woning/data";
 
@@ -8,6 +9,12 @@ import { deltaRichting, formatPct, type MaandPunt, type WozReeksRij } from "@/co
  * (copy-voice uit PROTOTYPE-OOGST.md) met twee subkaarten: de
  * waardeontwikkeling als staafjes uit de valuation-historie en de WOZ door de
  * jaren. Te weinig meetpunten = eerlijk zeggen, geen grafiek forceren.
+ *
+ * Flux-kleurlaag (BRAND.md, besluit 24 jul): de waardeontwikkeling is de
+ * donkere AnalyseKaart (shell-zwart, radius-band 20). De klasse chart-op-shell
+ * kleurt de WaardeGrafiek automatisch donker: gedempte historie-staven en
+ * precies een actieve staaf in het lime-anker (13,5:1 op shell). Dit is het
+ * ene donkere moment op de woningpagina (thema-slot).
  */
 
 function ConfidenceZin({ confidence, n, niveau }: { confidence: string; n: number; niveau: "straat" | "buurt" }) {
@@ -28,30 +35,21 @@ function maandLabel(maand: string): string {
 function WaardeStaafjes({ punten }: { punten: MaandPunt[] }) {
   if (punten.length < 2) {
     return (
-      <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
+      <p className="text-sm leading-relaxed text-op-shell-zacht">
         De ontwikkeling bouwen we op vanaf de eerste berekening voor dit adres. Er zijn nog te weinig meetpunten voor een
         eerlijke grafiek.
       </p>
     );
   }
-  const waarden = punten.map((p) => p.waarde);
-  const min = Math.min(...waarden);
-  const max = Math.max(...waarden);
-  const span = max - min || 1;
   const eerste = punten[0];
   const laatste = punten[punten.length - 1];
   return (
     <>
-      <div className="mt-4 flex h-24 items-end gap-1.5" aria-hidden="true">
-        {punten.map((p) => (
-          <div
-            key={p.maand}
-            className="flex-1 rounded-t bg-merk-200 last:bg-merk"
-            style={{ height: `${25 + ((p.waarde - min) / span) * 75}%` }}
-          />
-        ))}
-      </div>
-      <p className="mt-3 text-sm tabular-nums text-inkt-zacht">
+      <WaardeGrafiek
+        data={punten.map((p) => ({ label: maandLabel(p.maand), waarde: p.waarde }))}
+        maxLabels={4}
+      />
+      <p className="mt-3 text-sm tabular-nums text-op-shell-zacht">
         Van {formatEuro(eerste.waarde)} ({maandLabel(eerste.maand)}) naar {formatEuro(laatste.waarde)} ({maandLabel(laatste.maand)}).
       </p>
     </>
@@ -119,11 +117,11 @@ export function WaardeUitleg({
       )}
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-lijn p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">Waardeontwikkeling</p>
+        {/* De donkere AnalyseKaart (shell): het ene donkere moment op deze pagina. */}
+        <AnalyseKaart titel="Waardeontwikkeling">
           <WaardeStaafjes punten={punten} />
-        </div>
-        <div className="rounded-lg border border-lijn p-4">
+        </AnalyseKaart>
+        <div className="rounded-[14px] border border-lijn p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">WOZ door de jaren</p>
           <WozJaren rijen={wozRijen} />
         </div>

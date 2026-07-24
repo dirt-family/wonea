@@ -4,24 +4,32 @@ import { db } from "@/lib/db";
 import { marketStats, type addresses, type valuations } from "@/db/schema";
 import { berekenMarktsignalen, formatDoorlooptijd, type DoorlooptijdTrend, type Momentum } from "@/lib/marktsignalen";
 import { formatEuro } from "@/lib/util";
-import { Bandbreedte, BronLabel, Kaart, LegeStaat, SectieLabel, StatTegel, VoorbeelddataLabel } from "@/components/ui";
-import { WaardeGrafiek } from "@/components/dossier/waarde-grafiek";
+import {
+  Bandbreedte,
+  EnergieLabelBadge,
+  GrootCijfer,
+  IcoonRondje,
+  LegeStaat,
+  Pil,
+  SectieLabel,
+  StatTegel,
+} from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
+import { WaardeAnalyse } from "@/components/dossier/waarde-analyse";
+import { waardeDelta } from "@/components/dossier/data";
 
 /**
- * Sectie 1 van het woningdossier: huidige waarde met bandbreedte en
- * betrouwbaarheid, de opgebouwde waardehistorie, de kenmerken en de
- * belangrijkste buurtsignalen als kerncijfers. Geen data = eerlijk leeg.
+ * Sectie 1 van het woningdossier, als flux-blokken (BRAND.md): huidige waarde
+ * met bandbreedte en betrouwbaarheid (het oversized cijfer met lime
+ * delta-pill), de kenmerken, de waardehistorie in de shell-zwarte
+ * analysekaart (de ene donkere band van de pagina) en de buurtsignalen als
+ * stat-tiles met precies een kleurtegel. Geen data = eerlijk leeg.
  */
 
 type Adres = typeof addresses.$inferSelect;
 type Valuation = typeof valuations.$inferSelect;
 
 const MOMENTUM_WOORD: Record<Momentum, string> = { stijgend: "stijgend", vlak: "vlak", dalend: "dalend" };
-const MOMENTUM_RICHTING: Record<Momentum, "positief" | "negatief" | "neutraal"> = {
-  stijgend: "positief",
-  dalend: "negatief",
-  vlak: "neutraal",
-};
 const DOORLOOPTIJD_WOORD: Record<DoorlooptijdTrend, string> = {
   korter: "korter dan eerder",
   gelijk: "stabiel",
@@ -62,17 +70,29 @@ export async function OverzichtSectie({
   ).slice(-12);
   const signalen = berekenMarktsignalen(statRijen);
   const heeftSeedStats = statRijen.some((r) => r.bron === "seed");
+  const delta = waardeDelta(historie);
 
   return (
-    <section id="overzicht" aria-label="Overzicht" className="scroll-mt-6">
-      <h2 className="text-2xl font-semibold">Overzicht</h2>
+    <section id="overzicht" aria-label="Overzicht" className="scroll-mt-24">
+      <div className="flex items-center gap-3">
+        <IcoonRondje naam="huis" tint="merk" maat="l" />
+        <h2 className="text-2xl font-semibold">Overzicht</h2>
+      </div>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-3">
-        <Kaart className="lg:col-span-2">
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Blok className="lg:col-span-2">
           <SectieLabel>Geschatte woningwaarde</SectieLabel>
           {valuation ? (
             <>
-              <p className="mt-3 font-display text-5xl font-semibold text-merk">{formatEuro(valuation.waarde)}</p>
+              <div className="mt-3">
+                <GrootCijfer
+                  waarde={valuation.waarde.toLocaleString("nl-NL")}
+                  eenheid="euro"
+                  delta={delta?.tekst}
+                  deltaRichting={delta?.richting}
+                  deltaTint="lime"
+                />
+              </div>
               <Bandbreedte laag={valuation.intervalLaag} waarde={valuation.waarde} hoog={valuation.intervalHoog} />
               <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
                 <ConfidenceTekst valuation={valuation} niveau={niveau} />
@@ -91,18 +111,18 @@ export async function OverzichtSectie({
               geen getal dan een verzonnen getal.
             </p>
           )}
-        </Kaart>
+        </Blok>
 
-        <Kaart>
+        <Blok>
           <SectieLabel>Kenmerken</SectieLabel>
           <dl className="mt-3 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-gedempt">Bouwjaar</dt>
-              <dd className="font-medium">{adres.bouwjaar}</dd>
+              <dd className="font-medium tabular-nums">{adres.bouwjaar}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gedempt">Woonoppervlakte</dt>
-              <dd className="font-medium">{adres.oppervlakteM2} m2</dd>
+              <dd className="font-medium tabular-nums">{adres.oppervlakteM2} m2</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-gedempt">Type</dt>
@@ -111,10 +131,10 @@ export async function OverzichtSectie({
             <div className="flex justify-between gap-4">
               <dt className="text-gedempt">Energielabel</dt>
               <dd className="text-right font-medium">
-                {adres.energielabel ?? "onbekend"}
+                {adres.energielabel ? <EnergieLabelBadge label={adres.energielabel} klein /> : "onbekend"}
                 {adres.energielabel && adres.energielabelBron === "indicatie" ? (
                   <span className="mt-1 block">
-                    <BronLabel>indicatie op basis van bouwjaar</BronLabel>
+                    <Pil variant="lavendel">indicatie op basis van bouwjaar</Pil>
                   </span>
                 ) : null}
               </dd>
@@ -126,31 +146,29 @@ export async function OverzichtSectie({
               </div>
             ) : null}
           </dl>
-        </Kaart>
+        </Blok>
       </div>
 
-      <Kaart className="mt-5">
-        <SectieLabel>Waardehistorie</SectieLabel>
-        <WaardeGrafiek historie={historie} />
-        {historie.length >= 2 ? (
-          <p className="mt-2 text-xs text-gedempt">
-            Elke berekening van ons model is een punt; de waarde schommelt dus nooit onverklaard.
-          </p>
-        ) : null}
-      </Kaart>
+      <div className="mt-4">
+        <WaardeAnalyse historie={historie} />
+      </div>
 
       <div className="mt-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SectieLabel>Signalen uit de buurt</SectieLabel>
-          {heeftSeedStats && signalen ? <VoorbeelddataLabel /> : null}
+          {heeftSeedStats && signalen ? (
+            <span className="block max-w-72 text-right text-[11px] font-medium leading-snug text-lavendel-diep">
+              Voorbeelddata: in deze testfase tonen we fictieve verkopen op buurtniveau, niet gekoppeld aan echte adressen
+            </span>
+          ) : null}
         </div>
         {signalen ? (
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
             <StatTegel
+              tint={signalen.momentum === "stijgend" ? "lime" : "lavendel"}
               label="Buurtmomentum"
               waarde={MOMENTUM_WOORD[signalen.momentum]}
               delta={`${pctMetTeken(signalen.momentumPct)} vergeleken met de drie maanden ervoor`}
-              deltaRichting={MOMENTUM_RICHTING[signalen.momentum]}
             />
             <StatTegel
               label="Doorlooptijd"

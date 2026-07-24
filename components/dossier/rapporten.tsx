@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Kaart, KnopSecundair, SectieLabel } from "@/components/ui";
+import { IcoonRondje, KnopSecundair, SectieLabel } from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
 import { CONSENT_TEKST_ALERTS } from "@/app/claim/consent-teksten";
 import { zetAlerts, zegClaimOp } from "@/app/dashboard/actions";
 import { DeelRapport } from "@/components/dossier/deel-rapport";
@@ -26,11 +27,16 @@ export function RapportenSectie({
   adresQuery: string;
 }) {
   return (
-    <section id="rapporten" aria-label="Rapporten en alerts" className="scroll-mt-6">
-      <h2 className="text-2xl font-semibold">Rapporten en alerts</h2>
+    <section id="rapporten" aria-label="Rapporten en alerts" className="scroll-mt-24">
+      <div className="flex items-center gap-3">
+        <IcoonRondje naam="document" tint="merk" maat="l" />
+        <h2 className="text-2xl font-semibold">Rapporten en alerts</h2>
+      </div>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-2">
-        <Kaart>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {/* Eigen anker voor de sidebar-link "Waarde-alerts". */}
+        <div id="alerts" className="scroll-mt-24">
+        <Blok className="h-full">
           <SectieLabel>Waarde-alerts</SectieLabel>
           {alertsActief ? (
             <>
@@ -60,19 +66,20 @@ export function RapportenSectie({
               <KnopSecundair type="submit">Zet alerts aan</KnopSecundair>
             </form>
           )}
-        </Kaart>
+        </Blok>
+        </div>
 
-        <Kaart>
+        <Blok>
           <SectieLabel>Deel je rapport</SectieLabel>
           <p className="mt-2 mb-3 text-sm leading-relaxed text-inkt-zacht">
             Een deelbare link toont alleen gegevens die ook op de publieke woningpagina staan, niets uit dit dossier.
             Intrekken kan altijd.
           </p>
           <DeelRapport claimId={claimId} links={deelLinks} />
-        </Kaart>
+        </Blok>
       </div>
 
-      <Kaart className="mt-5">
+      <Blok className="mt-5">
         <SectieLabel>Beheer</SectieLabel>
         <div className="mt-3 space-y-4 text-sm leading-relaxed text-inkt-zacht">
           <div>
@@ -100,7 +107,7 @@ export function RapportenSectie({
             </Link>
           </div>
         </div>
-      </Kaart>
+      </Blok>
     </section>
   );
 }

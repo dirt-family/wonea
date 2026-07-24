@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { inputClass } from "@/components/ui";
+import { Icoon } from "@/components/iconen";
 
 type Suggestie = { label: string; url: string };
 
@@ -65,6 +65,11 @@ export function Zoekbalk({ placeholder = "Zoek op straat, huisnummer of postcode
 
   return (
     <div ref={wrap} className="relative w-full max-w-xl">
+      {/* Zwevende zoekbalk (huisstijl v3): gelaagde schaduw, zoekicoon in
+          merk-navy, focus-ring in de merkkleur. Input-radius blijft 8px. */}
+      <span aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-merk">
+        <Icoon naam="zoek" maat="m" />
+      </span>
       <input
         type="text"
         value={q}
@@ -72,7 +77,7 @@ export function Zoekbalk({ placeholder = "Zoek op straat, huisnummer of postcode
         onKeyDown={onKeyDown}
         onFocus={() => suggesties.length > 0 && setOpen(true)}
         placeholder={placeholder}
-        className={`${inputClass} py-4 text-base shadow-sm`}
+        className="w-full rounded-lg border border-lijn bg-paneel py-4 pl-12 pr-4 text-base text-inkt shadow-zweef-md transition-shadow placeholder:text-gedempt focus:border-merk focus:shadow-zweef-lg focus:outline-none focus:ring-4 focus:ring-merk-200/60"
         role="combobox"
         aria-expanded={open}
         aria-controls="zoek-suggesties"
@@ -83,7 +88,7 @@ export function Zoekbalk({ placeholder = "Zoek op straat, huisnummer of postcode
         <ul
           id="zoek-suggesties"
           role="listbox"
-          className="absolute z-20 mt-2 w-full overflow-hidden rounded-[14px] border border-lijn bg-paneel shadow-lg"
+          className="absolute z-20 mt-2 w-full overflow-hidden rounded-[14px] border border-lijn bg-paneel shadow-zweef-lg"
         >
           {suggesties.map((s, i) => (
             <li key={s.url} role="option" aria-selected={i === actief}>

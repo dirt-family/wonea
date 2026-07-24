@@ -40,7 +40,7 @@ function Sectie({ sectie }: { sectie: GidsSectie }) {
         </p>
       ))}
       {sectie.cijfers ? (
-        <dl className="mt-5 rounded-[14px] border border-lijn bg-paneel px-5">
+        <dl className="mt-5 rounded-[14px] border border-lijn bg-paneel px-5 shadow-zweef">
           {sectie.cijfers.map((rij) => (
             <div
               key={rij.label}
@@ -120,7 +120,7 @@ export default async function GidsArtikelPagina({ params }: { params: Promise<Pa
       </p>
 
       {toonInhoudsopgave ? (
-        <nav aria-label="Inhoudsopgave" className="mt-8 rounded-[14px] border border-lijn bg-paneel p-5">
+        <nav aria-label="Inhoudsopgave" className="mt-8 rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef">
           <p className="text-sm font-semibold text-inkt">Op deze pagina</p>
           <ol className="mt-2 space-y-1.5 text-sm">
             {artikel.secties.map((sectie) => (
@@ -151,7 +151,7 @@ export default async function GidsArtikelPagina({ params }: { params: Promise<Pa
         ))}
       </div>
 
-      <section className="mt-12 rounded-[14px] border border-lijn bg-paneel p-6">
+      <section className="mt-12 rounded-[14px] border border-lijn bg-paneel p-6 shadow-zweef">
         <h2 className="text-xl font-semibold">Bronnen en peildatum</h2>
         <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
           Elk bedrag in dit artikel komt rechtstreeks uit deze bronnen. Wijzigt een regeling, dan werken we het artikel

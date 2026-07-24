@@ -106,6 +106,37 @@ export function marktschattingPerJaar(
 }
 
 // ---------------------------------------------------------------------------
+// Waarde-delta uit de historie (voor de delta-pill bij het grote cijfer)
+// ---------------------------------------------------------------------------
+
+export type WaardeDelta = {
+  /** Procentuele ontwikkeling van eerste naar laatste punt, 1 decimaal. */
+  pct: number;
+  richting: "op" | "neer" | "vlak";
+  /** Delta-pill-tekst, bijv. "+4,2%". */
+  tekst: string;
+};
+
+/**
+ * Ontwikkeling over de opgebouwde waardehistorie: laatste punt ten opzichte
+ * van het eerste, als percentage. Minder dan 2 punten of een eerste waarde
+ * van 0 geeft null (geen delta zonder echte reeks). Bewegingen kleiner dan
+ * 0,05% tellen als vlak.
+ */
+export function waardeDelta(historie: { datum: string; waarde: number }[]): WaardeDelta | null {
+  if (historie.length < 2) return null;
+  const gesorteerd = [...historie].sort((a, b) => (a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : 0));
+  const eerste = gesorteerd[0].waarde;
+  const laatste = gesorteerd[gesorteerd.length - 1].waarde;
+  if (!Number.isFinite(eerste) || eerste <= 0 || !Number.isFinite(laatste)) return null;
+  const pct = Math.round(((laatste - eerste) / eerste) * 1000) / 10;
+  const richting = Math.abs(pct) < 0.05 ? "vlak" : pct > 0 ? "op" : "neer";
+  const abs = Math.abs(pct).toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  const tekst = richting === "vlak" ? "0%" : `${pct > 0 ? "+" : "-"}${abs}%`;
+  return { pct, richting, tekst };
+}
+
+// ---------------------------------------------------------------------------
 // WOZ-rijen per peiljaar (eigen invoer wint van voorbeelddata)
 // ---------------------------------------------------------------------------
 

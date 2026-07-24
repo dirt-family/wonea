@@ -4,7 +4,8 @@ import { getEnergielabel } from "@/lib/bronnen/energielabel";
 import { ISDE_PEILDATUM } from "@/lib/normen/isde-2026";
 import { BESPARING_PEILDATUM } from "@/lib/normen/besparing";
 import { formatDatumNl, formatEuro } from "@/lib/util";
-import { BronLabel, Kaart, SectieLabel, StatTegel } from "@/components/ui";
+import { EnergieLabelBadge, IcoonRondje, Pil, SectieLabel, StatTegel } from "@/components/ui";
+import { Blok } from "@/components/dossier/blok";
 import {
   extraLeenruimteBijLabel,
   formatEuroBereik,
@@ -40,18 +41,27 @@ export async function EnergieSectie({ adres, adresQuery }: { adres: Adres; adres
   const leenruimte = extraLeenruimteBijLabel(label);
 
   return (
-    <section id="energie" aria-label="Energie en verduurzaming" className="scroll-mt-6">
-      <h2 className="text-2xl font-semibold">Energie en verduurzaming</h2>
+    <section id="energie" aria-label="Energie en verduurzaming" className="scroll-mt-24">
+      <div className="flex items-center gap-3">
+        <IcoonRondje naam="blad" tint="merk" maat="l" />
+        <h2 className="text-2xl font-semibold">Energie en verduurzaming</h2>
+      </div>
 
-      <div className="mt-4 grid gap-5 lg:grid-cols-3">
-        <Kaart className="lg:col-span-2">
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Blok className="lg:col-span-2">
           <SectieLabel>Energielabel</SectieLabel>
           <div className="mt-3 flex items-center gap-4">
-            <span className="flex h-14 min-w-14 items-center justify-center rounded-lg bg-merk px-2 font-display text-3xl font-semibold text-white">
-              {label ?? "?"}
-            </span>
+            {label ? (
+              <span className="[&>span]:h-14 [&>span]:w-14 [&>span]:text-2xl">
+                <EnergieLabelBadge label={label} />
+              </span>
+            ) : (
+              <span className="flex h-14 min-w-14 items-center justify-center rounded-lg bg-merk px-2 font-display text-3xl font-semibold text-white">
+                ?
+              </span>
+            )}
             <div>
-              <BronLabel>{labelBronTekst}</BronLabel>
+              <Pil variant="lavendel">{labelBronTekst}</Pil>
               <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
                 {label
                   ? "Het label telt mee in de waarde en bepaalt de extra leenruimte voor verduurzaming hiernaast."
@@ -59,8 +69,9 @@ export async function EnergieSectie({ adres, adresQuery }: { adres: Adres; adres
               </p>
             </div>
           </div>
-        </Kaart>
+        </Blok>
         <StatTegel
+          tint={leenruimte ? "lime" : "paneel"}
           label="Extra leenruimte verduurzaming"
           waarde={leenruimte ? formatEuro(leenruimte.bedrag) : "onbekend"}
           delta={
@@ -73,7 +84,7 @@ export async function EnergieSectie({ adres, adresQuery }: { adres: Adres; adres
         />
       </div>
 
-      <Kaart className="mt-5">
+      <Blok className="mt-5">
         <SectieLabel>Wat levert verduurzamen op voor dit huis</SectieLabel>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full text-sm">
@@ -114,7 +125,7 @@ export async function EnergieSectie({ adres, adresQuery }: { adres: Adres; adres
         >
           Volledig advies per maatregel, met alle bronnen en uitleg
         </Link>
-      </Kaart>
+      </Blok>
     </section>
   );
 }

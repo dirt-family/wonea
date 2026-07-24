@@ -1,10 +1,8 @@
-import Link from "next/link";
-
 /**
- * Rustige sectienavigatie van het woningdossier: op grote schermen een
- * linkerkolom die meescrolt (sticky), op kleine schermen een horizontale
- * rij. Gewone ankerlinks, geen tabs en geen JavaScript: elke sectie staat
- * gewoon op de pagina en is direct linkbaar.
+ * Sectienavigatie van het woningdossier: een horizontale rij pill-links onder
+ * de dossierkop (de hoofdnavigatie zit sinds de app-shell in de navy
+ * sidebar). Gewone ankerlinks, geen tabs en geen JavaScript: elke sectie
+ * staat gewoon op de pagina en is direct linkbaar.
  */
 
 export const DOSSIER_SECTIES = [
@@ -17,26 +15,21 @@ export const DOSSIER_SECTIES = [
 
 export type DossierSectieId = (typeof DOSSIER_SECTIES)[number]["id"];
 
-export function DossierNav({ terugHref }: { terugHref: string }) {
+export function DossierNav() {
   return (
-    <nav aria-label="Dossiersecties" className="lg:sticky lg:top-6">
-      <ul className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0">
+    <nav aria-label="Dossiersecties">
+      <ul className="flex gap-2 overflow-x-auto pb-1">
         {DOSSIER_SECTIES.map((sectie) => (
           <li key={sectie.id} className="shrink-0">
             <a
               href={`#${sectie.id}`}
-              className="block whitespace-nowrap rounded-full border border-lijn bg-paneel px-4 py-2 text-sm font-medium text-inkt-zacht transition-colors hover:border-merk hover:text-merk lg:whitespace-normal lg:rounded-lg lg:border-0 lg:bg-transparent lg:px-3"
+              className="block whitespace-nowrap rounded-full bg-paneel px-4 py-2 text-sm font-medium text-inkt-zacht shadow-zweef transition-colors hover:text-merk focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-merk"
             >
               {sectie.titel}
             </a>
           </li>
         ))}
       </ul>
-      <div className="mt-2 hidden border-t border-lijn pt-3 lg:block">
-        <Link href={terugHref} className="block px-3 text-sm text-gedempt transition-colors hover:text-merk">
-          Terug naar mijn woningen
-        </Link>
-      </div>
     </nav>
   );
 }

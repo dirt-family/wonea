@@ -1,4 +1,4 @@
-import { BronLabel, EnergieLabelBadge, Kaart, KnopSecundair } from "@/components/ui";
+import { BronLabel, EnergieLabelBadge, IcoonRondje, Kaart, KnopSecundair } from "@/components/ui";
 import { formatDatumNl, formatEuro } from "@/lib/util";
 import type { Woningtype } from "@/db/schema";
 import {
@@ -44,7 +44,10 @@ export function EnergieModule({
 
   return (
     <Kaart>
-      <h2 className="text-xl font-semibold">Energie en verduurzamen</h2>
+      <div className="flex items-center gap-3">
+        <IcoonRondje naam="blad" tint="amber" />
+        <h2 className="text-xl font-semibold">Energie en verduurzamen</h2>
+      </div>
 
       <div className="mt-4 flex items-center gap-3">
         {energielabel ? (

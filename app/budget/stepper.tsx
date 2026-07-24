@@ -3,20 +3,22 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  BandbreedteInvaart,
   GerelateerdeRekenhulpen,
+  KeuzeKaart,
   RekenModule,
   RekenmoduleSamenvatting,
+  UitkomstMoment,
   type SamenvattingRij,
   type StapDefinitie,
 } from "@/components/rekenmodule";
 import {
-  Bandbreedte,
+  EnergieLabelBadge,
   inputClass,
   LeadCta,
   SectieLabel,
   StatTegel,
   UitklapUitleg,
-  UitkomstKaart,
   Veld,
 } from "@/components/ui";
 import { formatEuro } from "@/lib/format";
@@ -51,7 +53,19 @@ export type RenteVoorinvulling = {
   bron: string;
 };
 
-const radioCls = "flex items-center gap-3 rounded-lg border border-lijn px-4 py-3 text-sm text-inkt";
+/**
+ * Badge-letters per labelklasse, puur voor de keuzekaarten (UI-metadata,
+ * geen rekenregel): A+-varianten tonen we als A, zoals overal op Wonea.
+ */
+const LABEL_BADGES: Record<EnergielabelKlasse, string[]> = {
+  A4PlusGarantie: ["A"],
+  A4Plus: ["A"],
+  A3Plus: ["A"],
+  APlus_APlusPlus: ["A"],
+  AB: ["A", "B"],
+  CD: ["C", "D"],
+  EFG: ["E", "F", "G"],
+};
 
 function parseBedrag(s: string): number | null {
   if (!s.trim()) return null;
@@ -197,20 +211,15 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
               {RENTEVAST_KEUZES.map((keuze) => {
                 const dnb = voorinvulling.perKeuze[keuze];
                 return (
-                  <label key={keuze} className={radioCls}>
-                    <input
-                      type="radio"
-                      name="rentevast_keuze"
-                      value={keuze}
-                      checked={rentevast === keuze}
-                      onChange={() => kiesRentevast(keuze)}
-                      className="accent-merk"
-                    />
-                    <span className="flex-1">{keuze} jaar rentevast</span>
-                    {dnb !== undefined ? (
-                      <span className="text-xs text-gedempt">gemiddeld {renteTekst(dnb)}%</span>
-                    ) : null}
-                  </label>
+                  <KeuzeKaart
+                    key={keuze}
+                    naam="rentevast_keuze"
+                    waarde={String(keuze)}
+                    checked={rentevast === keuze}
+                    onKies={() => kiesRentevast(keuze)}
+                    titel={`${keuze} jaar rentevast`}
+                    meta={dnb !== undefined ? `gemiddeld ${renteTekst(dnb)}%` : undefined}
+                  />
                 );
               })}
             </div>
@@ -257,15 +266,9 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
           </Veld>
           <fieldset>
             <legend className="mb-2 block text-sm font-medium text-inkt">Heb je de AOW-leeftijd bereikt?</legend>
-            <div className="flex gap-6 text-sm text-inkt">
-              <label className="flex items-center gap-2">
-                <input type="radio" name="aow_keuze" value="nee" checked={aow === "nee"} onChange={() => setAow("nee")} className="accent-merk" />
-                Nee
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="aow_keuze" value="ja" checked={aow === "ja"} onChange={() => setAow("ja")} className="accent-merk" />
-                Ja
-              </label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <KeuzeKaart naam="aow_keuze" waarde="nee" checked={aow === "nee"} onKies={() => setAow("nee")} titel="Nee" />
+              <KeuzeKaart naam="aow_keuze" waarde="ja" checked={aow === "ja"} onKies={() => setAow("ja")} titel="Ja" />
             </div>
             <p className="mt-2 text-xs text-gedempt">
               Vanaf de AOW-leeftijd gelden andere financieringslastpercentages. Vraag je samen aan en heeft een van jullie
@@ -290,31 +293,27 @@ export function BudgetStepper({ voorinvulling }: { voorinvulling: RenteVoorinvul
           <fieldset>
             <legend className="sr-only">Energielabel</legend>
             <div className="space-y-2">
-              <label className={radioCls}>
-                <input
-                  type="radio"
-                  name="label_keuze"
-                  value=""
-                  checked={label === ""}
-                  onChange={() => setLabel("")}
-                  className="accent-merk"
-                />
-                <span className="flex-1">Weet ik niet of nog geen woning op het oog</span>
-                <span className="text-xs text-gedempt">geen labelbedrag</span>
-              </label>
+              <KeuzeKaart
+                naam="label_keuze"
+                waarde=""
+                checked={label === ""}
+                onKies={() => setLabel("")}
+                titel="Weet ik niet of nog geen woning op het oog"
+                meta="geen labelbedrag"
+              />
               {ENERGIELABEL_OPTIES.map((o) => (
-                <label key={o.klasse} className={radioCls}>
-                  <input
-                    type="radio"
-                    name="label_keuze"
-                    value={o.klasse}
-                    checked={label === o.klasse}
-                    onChange={() => setLabel(o.klasse)}
-                    className="accent-merk"
-                  />
-                  <span className="flex-1">{o.label}</span>
-                  <span className="text-xs text-gedempt">{o.bedrag > 0 ? `+ ${formatEuro(o.bedrag)}` : "geen extra bedrag"}</span>
-                </label>
+                <KeuzeKaart
+                  key={o.klasse}
+                  naam="label_keuze"
+                  waarde={o.klasse}
+                  checked={label === o.klasse}
+                  onKies={() => setLabel(o.klasse)}
+                  voor={LABEL_BADGES[o.klasse].map((b) => (
+                    <EnergieLabelBadge key={b} label={b} klein />
+                  ))}
+                  titel={o.label}
+                  meta={o.bedrag > 0 ? `+ ${formatEuro(o.bedrag)}` : "geen extra bedrag"}
+                />
               ))}
             </div>
             <p className="mt-2 text-xs text-gedempt">
@@ -380,10 +379,10 @@ function Uitkomst({
 
   return (
     <div className="space-y-5">
-      <UitkomstKaart label="Maximale hypotheek (indicatie)" bedrag={formatEuro(u.maximaal)}>
+      <UitkomstMoment label="Maximale hypotheek (indicatie)" waarde={formatEuro(u.maximaal)}>
         {u.maximaal > 0 ? (
           <>
-            <Bandbreedte laag={u.laag} waarde={u.maximaal} hoog={u.hoog} />
+            <BandbreedteInvaart laag={u.laag} waarde={u.maximaal} hoog={u.hoog} />
             <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
               De bandbreedte is een indicatiemarge van {INDICATIE_MARGE_PCT}% omlaag en omhoog. Je exacte leenruimte hangt
               af van je volledige situatie en het acceptatiebeleid van de geldverstrekker; een hypotheekadviseur rekent
@@ -401,7 +400,7 @@ function Uitkomst({
           Berekend volgens de wettelijke leennormen 2026 (Staatscourant 2025, 36471, geldend vanaf 1 januari 2026). Een
           indicatie, geen offerte.
         </p>
-      </UitkomstKaart>
+      </UitkomstMoment>
 
       {u.maximaal > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2">
@@ -409,7 +408,11 @@ function Uitkomst({
             label="Bruto maandlast"
             waarde={`${formatEuro(u.maandlast)} p/m`}
             delta={`bij ${renteTekst(u.toetsrente)}% toetsrente, 30 jaar annuitair`}
+            tint="merk"
           />
+          {/* Flux-echo: extra leenruimte is de positieve delta van deze
+              uitkomst; bij een echt bedrag wordt dit de ene lime-kleurtegel
+              van de rij (tekst shell, zie BRAND.md Flux-kleurlaag). */}
           <StatTegel
             label="Extra leenruimte door energielabel"
             waarde={formatEuro(u.labelExtra)}
@@ -420,6 +423,7 @@ function Uitkomst({
                   : "bij label E, F of G hoort geen extra bedrag"
                 : "geen energielabel opgegeven"
             }
+            tint={u.labelExtra > 0 ? "lime" : "merk"}
           />
         </div>
       ) : null}
@@ -433,7 +437,7 @@ function Uitkomst({
       ) : null}
 
       {u.maximaal > 0 ? (
-        <div className="rounded-[14px] border border-lijn bg-paneel p-5">
+        <div className="rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef">
           <SectieLabel>NHG-indicatie</SectieLabel>
           {u.nhgMogelijk ? (
             <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">

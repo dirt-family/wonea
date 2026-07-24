@@ -10,7 +10,7 @@ import { breadcrumbJsonLd, jsonLdScriptProps, woningJsonLd, type Kruimel } from 
 import { getOrCreateValuation, valuationHistorie } from "@/lib/valuation";
 import { getRenteBucket, peilmaandLabel } from "@/lib/bronnen/rentes";
 import { baseUrl, formatEuro } from "@/lib/util";
-import { DeltaPil, Kaart, ModuleTag } from "@/components/ui";
+import { GrootCijfer, Kaart, ModuleTag } from "@/components/ui";
 import {
   deltaRichting,
   formatPct,
@@ -161,14 +161,17 @@ export default async function WoningPagina({ params }: { params: Promise<WoningP
           </p>
         </div>
         {valuation ? (
-          <div className="sm:text-right">
+          <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-gedempt">Geschatte waarde</p>
-            <p className="mt-1 font-display text-4xl font-semibold tabular-nums text-merk">{formatEuro(valuation.waarde)}</p>
-            {jaarPct !== null ? (
-              <p className="mt-2">
-                <DeltaPil richting={deltaRichting(jaarPct)}>{formatPct(jaarPct)} in een jaar</DeltaPil>
-              </p>
-            ) : null}
+            <div className="mt-1">
+              {/* Flux-patroon groot-cijfer-plus-lime-delta: alleen "op" wordt een vol lime-vlak. */}
+              <GrootCijfer
+                waarde={formatEuro(valuation.waarde)}
+                delta={jaarPct !== null ? `${formatPct(jaarPct)} in een jaar` : undefined}
+                deltaRichting={jaarPct !== null ? deltaRichting(jaarPct) : undefined}
+                deltaTint="lime"
+              />
+            </div>
           </div>
         ) : null}
       </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { inputClass, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
+import { inputClass, KnopPrimair, StappenBalk, Veld } from "@/components/ui";
 import { formatEuro } from "@/lib/format";
 import { verstuurHypotheekLead } from "@/app/hypotheek/actions";
 import { HYPOTHEEK_CONSENT_TEKST, HYPOTHEEK_PARTIJ_TYPE } from "@/app/hypotheek/consent-tekst";
@@ -160,15 +160,22 @@ export function HypotheekStepper({ subtype, adres, waarde }: Props) {
     ];
   }
 
-  const radioCls = "flex items-center gap-3 rounded-lg border border-lijn px-4 py-3 text-sm text-inkt";
+  /** Optie-rij met zichtbare gekozen-staat (zelfde patroon als de verduurzamen-stepper). */
+  const radioCls = (gekozen: boolean) =>
+    `flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors ${
+      gekozen ? "border-merk bg-merk-wash text-inkt" : "border-lijn bg-paneel text-inkt hover:border-merk"
+    }`;
 
   return (
     <div>
-      <SectieLabel>Stap {stap + 1} van 3</SectieLabel>
-      <h2 className="mt-2 text-xl font-semibold">{STAP_TITELS[subtype][stap]}</h2>
+      <StappenBalk stappen={[...STAP_TITELS[subtype]]} actief={stap} />
+      <h2 className="mt-4 text-xl font-semibold">{STAP_TITELS[subtype][stap]}</h2>
 
       {fout ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{fout}</p>
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+          {fout}
+        </p>
       ) : null}
 
       {/* Stap 1 */}
@@ -207,8 +214,8 @@ export function HypotheekStepper({ subtype, adres, waarde }: Props) {
           </Veld>
           {basisWaarde != null && restantNum != null ? (
             <div className="rounded-lg bg-merk-wash p-4">
-              <SectieLabel>Indicatie van je overwaarde</SectieLabel>
-              <p className="mt-2 font-display text-2xl font-semibold text-merk">{formatEuro(basisWaarde - restantNum)}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk">Indicatie van je overwaarde</p>
+              <p className="mt-2 font-display text-2xl font-semibold tabular-nums text-merk">{formatEuro(basisWaarde - restantNum)}</p>
               {waarde ? (
                 <p className="mt-1 text-sm text-inkt-zacht">
                   Bandbreedte {formatEuro(waarde.laag - restantNum)} tot {formatEuro(waarde.hoog - restantNum)}
@@ -249,7 +256,7 @@ export function HypotheekStepper({ subtype, adres, waarde }: Props) {
           <legend className="mb-2 block text-sm font-medium text-inkt">In welke fase zit je?</legend>
           <div className="space-y-2">
             {AANKOOP_FASES.map((fase) => (
-              <label key={fase} className={radioCls}>
+              <label key={fase} className={radioCls(a.fase === fase)}>
                 <input
                   type="radio"
                   name="fase_keuze"
@@ -271,7 +278,7 @@ export function HypotheekStepper({ subtype, adres, waarde }: Props) {
           <legend className="mb-2 block text-sm font-medium text-inkt">Wat zou je met de overwaarde willen doen?</legend>
           <div className="space-y-2">
             {OVERWAARDE_DOELEN.map((doel) => (
-              <label key={doel} className={radioCls}>
+              <label key={doel} className={radioCls(a.doel === doel)}>
                 <input
                   type="radio"
                   name="doel_keuze"

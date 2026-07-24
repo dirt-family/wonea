@@ -14,7 +14,7 @@ import {
 } from "@/lib/woningmarkt";
 import { VerkopenGrafiek } from "@/components/grafieken/verkopen-grafiek";
 import { baseUrl, formatEuro } from "@/lib/util";
-import { Kaart, KnopPrimair, KnopSecundair, StatTegel, VoorbeelddataLabel } from "@/components/ui";
+import { Kaart, StatTegel, VoorbeelddataLabel, WoningKaart } from "@/components/ui";
 
 /**
  * /woningmarkt/[plaats]: plaatspagina met kerncijfers, buurten-grid, recente
@@ -104,15 +104,17 @@ export default async function PlaatsPagina({ params }: { params: Promise<Params>
         tonen we altijd als bandbreedte.
       </p>
 
+      {/* Stat-tiles op tint (v3): navy-wash als basis, de WOZ als het ene amber-accent. */}
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTegel label="Woningen in beeld" waarde={kerncijfers.aantalWoningen.toLocaleString("nl-NL")} />
-        <StatTegel label="Buurten" waarde={kerncijfers.aantalBuurten.toLocaleString("nl-NL")} />
+        <StatTegel label="Woningen in beeld" waarde={kerncijfers.aantalWoningen.toLocaleString("nl-NL")} tint="merk" />
+        <StatTegel label="Buurten" waarde={kerncijfers.aantalBuurten.toLocaleString("nl-NL")} tint="merk" />
         {kerncijfers.gemWoz != null ? (
           <StatTegel
             label="Gemiddelde WOZ"
             waarde={formatEuro(kerncijfers.gemWoz)}
             delta="gemiddelde van de buurtcijfers, CBS"
             deltaRichting="neutraal"
+            tint="amber"
           />
         ) : null}
         {kerncijfers.inwoners != null ? (
@@ -121,6 +123,7 @@ export default async function PlaatsPagina({ params }: { params: Promise<Params>
             waarde={kerncijfers.inwoners.toLocaleString("nl-NL")}
             delta="bron: CBS"
             deltaRichting="neutraal"
+            tint="merk"
           />
         ) : null}
       </div>
@@ -136,7 +139,7 @@ export default async function PlaatsPagina({ params }: { params: Promise<Params>
               <Link
                 key={buurt.buurtCode}
                 href={`/buurt/${gemeente.slug}/${buurt.slug}`}
-                className="block rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
+                className="til-op block rounded-[14px] border border-lijn bg-paneel p-5 shadow-zweef focus:outline-2 focus:outline-offset-2 focus:outline-merk"
               >
                 <p className="font-semibold text-inkt">{buurt.naam}</p>
                 <dl className="mt-3 space-y-1 text-sm">
@@ -183,30 +186,31 @@ export default async function PlaatsPagina({ params }: { params: Promise<Params>
           ) : null}
           {verkopen.length > 0 ? (
             <div className="mt-4 overflow-x-auto">
+              {/* Tint-zebra (v3): even rijen op navy-wash in plaats van lijnen onder elke rij. */}
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-lijn text-left text-xs uppercase tracking-wide text-gedempt">
-                    <th className="py-2 pr-4 font-medium">Wanneer</th>
-                    <th className="py-2 pr-4 font-medium">Buurt</th>
-                    <th className="py-2 pr-4 font-medium">Straat</th>
-                    <th className="py-2 pr-4 font-medium">Prijs</th>
-                    <th className="py-2 pr-4 font-medium">Oppervlakte</th>
-                    <th className="py-2 font-medium">Type</th>
+                    <th className="px-3 py-2 font-medium">Wanneer</th>
+                    <th className="px-3 py-2 font-medium">Buurt</th>
+                    <th className="px-3 py-2 font-medium">Straat</th>
+                    <th className="px-3 py-2 font-medium">Prijs</th>
+                    <th className="px-3 py-2 font-medium">Oppervlakte</th>
+                    <th className="px-3 py-2 font-medium">Type</th>
                   </tr>
                 </thead>
                 <tbody>
                   {verkopen.map((verkoop) => (
-                    <tr key={verkoop.id} className="border-b border-lijn last:border-0">
-                      <td className="py-2.5 pr-4">{maandFmt.format(new Date(verkoop.datum))}</td>
-                      <td className="py-2.5 pr-4">
+                    <tr key={verkoop.id} className="even:bg-merk-50">
+                      <td className="rounded-l-lg px-3 py-2.5">{maandFmt.format(new Date(verkoop.datum))}</td>
+                      <td className="px-3 py-2.5">
                         <Link href={`/buurt/${gemeente.slug}/${verkoop.buurtSlug}`} className="text-merk hover:underline">
                           {verkoop.buurtNaam}
                         </Link>
                       </td>
-                      <td className="py-2.5 pr-4">{verkoop.straat ?? "onbekend"}</td>
-                      <td className="py-2.5 pr-4 font-medium">{formatEuro(verkoop.prijs)}</td>
-                      <td className="py-2.5 pr-4">{verkoop.oppervlakteM2} m2</td>
-                      <td className="py-2.5">{verkoop.woningtype}</td>
+                      <td className="px-3 py-2.5">{verkoop.straat ?? "onbekend"}</td>
+                      <td className="px-3 py-2.5 font-medium tabular-nums">{formatEuro(verkoop.prijs)}</td>
+                      <td className="px-3 py-2.5 tabular-nums">{verkoop.oppervlakteM2} m2</td>
+                      <td className="rounded-r-lg px-3 py-2.5">{verkoop.woningtype}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -234,28 +238,20 @@ export default async function PlaatsPagina({ params }: { params: Promise<Params>
           Adressen in {gemeente.naam} waarvoor ons model onlangs een waarde berekende, altijd met bandbreedte.
         </p>
         {woningen.length > 0 ? (
-          <div className="mt-6 flex gap-4 overflow-x-auto pb-2" role="list">
+          <div className="mt-6 flex gap-4 overflow-x-auto px-1 pb-3 pt-1" role="list">
             {woningen.map((woning) => {
               const naam = `${woning.straat} ${woning.huisnummer}${woning.toevoeging ? ` ${woning.toevoeging}` : ""}`;
               return (
-                <Link
-                  key={woning.adresId}
-                  role="listitem"
-                  href={`/woning/${woning.postcode}/${woning.nummerslug}`}
-                  className="block w-64 shrink-0 rounded-[14px] border border-lijn bg-paneel p-5 transition-colors hover:border-merk"
-                >
-                  <p className="font-semibold text-inkt">{naam}</p>
-                  <p className="mt-0.5 text-xs text-gedempt">
-                    {woning.postcode} {woning.plaats}
-                  </p>
-                  <p className="mt-3 font-display text-xl font-semibold text-merk">{formatEuro(woning.waarde)}</p>
-                  <p className="mt-1 text-xs text-inkt-zacht">
-                    {formatEuro(woning.intervalLaag)} tot {formatEuro(woning.intervalHoog)}
-                  </p>
-                  <p className="mt-2 text-xs text-gedempt">
-                    {woning.oppervlakteM2} m2, {woning.woningtype}
-                  </p>
-                </Link>
+                <div key={woning.adresId} role="listitem" className="w-72 shrink-0">
+                  <WoningKaart
+                    href={`/woning/${woning.postcode}/${woning.nummerslug}`}
+                    adres={naam}
+                    plaats={`${woning.postcode} ${woning.plaats}`}
+                    micro={`${woning.oppervlakteM2} m2, ${woning.woningtype}`}
+                    waarde={formatEuro(woning.waarde)}
+                    bandbreedte={`${formatEuro(woning.intervalLaag)} tot ${formatEuro(woning.intervalHoog)}`}
+                  />
+                </div>
               );
             })}
           </div>
@@ -267,22 +263,39 @@ export default async function PlaatsPagina({ params }: { params: Promise<Params>
         )}
       </section>
 
+      {/* Donkere slotband (v3, radius-band 20): het ene donkere moment op deze
+          pagina; amber knop met merk-900-tekst (6,8:1). */}
       <section className="mt-12">
-        <Kaart className="bg-merk-wash">
+        <div className="rounded-[20px] bg-merk-900 px-7 py-10 sm:px-10">
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="max-w-md">
-              <h2 className="text-xl font-semibold">Zelf rekenen?</h2>
-              <p className="mt-2 text-sm leading-relaxed text-inkt-zacht">
+              {/* Inline tokenkleur: de ongelaagde h1-h3-regel in globals.css wint
+                  van de text-white-utility (cascade layers), dus op donker moet
+                  de witkleur inline. Zelfde geldt site-breed voor CtaBand (ui.tsx). */}
+              <h2 className="text-2xl font-semibold" style={{ color: "var(--color-paneel)" }}>
+                Zelf rekenen?
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-merk-200">
                 Bereken wat een woning waard is, of wat je kunt lenen volgens de leennormen van 2026. Gratis en
                 zonder account.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <KnopPrimair href="/">Bereken een woningwaarde</KnopPrimair>
-              <KnopSecundair href="/budget">Bereken je budget</KnopSecundair>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center rounded-full bg-accent-500 px-6 py-3 text-sm font-semibold text-merk-900 transition-colors hover:bg-accent-400 focus:outline-2 focus:outline-offset-2 focus:outline-accent-300"
+              >
+                Bereken een woningwaarde
+              </Link>
+              <Link
+                href="/budget"
+                className="inline-flex items-center justify-center rounded-full border border-white/25 px-6 py-3 text-sm font-semibold text-white transition-colors hover:border-white/60 focus:outline-2 focus:outline-offset-2 focus:outline-accent-300"
+              >
+                Bereken je budget
+              </Link>
             </div>
           </div>
-        </Kaart>
+        </div>
       </section>
     </div>
   );

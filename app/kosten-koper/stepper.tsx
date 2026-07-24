@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   GerelateerdeRekenhulpen,
+  KeuzeKaart,
   RekenModule,
   RekenmoduleSamenvatting,
+  UitkomstMoment,
   type SamenvattingRij,
   type StapDefinitie,
 } from "@/components/rekenmodule";
-import { FeitenLijst, inputClass, LeadCta, UitklapUitleg, UitkomstKaart } from "@/components/ui";
+import { inputClass, LeadCta, UitklapUitleg, VoortgangsBalk } from "@/components/ui";
 import { formatEuro } from "@/lib/format";
 import {
   OVB_PEILDATUM,
@@ -39,8 +41,6 @@ import {
  * (lib/normen/overdrachtsbelasting-2026.ts via berekening.ts); er wordt
  * niets opgeslagen of verstuurd buiten de browser.
  */
-
-const radioCls = "flex items-center gap-3 rounded-lg border border-lijn px-4 py-3 text-sm text-inkt";
 
 export function KostenKoperStepper() {
   const [koopsomInvoer, setKoopsomInvoer] = useState(String(KOOPSOM_DEFAULT));
@@ -119,45 +119,33 @@ export function KostenKoperStepper() {
               Ga je zelf in de woning wonen, als hoofdverblijf?
             </legend>
             <div className="space-y-2">
-              <label className={radioCls}>
-                <input
-                  type="radio"
-                  name="hoofdverblijf_keuze"
-                  value="ja"
-                  checked={hoofdverblijf === "ja"}
-                  onChange={() => setHoofdverblijf("ja")}
-                  className="accent-merk"
-                />
-                <span className="flex-1">Ja, ik ga er zelf wonen</span>
-                <span className="text-xs text-gedempt">{OVB_TARIEF_HOOFDVERBLIJF_PCT}% of 0% belasting</span>
-              </label>
-              <label className={radioCls}>
-                <input
-                  type="radio"
-                  name="hoofdverblijf_keuze"
-                  value="nee"
-                  checked={hoofdverblijf === "nee"}
-                  onChange={() => setHoofdverblijf("nee")}
-                  className="accent-merk"
-                />
-                <span className="flex-1">Nee, bijvoorbeeld verhuur of een tweede woning</span>
-                <span className="text-xs text-gedempt">{String(OVB_TARIEF_WONING_OVERIG_PCT).replace(".", ",")}% belasting</span>
-              </label>
+              <KeuzeKaart
+                naam="hoofdverblijf_keuze"
+                waarde="ja"
+                checked={hoofdverblijf === "ja"}
+                onKies={() => setHoofdverblijf("ja")}
+                titel="Ja, ik ga er zelf wonen"
+                meta={`${OVB_TARIEF_HOOFDVERBLIJF_PCT}% of 0% belasting`}
+              />
+              <KeuzeKaart
+                naam="hoofdverblijf_keuze"
+                waarde="nee"
+                checked={hoofdverblijf === "nee"}
+                onKies={() => setHoofdverblijf("nee")}
+                titel="Nee, bijvoorbeeld verhuur of een tweede woning"
+                meta={`${String(OVB_TARIEF_WONING_OVERIG_PCT).replace(".", ",")}% belasting`}
+              />
             </div>
           </fieldset>
 
           {hoofdverblijf === "ja" ? (
-            <div className="rounded-lg border border-lijn p-4">
-              <label className="flex items-start gap-3 text-sm leading-relaxed text-inkt">
-                <input
-                  type="checkbox"
-                  checked={starter}
-                  onChange={(e) => setStarter(e.target.checked)}
-                  className="mt-0.5 accent-merk"
-                />
-                <span className="font-medium">Ik kom in aanmerking voor de startersvrijstelling</span>
-              </label>
-              <ul className="mt-2 list-disc space-y-1 pl-9 text-xs leading-relaxed text-gedempt">
+            <KeuzeKaart
+              soort="checkbox"
+              checked={starter}
+              onKies={() => setStarter(!starter)}
+              titel="Ik kom in aanmerking voor de startersvrijstelling"
+            >
+              <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-gedempt">
                 <li>
                   Je bent {STARTERS_LEEFTIJD_VANAF} tot {STARTERS_LEEFTIJD_TOT} jaar op het moment van de overdracht bij
                   de notaris.
@@ -169,7 +157,7 @@ export function KostenKoperStepper() {
                   deze rekenhulp zelf op de koopsom.
                 </li>
               </ul>
-            </div>
+            </KeuzeKaart>
           ) : null}
 
           {hoofdverblijf === "nee" ? (
@@ -252,15 +240,24 @@ function Uitkomst({
         </p>
       ) : null}
 
-      <UitkomstKaart label="Minimaal eigen geld (indicatie)" bedrag={formatEuro(u.eigenGeldMinimaal)}>
-        <div className="mt-4">
-          <FeitenLijst
-            feiten={[
-              [belastingLabel, formatEuro(u.ovb.belasting)],
-              ...INDICATIE_KOSTEN.map((k): [string, string] => [`${k.label} (indicatie)`, formatEuro(k.bedrag)]),
-            ]}
-          />
-        </div>
+      <UitkomstMoment label="Minimaal eigen geld (indicatie)" waarde={formatEuro(u.eigenGeldMinimaal)}>
+        {/* Flux-echo: het uitkomst-grafiekje. De gestapelde balk laat zien
+            waar het eigen geld heen gaat, met lavendel als tweede reeks; de
+            legenda (kleurdot + label + bedrag) is meteen de postenlijst.
+            Belasting 0 (startersvrijstelling) valt eerlijk uit de balk maar
+            blijft met 0 in de legenda staan. */}
+        <VoortgangsBalk
+          className="mt-5"
+          formatteer={formatEuro}
+          segmenten={[
+            { label: belastingLabel, waarde: u.ovb.belasting, kleur: "merk" },
+            ...INDICATIE_KOSTEN.map((k, i) => ({
+              label: `${k.label} (indicatie)`,
+              waarde: k.bedrag,
+              kleur: (["lavendel", "amber", "neutraal"] as const)[i % 3],
+            })),
+          ]}
+        />
         {zelfWonen ? (
           <p className="mt-4 text-sm leading-relaxed text-inkt-zacht">
             Dit is wat je bij deze koopsom minimaal zelf meebrengt: je kunt maximaal 100% van de woningwaarde lenen, dus
@@ -279,7 +276,7 @@ function Uitkomst({
           </p>
         )}
         <p className="mt-3 text-xs text-gedempt">Bedoeld om je een gevoel te geven, niet om op te baseren.</p>
-      </UitkomstKaart>
+      </UitkomstMoment>
 
       <RekenmoduleSamenvatting rijen={samenvatting} gaNaarStap={gaNaarStap} />
 

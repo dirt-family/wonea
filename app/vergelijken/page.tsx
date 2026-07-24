@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { dnbIndicatieRente, getVergelijkWoningen, watValtOp } from "@/lib/zoeken";
 import { formatEuro } from "@/lib/util";
-import { BronLabel, EnergieLabelBadge, Kaart, KnopPrimair } from "@/components/ui";
+import { AlertRij, BronLabel, EnergieLabelBadge, Kaart, KnopPrimair } from "@/components/ui";
 
 /**
  * /vergelijken: 2 of 3 woningen naast elkaar via ?w=slug,slug,slug.
@@ -74,10 +74,11 @@ export default async function VergelijkenPagina({
         als een goed startpunt voor je gesprek of je bod.
       </p>
 
-      <div className="mt-8 overflow-x-auto rounded-[14px] border border-lijn bg-paneel">
+      {/* v3: zwevende vergelijktabel met navy-wash kop en tint-zebra rijen. */}
+      <div className="mt-8 overflow-x-auto rounded-[14px] border border-lijn bg-paneel shadow-zweef">
         <table className="w-full min-w-[560px] text-sm">
           <thead>
-            <tr className="border-b border-lijn align-bottom">
+            <tr className="border-b border-lijn bg-merk-50 align-bottom">
               <th scope="col" className="w-44 px-4 py-4" aria-label="Kenmerk" />
               {woningen.map((won) => (
                 <th key={won.slug} scope="col" className="px-4 py-4 text-left">
@@ -95,7 +96,7 @@ export default async function VergelijkenPagina({
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Geschatte waarde</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>
@@ -107,7 +108,7 @@ export default async function VergelijkenPagina({
                 </td>
               ))}
             </tr>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Bandbreedte</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>
@@ -121,7 +122,7 @@ export default async function VergelijkenPagina({
                 </td>
               ))}
             </tr>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>WOZ-waarde</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>
@@ -141,7 +142,7 @@ export default async function VergelijkenPagina({
                 </td>
               ))}
             </tr>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Prijs per m2</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>
@@ -149,19 +150,19 @@ export default async function VergelijkenPagina({
                 </td>
               ))}
             </tr>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Oppervlakte</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>{won.adres.oppervlakteM2} m2</td>
               ))}
             </tr>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Bouwjaar</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>{won.adres.bouwjaar}</td>
               ))}
             </tr>
-            <tr className="border-b border-lijn">
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Energielabel</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>
@@ -180,7 +181,7 @@ export default async function VergelijkenPagina({
                 </td>
               ))}
             </tr>
-            <tr>
+            <tr className="even:bg-merk-50">
               <th scope="row" className={rijLabelClass}>Indicatieve maandlast</th>
               {woningen.map((won) => (
                 <td key={won.slug} className={celClass}>
@@ -209,12 +210,15 @@ export default async function VergelijkenPagina({
       {opvallend.length > 0 ? (
         <Kaart className="mt-6">
           <h2 className="text-lg font-semibold">Wat valt op?</h2>
-          <ul className="mt-3 space-y-2 text-sm leading-relaxed text-inkt-zacht">
+          {/* Alert-rijen met kleurdot: lavendel is de rustige datakant uit de
+              flux-kleurlaag (dot lavendel-500, 3,9:1 op wit); elk feitelijk
+              verschil als eigen rij. */}
+          <div className="mt-2 divide-y divide-lijn">
             {opvallend.map((zin) => (
-              <li key={zin}>{zin}</li>
+              <AlertRij key={zin} kleur="lavendel" titel={zin} />
             ))}
-          </ul>
-          <p className="mt-4 text-xs text-gedempt">
+          </div>
+          <p className="mt-3 text-xs text-gedempt">
             Feitelijke verschillen uit de cijfers hierboven. Welke woning bij jou past, bepaal je zelf: rustig, niet onder
             druk.
           </p>

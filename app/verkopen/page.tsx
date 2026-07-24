@@ -11,7 +11,7 @@ import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { isSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation } from "@/lib/valuation";
 import { formatEuro, normalizePostcode } from "@/lib/util";
-import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, Kaart, KnopPrimair, SectieLabel, StappenBalk, Veld } from "@/components/ui";
 import { CONSENT_TEKST, CONSENT_TEKSTVERSIE, consentTekstversie } from "@/app/verkopen/consent-teksten";
 
 export const metadata: Metadata = { title: "Je woning verkopen", robots: { index: false, follow: false } };
@@ -146,24 +146,15 @@ const FOUTEN: Record<string, string> = {
   onbekend: "Dit adres staat niet (meer) op Wonea. Controleer je invoer of probeer een ander adres.",
 };
 
-function Stappen({ actief }: { actief: number }) {
-  const labels = ["Adres", "Termijn", "Reden", "Makelaar", "Versturen"];
-  return (
-    <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gedempt" aria-label={`Stap ${actief} van ${labels.length}`}>
-      {labels.map((label, i) => {
-        const nr = i + 1;
-        return (
-          <li key={label} className="flex items-center gap-x-2">
-            {i > 0 ? <span aria-hidden="true">/</span> : null}
-            <span className={nr === actief ? "font-semibold text-merk" : nr < actief ? "text-inkt-zacht" : undefined}>
-              {nr}. {label}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
+const STAP_LABELS = ["Adres", "Termijn", "Reden", "Makelaar", "Versturen"];
+
+/**
+ * Optie-rij met zichtbare gekozen-staat. Deze stappen zijn server-gerenderde
+ * GET-formulieren (geen client state), dus de gekozen-stijl komt uit CSS:
+ * has-[:checked] kleurt de rij zodra de radio erin aangevinkt is.
+ */
+const optieRijCls =
+  "flex cursor-pointer items-center gap-3 rounded-lg border border-lijn bg-paneel px-4 py-3 transition-colors hover:border-merk has-[:checked]:border-merk has-[:checked]:bg-merk-wash";
 
 export default async function VerkopenPagina({
   searchParams,
@@ -190,41 +181,53 @@ export default async function VerkopenPagina({
     adres ? `/verkopen?${new URLSearchParams({ postcode: adres.postcode, nummer: adres.nummerslug, ...extra }).toString()}` : "/verkopen";
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash)]" />
+      <div className="relative mx-auto max-w-2xl px-5 py-16">
       <h1 className="text-3xl font-semibold">Je woning verkopen</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         Verkoopplannen, of gewoon aan het verkennen? Beantwoord drie korte vragen, dan brengen we je in contact met een
         lokale verkoopmakelaar die je buurt kent. Gratis en vrijblijvend, je zit nergens aan vast.
       </p>
-      <Stappen actief={stap} />
+      <div className="mt-6">
+        <StappenBalk stappen={STAP_LABELS} actief={stap - 1} />
+      </div>
 
       {foutmelding ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{foutmelding}</p>
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+          {foutmelding}
+        </p>
       ) : null}
 
       {adres && view ? (
-        <Kaart className="mt-8 bg-merk-wash">
-          <SectieLabel>Je woning</SectieLabel>
-          <p className="mt-2 text-lg font-semibold text-inkt">{naam}</p>
-          <p className="text-sm text-inkt-zacht">
-            {adres.postcode} {adres.plaats}
-          </p>
-          {view.valuation ? (
-            <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-              Geschatte Wonea-waarde: <span className="font-semibold text-merk">{formatEuro(view.valuation.waarde)}</span>,
-              bandbreedte {formatEuro(view.valuation.intervalLaag)} tot {formatEuro(view.valuation.intervalHoog)}, op basis
-              van {view.valuation.nComparables} verkopen. Dit is een modelmatige schatting, geen taxatie; een makelaar kijkt
-              ook naar staat en afwerking.
-            </p>
-          ) : (
-            <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-              Voor dit adres hebben we nog geen eerlijke schatting: er zijn te weinig recente verkopen in de buurt. Een
-              makelaar kan de waarde wel ter plekke bepalen.
-            </p>
-          )}
-          <Link href="/verkopen" className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
-            Ander adres kiezen
-          </Link>
+        <Kaart className="mt-8 border-merk-200 bg-merk-wash">
+          <div className="flex items-start gap-4">
+            <IcoonRondje naam="huis" tint="merk" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk">Je woning</p>
+              <p className="mt-2 text-lg font-semibold text-inkt">{naam}</p>
+              <p className="text-sm text-inkt-zacht">
+                {adres.postcode} {adres.plaats}
+              </p>
+              {view.valuation ? (
+                <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
+                  Geschatte Wonea-waarde: <span className="font-semibold tabular-nums text-merk">{formatEuro(view.valuation.waarde)}</span>,
+                  bandbreedte {formatEuro(view.valuation.intervalLaag)} tot {formatEuro(view.valuation.intervalHoog)}, op basis
+                  van {view.valuation.nComparables} verkopen. Dit is een modelmatige schatting, geen taxatie; een makelaar kijkt
+                  ook naar staat en afwerking.
+                </p>
+              ) : (
+                <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
+                  Voor dit adres hebben we nog geen eerlijke schatting: er zijn te weinig recente verkopen in de buurt. Een
+                  makelaar kan de waarde wel ter plekke bepalen.
+                </p>
+              )}
+              <Link href="/verkopen" className="mt-3 inline-block text-sm font-semibold text-merk underline underline-offset-4">
+                Ander adres kiezen
+              </Link>
+            </div>
+          </div>
         </Kaart>
       ) : null}
 
@@ -258,7 +261,7 @@ export default async function VerkopenPagina({
               <legend className="text-sm font-medium text-inkt">Op welke termijn wil je verkopen?</legend>
               <div className="mt-3 space-y-2 text-sm text-inkt">
                 {(Object.entries(TERMIJNEN) as [Termijn, string][]).map(([waarde, label]) => (
-                  <label key={waarde} className="flex items-center gap-2">
+                  <label key={waarde} className={optieRijCls}>
                     <input type="radio" name="termijn" value={waarde} required className="accent-merk" />
                     {label}
                   </label>
@@ -280,7 +283,7 @@ export default async function VerkopenPagina({
               <legend className="text-sm font-medium text-inkt">Wat is de belangrijkste reden om te verhuizen?</legend>
               <div className="mt-3 space-y-2 text-sm text-inkt">
                 {(Object.entries(REDENEN) as [Reden, string][]).map(([waarde, label]) => (
-                  <label key={waarde} className="flex items-center gap-2">
+                  <label key={waarde} className={optieRijCls}>
                     <input type="radio" name="reden" value={waarde} required className="accent-merk" />
                     {label}
                   </label>
@@ -308,7 +311,7 @@ export default async function VerkopenPagina({
               <legend className="text-sm font-medium text-inkt">Heb je al een makelaar gesproken?</legend>
               <div className="mt-3 space-y-2 text-sm text-inkt">
                 {(Object.entries(MAKELAAR_OPTIES) as [MakelaarKeuze, string][]).map(([waarde, label]) => (
-                  <label key={waarde} className="flex items-center gap-2">
+                  <label key={waarde} className={optieRijCls}>
                     <input type="radio" name="makelaar" value={waarde} required className="accent-merk" />
                     {label}
                   </label>
@@ -394,6 +397,7 @@ export default async function VerkopenPagina({
           </form>
         </Kaart>
       ) : null}
+      </div>
     </div>
   );
 }

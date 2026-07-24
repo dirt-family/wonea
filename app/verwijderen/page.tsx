@@ -9,7 +9,8 @@ import { addresses, optouts } from "@/db/schema";
 import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { normalizePostcode, nowIso, randomToken } from "@/lib/util";
 import { stuurOptoutBevestiging } from "@/emails/optout";
-import { inputClass, Kaart, KnopPrimair, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, Kaart, KnopPrimair, Veld } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 
 export const metadata: Metadata = { title: "Woningpagina verwijderen", robots: { index: false, follow: false } };
 
@@ -119,24 +120,34 @@ export default async function VerwijderenPagina({
   if (sp.stap === "mail") {
     return (
       <div className="mx-auto max-w-2xl px-5 py-16">
-        <h1 className="text-3xl font-semibold">Check je mail</h1>
-        <p className="mt-4 leading-relaxed text-inkt-zacht">
-          We hebben je een bevestigingslink gestuurd. Eén klik daarop en de woningpagina is verwijderd. Zonder die klik
-          verandert er niets, zo weten we zeker dat het verzoek van jou komt.
-        </p>
+        <div className="flex items-start justify-between gap-8">
+          <div className="min-w-0">
+            <IcoonRondje naam="vinkje" tint="merk" maat="l" />
+            <h1 className="mt-5 text-3xl font-semibold">Check je mail</h1>
+            <p className="mt-4 leading-relaxed text-inkt-zacht">
+              We hebben je een bevestigingslink gestuurd. Eén klik daarop en de woningpagina is verwijderd. Zonder die klik
+              verandert er niets, zo weten we zeker dat het verzoek van jou komt.
+            </p>
+          </div>
+          <Illustratie naam="jouw-data" className="hidden w-44 shrink-0 sm:block" />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16">
-      <h1 className="text-3xl font-semibold">Je woningpagina verwijderen</h1>
+      {/* Bewust sober (trust-flow); het ene familie-accent is dit merk-rondje,
+          zelfde patroon als de "Check je mail"-stap hierboven. */}
+      <IcoonRondje naam="schild" tint="merk" maat="l" />
+      <h1 className="mt-5 text-3xl font-semibold">Je woningpagina verwijderen</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         Jouw huis, jouw keuze. Verwijderen gaat in twee stappen: je vraagt het hier aan en bevestigt daarna. Na bevestiging
         verdwijnt het adres overal op Wonea (pagina, rapporten, alerts) en komt het ook bij nieuwe data-imports niet terug.
       </p>
       {sp.fout ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
           {FOUTEN[sp.fout] ?? "Er ging iets mis. Probeer het opnieuw."}
         </p>
       ) : null}

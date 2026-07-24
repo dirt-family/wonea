@@ -7,7 +7,7 @@ import { addresses, alertSubscriptions, claims, consents, mortgageInfo, sharedRe
 import { currentUser } from "@/lib/auth";
 import { isAddressIdSuppressed } from "@/lib/suppression";
 import { getOrCreateValuation, valuationHistorie } from "@/lib/valuation";
-import { BronLabel } from "@/components/ui";
+import { Pil } from "@/components/ui";
 import { DossierNav } from "@/components/dossier/nav";
 import { OverzichtSectie } from "@/components/dossier/overzicht";
 import { WozSectie } from "@/components/dossier/woz";
@@ -94,7 +94,7 @@ export default async function WoningDossierPagina({
   const jaarSchattingen = marktschattingPerJaar(historie);
 
   return (
-    <div className="mx-auto max-w-5xl px-5 py-10">
+    <div>
       <nav className="text-sm text-gedempt" aria-label="Kruimelpad">
         <Link href="/dashboard" className="hover:text-merk">
           Mijn woningen
@@ -110,7 +110,7 @@ export default async function WoningDossierPagina({
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <BronLabel>zelfverklaard {claim.rol}</BronLabel>
+          <Pil variant="lavendel">zelfverklaard {claim.rol}</Pil>
           <Link
             href={`/woning/${adres.postcode}/${adres.nummerslug}`}
             className="text-sm font-semibold text-merk underline underline-offset-4"
@@ -129,9 +129,9 @@ export default async function WoningDossierPagina({
         <p className="mt-6 rounded-lg border border-positief/30 bg-positief-wash px-4 py-3 text-sm text-positief">{OK[sp.ok]}</p>
       ) : null}
 
-      <div className="mt-8 gap-10 lg:grid lg:grid-cols-[200px_1fr] lg:items-start">
-        <DossierNav terugHref="/dashboard" />
-        <div className="mt-6 space-y-14 lg:mt-0">
+      <div className="mt-6">
+        <DossierNav />
+        <div className="mt-8 space-y-14">
           <OverzichtSectie
             adres={adres}
             valuation={valuation}

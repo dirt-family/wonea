@@ -11,7 +11,8 @@ import { clientIp, rateLimited } from "@/lib/ratelimit";
 import { isSuppressed } from "@/lib/suppression";
 import { baseUrl, normalizePostcode } from "@/lib/util";
 import { stuurMagicLink } from "@/emails/magic-link";
-import { inputClass, Kaart, KnopPrimair, SectieLabel, Veld } from "@/components/ui";
+import { IcoonRondje, inputClass, Kaart, KnopPrimair, Veld } from "@/components/ui";
+import { Illustratie } from "@/components/illustraties";
 import { CONSENT_TEKST_ALERTS, CONSENT_TEKST_MARKETING } from "@/app/claim/consent-teksten";
 
 export const metadata: Metadata = { title: "Claim je woning", robots: { index: false, follow: false } };
@@ -112,14 +113,20 @@ export default async function ClaimPagina({
   if (sp.stap === "mail") {
     return (
       <div className="mx-auto max-w-2xl px-5 py-16">
-        <h1 className="text-3xl font-semibold">Check je mail</h1>
-        <p className="mt-4 leading-relaxed text-inkt-zacht">
-          We hebben je een bevestigingslink gestuurd. Die is 15 minuten geldig en werkt één keer. Klik erop en je woning
-          staat in je dashboard. Geen mail? Kijk even in je spamfolder.
-        </p>
-        <p className="mt-4 text-sm text-gedempt">
-          Zonder die klik gebeurt er niets: geen claim, geen mails.
-        </p>
+        <div className="flex items-start justify-between gap-8">
+          <div className="min-w-0">
+            <IcoonRondje naam="vinkje" tint="amber" maat="l" />
+            <h1 className="mt-5 text-3xl font-semibold">Check je mail</h1>
+            <p className="mt-4 leading-relaxed text-inkt-zacht">
+              We hebben je een bevestigingslink gestuurd. Die is 15 minuten geldig en werkt één keer. Klik erop en je woning
+              staat in je dashboard. Geen mail? Kijk even in je spamfolder.
+            </p>
+            <p className="mt-4 text-sm text-gedempt">
+              Zonder die klik gebeurt er niets: geen claim, geen mails.
+            </p>
+          </div>
+          <Illustratie naam="jouw-data" className="hidden w-44 shrink-0 sm:block" />
+        </div>
       </div>
     );
   }
@@ -129,42 +136,59 @@ export default async function ClaimPagina({
   const foutmelding = sp.fout ? (FOUTEN[sp.fout] ?? "Er ging iets mis. Probeer het opnieuw.") : heeftParams && !adres ? FOUTEN.onbekend : null;
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-16">
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 [background-image:var(--gradient-hero-wash)]" />
+      <div className="relative mx-auto max-w-2xl px-5 py-16">
       <h1 className="text-3xl font-semibold">Claim je woning</h1>
       <p className="mt-4 leading-relaxed text-inkt-zacht">
         Claim je woning en volg de waarde vanuit je eigen dashboard. Gratis, en opzeggen kan altijd met één klik.
       </p>
 
       {foutmelding ? (
-        <p className="mt-4 rounded-lg border border-negatief/30 bg-negatief/5 px-4 py-3 text-sm text-negatief">{foutmelding}</p>
+        <p className="mt-4 flex items-start gap-2.5 rounded-lg border border-negatief/30 bg-negatief-wash px-4 py-3 text-sm text-negatief">
+          <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-negatief" />
+          {foutmelding}
+        </p>
       ) : null}
 
       {!adres ? (
         <Kaart className="mt-8">
-          <SectieLabel>Eerst je adres</SectieLabel>
-          <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
-            Zoek eerst je adres op de homepage en klik op de woningpagina op de knop &quot;Dit is mijn woning&quot;. Dan
-            staat je adres hier klaar.
-          </p>
-          <KnopPrimair href="/">Zoek je adres</KnopPrimair>
+          <div className="flex flex-wrap items-center gap-6 sm:flex-nowrap">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk">Eerst je adres</p>
+              <p className="mt-3 text-sm leading-relaxed text-inkt-zacht">
+                Zoek eerst je adres op de homepage en klik op de woningpagina op de knop &quot;Dit is mijn woning&quot;. Dan
+                staat je adres hier klaar.
+              </p>
+              <div className="mt-4">
+                <KnopPrimair href="/">Zoek je adres</KnopPrimair>
+              </div>
+            </div>
+            <Illustratie naam="lege-staat" className="hidden w-36 shrink-0 sm:block" />
+          </div>
         </Kaart>
       ) : (
         <>
-          <Kaart className="mt-8 bg-merk-wash">
-            <SectieLabel>Je claimt</SectieLabel>
-            <p className="mt-2 text-lg font-semibold text-inkt">
-              {adres.straat} {adres.huisnummer}
-              {adres.toevoeging ? ` ${adres.toevoeging}` : ""}
-            </p>
-            <p className="text-sm text-inkt-zacht">
-              {adres.postcode} {adres.plaats}
-            </p>
-            <Link
-              href={`/woning/${adres.postcode}/${adres.nummerslug}`}
-              className="mt-2 inline-block text-sm font-semibold text-merk underline underline-offset-4"
-            >
-              Bekijk de woningpagina
-            </Link>
+          <Kaart className="mt-8 border-merk-200 bg-merk-wash">
+            <div className="flex items-start gap-4">
+              <IcoonRondje naam="huis" tint="merk" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-merk">Je claimt</p>
+                <p className="mt-2 text-lg font-semibold text-inkt">
+                  {adres.straat} {adres.huisnummer}
+                  {adres.toevoeging ? ` ${adres.toevoeging}` : ""}
+                </p>
+                <p className="text-sm text-inkt-zacht">
+                  {adres.postcode} {adres.plaats}
+                </p>
+                <Link
+                  href={`/woning/${adres.postcode}/${adres.nummerslug}`}
+                  className="mt-2 inline-block text-sm font-semibold text-merk underline underline-offset-4"
+                >
+                  Bekijk de woningpagina
+                </Link>
+              </div>
+            </div>
           </Kaart>
 
           <Kaart className="mt-5">
@@ -219,6 +243,7 @@ export default async function ClaimPagina({
           </Kaart>
         </>
       )}
+      </div>
     </div>
   );
 }
